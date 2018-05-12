@@ -235,7 +235,7 @@ if test_mode:
     update_interval = num_examples
 else:
     weight_path = data_path + 'random/'  
-    num_examples = 100
+    num_examples = 1000
     use_testing_set = False
     do_plot_performance = True
     if num_examples <= 60000:    
@@ -356,7 +356,7 @@ neuron_groups['i'] = b.NeuronGroup(n_i*len(population_names), neuron_eqs_i, thre
 #------------------------------------------------------------------------------ 
 # create network population and recurrent connections
 #------------------------------------------------------------------------------ 
-
+'''
 neuron_groups['Ae'] = neuron_groups['e'].subgroup(n_e)
 neuron_groups['Ai'] = neuron_groups['i'].subgroup(n_i)
 
@@ -387,43 +387,18 @@ for name in population_names:
     
     neuron_groups[name+'e'].v = v_rest_e - 40. * b.mV
     neuron_groups[name+'i'].v = v_rest_i - 40. * b.mV
-    if test_mode or weight_path[-8:] == 'weights/':
-        neuron_groups['e'].theta = np.load(weight_path + 'theta_' + name + ending + '.npy')
-    else:
-        # it does this.
-        neuron_groups['e'].theta = np.ones((n_e)) * 20.0*b.mV
+
+    neuron_groups['e'].theta = np.ones((n_e)) * 20.0*b.mV
     
-    print 'create recurrent connections'
     for conn_type in recurrent_conn_names:
         connName = name+conn_type[0]+name+conn_type[1]
         weightMatrix = get_matrix_from_file('../random/' + connName + ending + '.npy')
-        connections[connName] = b.Connection(neuron_groups[connName[0:2]], neuron_groups[connName[2:4]], structure= conn_structure, 
-                                                    state = 'g'+conn_type[0])
+        connections[connName] = b.Connection(neuron_groups[connName[0:2]], neuron_groups[connName[2:4]], structure= conn_structure, state = 'g'+conn_type[0])
         connections[connName].connect(neuron_groups[connName[0:2]], neuron_groups[connName[2:4]], weightMatrix)
-                
-    if ee_STDP_on:
-        if 'ee' in recurrent_conn_names:
-            stdp_methods[name+'e'+name+'e'] = b.STDP(connections[name+'e'+name+'e'], eqs=eqs_stdp_ee, pre = eqs_stdp_pre_ee, 
-                                                           post = eqs_stdp_post_ee, wmin=0., wmax= wmax_ee)
 
-    print 'create monitors for', name
     rate_monitors[name+'e'] = b.PopulationRateMonitor(neuron_groups[name+'e'], bin = (single_example_time+resting_time)/b.second)
     rate_monitors[name+'i'] = b.PopulationRateMonitor(neuron_groups[name+'i'], bin = (single_example_time+resting_time)/b.second)
     spike_counters[name+'e'] = b.SpikeCounter(neuron_groups[name+'e'])
-    
-    if record_spikes:
-        spike_monitors[name+'e'] = b.SpikeMonitor(neuron_groups[name+'e'])
-        spike_monitors[name+'i'] = b.SpikeMonitor(neuron_groups[name+'i'])
-
-if record_spikes:
-    b.figure(fig_num)
-    fig_num += 1
-    b.ion()
-    b.subplot(211)
-    b.raster_plot(spike_monitors['Ae'], refresh=1000*b.ms, showlast=1000*b.ms)
-    b.subplot(212)
-    b.raster_plot(spike_monitors['Ai'], refresh=1000*b.ms, showlast=1000*b.ms)
-'''
 
 #------------------------------------------------------------------------------ 
 # create input population and connections from input populations 
