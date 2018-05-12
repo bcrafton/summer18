@@ -202,12 +202,12 @@ neuron_groups['Ai'].v = v_rest_i - 40. * b.mV
 neuron_groups['e'].theta = np.load('../saved_weights/theta_A.npy')
 
 connName = 'AeAi'
-weightMatrix = get_matrix_from_file('../random/AeAi.npy')
+weightMatrix = np.load('../random/AeAi.npy')
 connections[connName] = b.Connection(neuron_groups['Ae'], neuron_groups['Ai'], structure= conn_structure, state = 'g'+'e')
 connections[connName].connect(neuron_groups['Ae'], neuron_groups['Ai'], weightMatrix)
 
 connName = 'AiAe'
-weightMatrix = get_matrix_from_file('../random/AiAe.npy')
+weightMatrix = np.load('../random/AiAe.npy')
 connections[connName] = b.Connection(neuron_groups['Ai'], neuron_groups['Ae'], structure= conn_structure, state = 'g'+'i')
 connections[connName].connect(neuron_groups['Ai'], neuron_groups['Ae'], weightMatrix)
 
@@ -223,7 +223,7 @@ input_groups['Xe'] = b.PoissonGroup(n_input, 0)
 rate_monitors['Xe'] = b.PopulationRateMonitor(input_groups['Xe'], bin = (single_example_time + resting_time) / b.second)
 
 connName = 'XeAe'
-weightMatrix = get_matrix_from_file('../saved_weights/XeAe.npy')
+weightMatrix = np.load('../saved_weights/XeAe.npy')
 connections[connName] = b.Connection(input_groups['Xe'], neuron_groups['Ae'], structure=conn_structure, state = 'g' + 'e', delay=True, max_delay=delay['ee_input'][1])
 connections[connName].connect(input_groups['Xe'], neuron_groups['Ae'], weightMatrix, delay=delay['ee_input'])
 

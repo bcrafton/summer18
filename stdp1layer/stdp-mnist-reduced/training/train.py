@@ -31,32 +31,9 @@ def load_data():
 
   f.close()
 
-def get_matrix_from_file(fileName):
-    offset = len(ending) + 4
-    if fileName[-4-offset] == 'X':
-        n_src = n_input                
-    else:
-        if fileName[-3-offset]=='e':
-            n_src = n_e
-        else:
-            n_src = n_i
-    if fileName[-1-offset]=='e':
-        n_tgt = n_e
-    else:
-        n_tgt = n_i
-    readout = np.load(fileName)
-    print readout.shape, fileName
-    value_arr = np.zeros((n_src, n_tgt))
-    if not readout.shape == (0,):
-        value_arr[np.int32(readout[:,0]), np.int32(readout[:,1])] = readout[:,2]
-    return value_arr
-
-
 def save_connections(ending = ''):
-    print 'save connections'
     connMatrix = connections['XeAe'][:]
-    connListSparse = ([(i,j,connMatrix[i,j]) for i in xrange(connMatrix.shape[0]) for j in xrange(connMatrix.shape[1]) ])
-    np.save('XeAe' + ending, connListSparse)
+    np.save('XeAe', connMatrix)
 
 def save_theta(ending = ''):
     np.save('theta_A', neuron_groups['Ae'].theta)
@@ -70,24 +47,7 @@ def normalize_weights():
             colFactors = weight['ee_input']/colSums
             for j in xrange(n_e):#
                 connection[:,j] *= colFactors[j]
-            
-def get_2d_input_weights():
-    name = 'XeAe'
-    weight_matrix = np.zeros((n_input, n_e))
-    n_e_sqrt = int(np.sqrt(n_e))
-    n_in_sqrt = int(np.sqrt(n_input))
-    num_values_col = n_e_sqrt*n_in_sqrt
-    num_values_row = num_values_col
-    rearranged_weights = np.zeros((num_values_col, num_values_row))
-    connMatrix = connections[name][:]
-    weight_matrix = np.copy(connMatrix)
-        
-    for i in xrange(n_e_sqrt):
-        for j in xrange(n_e_sqrt):
-                rearranged_weights[i*n_in_sqrt : (i+1)*n_in_sqrt, j*n_in_sqrt : (j+1)*n_in_sqrt] = \
-                    weight_matrix[:, i + j*n_e_sqrt].reshape((n_in_sqrt, n_in_sqrt))
-    return rearranged_weights
-    
+
 #------------------------------------------------------------------------------ 
 # load MNIST
 #------------------------------------------------------------------------------
@@ -215,12 +175,12 @@ neuron_groups['Ai'].v = v_rest_i - 40. * b.mV
 neuron_groups['e'].theta = np.ones((n_e)) * 20.0*b.mV
 
 connName = 'AeAi'
-weightMatrix = get_matrix_from_file('../random/AeAi.npy')
+weightMatrix = np.load('../random/AeAi.npy')
 connections[connName] = b.Connection(neuron_groups['Ae'], neuron_groups['Ai'], structure= conn_structure, state = 'g'+'e')
 connections[connName].connect(neuron_groups['Ae'], neuron_groups['Ai'], weightMatrix)
 
 connName = 'AiAe'
-weightMatrix = get_matrix_from_file('../random/AiAe.npy')
+weightMatrix = np.load('../random/AiAe.npy')
 connections[connName] = b.Connection(neuron_groups['Ai'], neuron_groups['Ae'], structure= conn_structure, state = 'g'+'i')
 connections[connName].connect(neuron_groups['Ai'], neuron_groups['Ae'], weightMatrix)
 
@@ -237,7 +197,7 @@ input_groups['Xe'] = b.PoissonGroup(n_input, 0)
 rate_monitors['Xe'] = b.PopulationRateMonitor(input_groups['Xe'], bin = (single_example_time + resting_time) / b.second)
 
 connName = 'XeAe'
-weightMatrix = get_matrix_from_file('../random/XeAe.npy')
+weightMatrix = np.load('../random/XeAe.npy')
 connections[connName] = b.Connection(input_groups['Xe'], neuron_groups['Ae'], structure=conn_structure, state = 'g' + 'e', delay=True, max_delay=delay['ee_input'][1])
 connections[connName].connect(input_groups['Xe'], neuron_groups['Ae'], weightMatrix, delay=delay['ee_input'])
 
@@ -266,7 +226,6 @@ while j < num_examples:
 
     if np.sum(current_spike_count) < 5:
         input_intensity += 1
-
     else:
         input_intensity = start_input_intensity
         j += 1
