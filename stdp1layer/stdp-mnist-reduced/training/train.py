@@ -379,26 +379,24 @@ rate_monitors['Ai'] = b.PopulationRateMonitor(neuron_groups['Ai'], bin = (single
 spike_counters['Ae'] = b.SpikeCounter(neuron_groups['Ae'])
 '''
 
-for name in population_names:
-    print 'create neuron group', name
-    
-    neuron_groups[name+'e'] = neuron_groups['e'].subgroup(n_e)
-    neuron_groups[name+'i'] = neuron_groups['i'].subgroup(n_i)
-    
-    neuron_groups[name+'e'].v = v_rest_e - 40. * b.mV
-    neuron_groups[name+'i'].v = v_rest_i - 40. * b.mV
+name = 'A'
+neuron_groups[name+'e'] = neuron_groups['e'].subgroup(n_e)
+neuron_groups[name+'i'] = neuron_groups['i'].subgroup(n_i)
 
-    neuron_groups['e'].theta = np.ones((n_e)) * 20.0*b.mV
-    
-    for conn_type in recurrent_conn_names:
-        connName = name+conn_type[0]+name+conn_type[1]
-        weightMatrix = get_matrix_from_file('../random/' + connName + ending + '.npy')
-        connections[connName] = b.Connection(neuron_groups[connName[0:2]], neuron_groups[connName[2:4]], structure= conn_structure, state = 'g'+conn_type[0])
-        connections[connName].connect(neuron_groups[connName[0:2]], neuron_groups[connName[2:4]], weightMatrix)
+neuron_groups[name+'e'].v = v_rest_e - 40. * b.mV
+neuron_groups[name+'i'].v = v_rest_i - 40. * b.mV
 
-    rate_monitors[name+'e'] = b.PopulationRateMonitor(neuron_groups[name+'e'], bin = (single_example_time+resting_time)/b.second)
-    rate_monitors[name+'i'] = b.PopulationRateMonitor(neuron_groups[name+'i'], bin = (single_example_time+resting_time)/b.second)
-    spike_counters[name+'e'] = b.SpikeCounter(neuron_groups[name+'e'])
+neuron_groups['e'].theta = np.ones((n_e)) * 20.0*b.mV
+
+for conn_type in recurrent_conn_names:
+    connName = name+conn_type[0]+name+conn_type[1]
+    weightMatrix = get_matrix_from_file('../random/' + connName + ending + '.npy')
+    connections[connName] = b.Connection(neuron_groups[connName[0:2]], neuron_groups[connName[2:4]], structure= conn_structure, state = 'g'+conn_type[0])
+    connections[connName].connect(neuron_groups[connName[0:2]], neuron_groups[connName[2:4]], weightMatrix)
+
+rate_monitors[name+'e'] = b.PopulationRateMonitor(neuron_groups[name+'e'], bin = (single_example_time+resting_time)/b.second)
+rate_monitors[name+'i'] = b.PopulationRateMonitor(neuron_groups[name+'i'], bin = (single_example_time+resting_time)/b.second)
+spike_counters[name+'e'] = b.SpikeCounter(neuron_groups[name+'e'])
 
 #------------------------------------------------------------------------------ 
 # create input population and connections from input populations 
