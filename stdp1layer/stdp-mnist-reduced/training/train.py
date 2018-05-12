@@ -15,6 +15,7 @@ import brian_no_units  #import it to deactivate unit checking --> This should NO
 import brian as b
 from struct import unpack
 from brian import *
+import gzip
 
 # specify the location of the MNIST data
 MNIST_data_path = ''
@@ -22,43 +23,22 @@ MNIST_data_path = ''
 #------------------------------------------------------------------------------ 
 # functions
 #------------------------------------------------------------------------------     
-def get_labeled_data(picklename, bTrain = True):
-    """Read input-vector (image) and target class (label, 0-9) and return
-       it as list of tuples.
-    """
-    if os.path.isfile('%s.pickle' % picklename):
-        data = pickle.load(open('%s.pickle' % picklename))
-    else:
-        # Open the images with gzip in read binary mode
-        if bTrain:
-            images = open(MNIST_data_path + 'train-images.idx3-ubyte','rb')
-            labels = open(MNIST_data_path + 'train-labels.idx1-ubyte','rb')
-        else:
-            images = open(MNIST_data_path + 't10k-images.idx3-ubyte','rb')
-            labels = open(MNIST_data_path + 't10k-labels.idx1-ubyte','rb')
-        # Get metadata for images
-        images.read(4)  # skip the magic_number
-        number_of_images = unpack('>I', images.read(4))[0]
-        rows = unpack('>I', images.read(4))[0]
-        cols = unpack('>I', images.read(4))[0]
-        # Get metadata for labels
-        labels.read(4)  # skip the magic_number
-        N = unpack('>I', labels.read(4))[0]
-    
-        if number_of_images != N:
-            raise Exception('number of labels did not match the number of images')
-        # Get the data
-        x = np.zeros((N, rows, cols), dtype=np.uint8)  # Initialize numpy array
-        y = np.zeros((N, 1), dtype=np.uint8)  # Initialize numpy array
-        for i in xrange(N):
-            if i % 1000 == 0:
-                print("i: %i" % i)
-            x[i] = [[unpack('>B', images.read(1))[0] for unused_col in xrange(cols)]  for unused_row in xrange(rows) ]
-            y[i] = unpack('>B', labels.read(1))[0]
-            
-        data = {'x': x, 'y': y, 'rows': rows, 'cols': cols}
-        pickle.dump(data, open("%s.pickle" % picklename, "wb"))
-    return data
+def load_data():
+  global training_set, training_labels, testing_set, testing_labels
+  f = gzip.open('mnist.pkl.gz', 'rb')
+  train, valid, test = pickle.load(f)
+
+  [training_set, training_labels] = train
+  [validation_set, validation_labels] = valid
+  [testing_set, testing_labels] = test
+
+  for i in range( len(training_set) ):
+    training_set[i] = training_set[i].reshape(28*28)
+
+  for i in range( len(testing_set) ):
+    testing_set[i] = testing_set[i].reshape(28*28)
+
+  f.close()
 
 def get_matrix_from_file(fileName):
     offset = len(ending) + 4
@@ -120,51 +100,6 @@ def get_2d_input_weights():
                 rearranged_weights[i*n_in_sqrt : (i+1)*n_in_sqrt, j*n_in_sqrt : (j+1)*n_in_sqrt] = \
                     weight_matrix[:, i + j*n_e_sqrt].reshape((n_in_sqrt, n_in_sqrt))
     return rearranged_weights
-
-
-def plot_2d_input_weights():
-    name = 'XeAe'
-    weights = get_2d_input_weights()
-    fig = b.figure(fig_num, figsize = (18, 18))
-    im2 = b.imshow(weights, interpolation = "nearest", vmin = 0, vmax = wmax_ee, cmap = cmap.get_cmap('hot_r'))
-    b.colorbar(im2)
-    b.title('weights of connection' + name)
-    fig.canvas.draw()
-    return im2, fig
-    
-def update_2d_input_weights(im, fig):
-    weights = get_2d_input_weights()
-    im.set_array(weights)
-    fig.canvas.draw()
-    return im
-
-def get_current_performance(performance, current_example_num):
-    current_evaluation = int(current_example_num/update_interval)
-    start_num = current_example_num - update_interval
-    end_num = current_example_num
-    difference = outputNumbers[start_num:end_num, 0] - input_numbers[start_num:end_num]
-    correct = len(np.where(difference == 0)[0])
-    performance[current_evaluation] = correct / float(update_interval) * 100
-    return performance
-
-def plot_performance(fig_num):
-    num_evaluations = int(num_examples/update_interval)
-    time_steps = range(0, num_evaluations)
-    performance = np.zeros(num_evaluations)
-    fig = b.figure(fig_num, figsize = (5, 5))
-    fig_num += 1
-    ax = fig.add_subplot(111)
-    im2, = ax.plot(time_steps, performance) #my_cmap
-    b.ylim(ymax = 100)
-    b.title('Classification performance')
-    fig.canvas.draw()
-    return im2, performance, fig_num, fig
-
-def update_performance_plot(im, performance, current_example_num, fig):
-    performance = get_current_performance(performance, current_example_num)
-    im.set_ydata(performance)
-    fig.canvas.draw()
-    return im, performance
     
 def get_recognized_number_ranking(assignments, spike_rates):
     summed_rates = [0] * 10
@@ -189,20 +124,11 @@ def get_new_assignments(result_monitor, input_numbers):
                 assignments[i] = j
     return assignments
     
-    
 #------------------------------------------------------------------------------ 
 # load MNIST
 #------------------------------------------------------------------------------
-start = time.time()
-training = get_labeled_data(MNIST_data_path + 'training')
-end = time.time()
-print 'time needed to load training set:', end - start
- 
-start = time.time()
-testing = get_labeled_data(MNIST_data_path + 'testing', bTrain = False)
-end = time.time()
-print 'time needed to load test set:', end - start
 
+load_data()
 
 #------------------------------------------------------------------------------ 
 # set parameters and equations
@@ -356,7 +282,7 @@ neuron_groups['i'] = b.NeuronGroup(n_i*len(population_names), neuron_eqs_i, thre
 #------------------------------------------------------------------------------ 
 # create network population and recurrent connections
 #------------------------------------------------------------------------------ 
-'''
+
 neuron_groups['Ae'] = neuron_groups['e'].subgroup(n_e)
 neuron_groups['Ai'] = neuron_groups['i'].subgroup(n_i)
 
@@ -377,26 +303,7 @@ connections[connName].connect(neuron_groups['Ai'], neuron_groups['Ae'], weightMa
 rate_monitors['Ae'] = b.PopulationRateMonitor(neuron_groups['Ae'], bin = (single_example_time+resting_time)/b.second)
 rate_monitors['Ai'] = b.PopulationRateMonitor(neuron_groups['Ai'], bin = (single_example_time+resting_time)/b.second)
 spike_counters['Ae'] = b.SpikeCounter(neuron_groups['Ae'])
-'''
 
-name = 'A'
-neuron_groups[name+'e'] = neuron_groups['e'].subgroup(n_e)
-neuron_groups[name+'i'] = neuron_groups['i'].subgroup(n_i)
-
-neuron_groups[name+'e'].v = v_rest_e - 40. * b.mV
-neuron_groups[name+'i'].v = v_rest_i - 40. * b.mV
-
-neuron_groups['e'].theta = np.ones((n_e)) * 20.0*b.mV
-
-for conn_type in recurrent_conn_names:
-    connName = name+conn_type[0]+name+conn_type[1]
-    weightMatrix = get_matrix_from_file('../random/' + connName + ending + '.npy')
-    connections[connName] = b.Connection(neuron_groups[connName[0:2]], neuron_groups[connName[2:4]], structure= conn_structure, state = 'g'+conn_type[0])
-    connections[connName].connect(neuron_groups[connName[0:2]], neuron_groups[connName[2:4]], weightMatrix)
-
-rate_monitors[name+'e'] = b.PopulationRateMonitor(neuron_groups[name+'e'], bin = (single_example_time+resting_time)/b.second)
-rate_monitors[name+'i'] = b.PopulationRateMonitor(neuron_groups[name+'i'], bin = (single_example_time+resting_time)/b.second)
-spike_counters[name+'e'] = b.SpikeCounter(neuron_groups[name+'e'])
 
 #------------------------------------------------------------------------------ 
 # create input population and connections from input populations 
@@ -404,16 +311,6 @@ spike_counters[name+'e'] = b.SpikeCounter(neuron_groups[name+'e'])
 
 input_groups['Xe'] = b.PoissonGroup(n_input, 0)
 rate_monitors['Xe'] = b.PopulationRateMonitor(input_groups['Xe'], bin = (single_example_time + resting_time) / b.second)
-
-'''
-connName = 'XeAe'
-tmp = np.load('../saved_weights/XeAe.npy')
-avg = np.average(tmp)
-std = np.std(tmp)
-weightMatrix = np.random.normal(avg, std, size=(n_input, n_e))
-connections[connName] = b.Connection(input_groups['Xe'], neuron_groups['Ae'], structure=conn_structure, state = 'g' + 'e', delay=True, max_delay=delay['ee_input'][1])
-connections[connName].connect(input_groups['Xe'], neuron_groups['Ae'], weightMatrix, delay=delay['ee_input'])
-'''
 
 connName = 'XeAe'
 weightMatrix = get_matrix_from_file('../random/XeAe.npy')
@@ -425,55 +322,47 @@ stdp_methods['XeAe'] = b.STDP(connections['XeAe'], eqs=eqs_stdp_ee, pre = eqs_st
 #------------------------------------------------------------------------------ 
 # run the simulation and set inputs
 #------------------------------------------------------------------------------ 
+
 previous_spike_count = np.zeros(n_e)
 assignments = np.zeros(n_e)
 input_numbers = [0] * num_examples
 outputNumbers = np.zeros((num_examples, 10))
-for i,name in enumerate(input_population_names):
-    input_groups[name+'e'].rate = 0
+
+input_groups['Xe'].rate = 0
+
 b.run(0)
 j = 0
-while j < (int(num_examples)):
-    if test_mode:
-        if use_testing_set:
-            rates = testing['x'][j%10000,:,:].reshape((n_input)) / 8. *  input_intensity
-        else:
-            rates = training['x'][j%60000,:,:].reshape((n_input)) / 8. *  input_intensity
-    else:
-        normalize_weights()
-        rates = training['x'][j%60000,:,:].reshape((n_input)) / 8. *  input_intensity
+
+while j < num_examples:
+
+    normalize_weights()
+    rates = training_set[j] * 32. *  input_intensity
+
     input_groups['Xe'].rate = rates
-#     print 'run number:', j+1, 'of', int(num_examples)
     b.run(single_example_time, report='text')
             
     if j % update_interval == 0 and j > 0:
         assignments = get_new_assignments(result_monitor[:], input_numbers[j-update_interval : j])
-    if j % save_connections_interval == 0 and j > 0 and not test_mode:
-        save_connections(str(j))
-        save_theta(str(j))
     
     current_spike_count = np.asarray(spike_counters['Ae'].count[:]) - previous_spike_count
     previous_spike_count = np.copy(spike_counters['Ae'].count[:])
+
     if np.sum(current_spike_count) < 5:
         input_intensity += 1
-        for i,name in enumerate(input_population_names):
-            input_groups[name+'e'].rate = 0
-        b.run(resting_time)
+
     else:
-        result_monitor[j%update_interval,:] = current_spike_count
-        if test_mode and use_testing_set:
-            input_numbers[j] = testing['y'][j%10000][0]
-        else:
-            input_numbers[j] = training['y'][j%60000][0]
+        result_monitor[j, :] = current_spike_count
+        input_numbers[j] = training_labels[j]
+
+        '''
         outputNumbers[j,:] = get_recognized_number_ranking(assignments, result_monitor[j%update_interval,:])
-        if j % 100 == 0 and j > 0:
-            print 'runs done:', j, 'of', int(num_examples)
-        for i,name in enumerate(input_population_names):
-            input_groups[name+'e'].rate = 0
-        b.run(resting_time)
+        '''
+
         input_intensity = start_input_intensity
         j += 1
 
+    input_groups['Xe'].rate = 0
+    b.run(resting_time)
 
 #------------------------------------------------------------------------------ 
 # save results
