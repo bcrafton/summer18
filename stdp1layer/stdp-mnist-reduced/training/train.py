@@ -93,8 +93,6 @@ v_thresh_i = -40. * b.mV
 refrac_e = 5. * b.ms
 refrac_i = 2. * b.ms
 
-conn_structure = 'dense'
-
 weight = {}
 weight['ee_input'] = 78.
 
@@ -176,12 +174,12 @@ neuron_groups['e'].theta = np.ones((n_e)) * 20.0*b.mV
 
 connName = 'AeAi'
 weightMatrix = np.load('../random/AeAi.npy')
-connections[connName] = b.Connection(neuron_groups['Ae'], neuron_groups['Ai'], structure= conn_structure, state = 'g'+'e')
+connections[connName] = b.Connection(neuron_groups['Ae'], neuron_groups['Ai'], structure='dense', state = 'g'+'e')
 connections[connName].connect(neuron_groups['Ae'], neuron_groups['Ai'], weightMatrix)
 
 connName = 'AiAe'
 weightMatrix = np.load('../random/AiAe.npy')
-connections[connName] = b.Connection(neuron_groups['Ai'], neuron_groups['Ae'], structure= conn_structure, state = 'g'+'i')
+connections[connName] = b.Connection(neuron_groups['Ai'], neuron_groups['Ae'], structure='dense', state = 'g'+'i')
 connections[connName].connect(neuron_groups['Ai'], neuron_groups['Ae'], weightMatrix)
 
 rate_monitors['Ae'] = b.PopulationRateMonitor(neuron_groups['Ae'], bin = (single_example_time+resting_time)/b.second)
@@ -198,7 +196,7 @@ rate_monitors['Xe'] = b.PopulationRateMonitor(input_groups['Xe'], bin = (single_
 
 connName = 'XeAe'
 weightMatrix = np.load('../random/XeAe.npy')
-connections[connName] = b.Connection(input_groups['Xe'], neuron_groups['Ae'], structure=conn_structure, state = 'g' + 'e', delay=True, max_delay=delay['ee_input'][1])
+connections[connName] = b.Connection(input_groups['Xe'], neuron_groups['Ae'], structure='dense', state = 'g' + 'e', delay=True, max_delay=delay['ee_input'][1])
 connections[connName].connect(input_groups['Xe'], neuron_groups['Ae'], weightMatrix, delay=delay['ee_input'])
 
 stdp_methods['XeAe'] = b.STDP(connections['XeAe'], eqs=eqs_stdp_ee, pre = eqs_stdp_pre_ee, post = eqs_stdp_post_ee, wmin=0., wmax= wmax_ee)
