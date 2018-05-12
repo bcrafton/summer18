@@ -1,9 +1,3 @@
-'''
-Created on 15.12.2014
-
-@author: Peter U. Diehl
-'''
-
  
 import numpy as np
 import matplotlib.cm as cmap
@@ -103,7 +97,6 @@ load_data()
 #------------------------------------------------------------------------------ 
 # set parameters and equations
 #------------------------------------------------------------------------------
-test_mode = False
 
 b.set_global_preferences( 
                         defaultclock = b.Clock(dt=0.5*b.ms), # The default clock to use if none is provided or defined in any enclosing scope.
@@ -129,8 +122,6 @@ n_i = n_e
 
 single_example_time =   0.35 * b.second
 resting_time = 0.15 * b.second
-
-runtime = num_examples * (single_example_time + resting_time)
 update_interval = num_examples
 
 v_rest_e = -65. * b.mV 
@@ -166,12 +157,9 @@ exp_ee_pre = 0.2
 exp_ee_post = exp_ee_pre
 STDP_offset = 0.4
 
-if test_mode:
-    scr_e = 'v = v_reset_e; timer = 0*ms'
-else:
-    tc_theta = 1e7 * b.ms
-    theta_plus_e = 0.05 * b.mV
-    scr_e = 'v = v_reset_e; theta += theta_plus_e; timer = 0*ms'
+tc_theta = 1e7 * b.ms
+theta_plus_e = 0.05 * b.mV
+scr_e = 'v = v_reset_e; theta += theta_plus_e; timer = 0*ms'
 offset = 20.0*b.mV
 v_thresh_e = '(v>(theta - offset + ' + str(v_thresh_e) + ')) * (timer>refrac_e)'
 
@@ -183,10 +171,7 @@ neuron_eqs_e = '''
         dge/dt = -ge/(1.0*ms)                                   : 1
         dgi/dt = -gi/(2.0*ms)                                  : 1
         '''
-if test_mode:
-    neuron_eqs_e += '\n  theta      :volt'
-else:
-    neuron_eqs_e += '\n  dtheta/dt = -theta / (tc_theta)  : volt'
+neuron_eqs_e += '\n  dtheta/dt = -theta / (tc_theta)  : volt'
 neuron_eqs_e += '\n  dtimer/dt = 100.0  : ms'
 
 neuron_eqs_i = '''
@@ -214,7 +199,6 @@ stdp_methods = {}
 rate_monitors = {}
 spike_monitors = {}
 spike_counters = {}
-result_monitor = np.zeros((update_interval, n_e))
 
 neuron_groups['e'] = b.NeuronGroup(n_e*NUM_LAYERS, neuron_eqs_e, threshold= v_thresh_e, refractory= refrac_e, reset= scr_e, compile = True, freeze = True)
 neuron_groups['i'] = b.NeuronGroup(n_i*NUM_LAYERS, neuron_eqs_i, threshold= v_thresh_i, refractory= refrac_i, reset= v_reset_i, compile = True, freeze = True)
@@ -264,13 +248,11 @@ stdp_methods['XeAe'] = b.STDP(connections['XeAe'], eqs=eqs_stdp_ee, pre = eqs_st
 #------------------------------------------------------------------------------ 
 
 previous_spike_count = np.zeros(n_e)
-input_numbers = [0] * num_examples
-
 input_groups['Xe'].rate = 0
 
 b.run(0)
-j = 0
 
+j = 0
 while j < num_examples:
 
     normalize_weights()
@@ -286,9 +268,6 @@ while j < num_examples:
         input_intensity += 1
 
     else:
-        result_monitor[j, :] = current_spike_count
-        input_numbers[j] = training_labels[j]
-
         input_intensity = start_input_intensity
         j += 1
 
