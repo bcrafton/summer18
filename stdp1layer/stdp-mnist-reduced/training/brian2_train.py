@@ -162,7 +162,7 @@ neuron_groups['Ai'] = neuron_groups['i'][0:n_i]
 
 neuron_groups['Ae'].v = v_rest_e - 40. * b2.mV
 neuron_groups['Ai'].v = v_rest_i - 40. * b2.mV
-neuron_groups['e'].theta = np.load('../saved_weights/theta_A.npy') * b2.volt
+neuron_groups['e'].theta = np.ones((n_e)) * 20.0 * b2.mV
 
 connName = 'AeAi'
 weightMatrix = np.load('../random/AeAi.npy')
@@ -195,7 +195,7 @@ input_groups['Xe'] = b2.PoissonGroup(n_input, 0*Hz)
 rate_monitors['Xe'] = b2.PopulationRateMonitor(input_groups['Xe'])
 
 connName = 'XeAe'
-weightMatrix = np.load('../saved_weights/XeAe.npy')
+weightMatrix = np.load('../random/XeAe.npy')
 
 model = 'w : 1'
 pre = 'ge_post += w'
