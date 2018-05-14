@@ -12,8 +12,6 @@ import os.path
 import scipy 
 import cPickle as pickle
 from struct import unpack
-from PIL import Image
-from scipy.misc import toimage
 
 #------------------------------------------------------------------------------ 
 # functions
