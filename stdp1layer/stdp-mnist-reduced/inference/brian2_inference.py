@@ -162,21 +162,23 @@ neuron_groups['e'].theta = np.load('../saved_weights/theta_A.npy') * b2.volt
 
 connName = 'AeAi'
 weightMatrix = np.load('../random/AeAi.npy')
+weightMatrix = weightMatrix.flatten()
 model = 'w : 1'
 pre = 'ge_post += w'
 post = ''
 connections[connName] = b2.Synapses(neuron_groups['Ae'], neuron_groups['Ai'], model=model, on_pre=pre, on_post=post)
 connections[connName].connect(True)
-connections[connName].w = weightMatrix[connections[connName].i, connections[connName].j]
+connections[connName].w = weightMatrix
 
 connName = 'AiAe'
 weightMatrix = np.load('../random/AiAe.npy')
+weightMatrix = weightMatrix.flatten()
 model = 'w : 1'
 pre = 'gi_post += w'
 post = ''
 connections[connName] = b2.Synapses(neuron_groups['Ai'], neuron_groups['Ae'], model=model, on_pre=pre, on_post=post)
 connections[connName].connect(True)
-connections[connName].w = weightMatrix[connections[connName].i, connections[connName].j]
+connections[connName].w = weightMatrix
 
 rate_monitors['Ae'] = b2.PopulationRateMonitor(neuron_groups['Ae'])
 rate_monitors['Ai'] = b2.PopulationRateMonitor(neuron_groups['Ai'])
@@ -191,6 +193,7 @@ rate_monitors['Xe'] = b2.PopulationRateMonitor(input_groups['Xe'])
 
 connName = 'XeAe'
 weightMatrix = np.load('../saved_weights/XeAe.npy')
+weightMatrix = weightMatrix.flatten()
 
 model = 'w : 1'
 pre = 'ge_post += w'
@@ -203,7 +206,7 @@ deltaDelay = maxDelay - minDelay
 connections[connName] = b2.Synapses(input_groups['Xe'], neuron_groups['Ae'], model=model, on_pre=pre, on_post=post)
 connections[connName].connect(True)
 connections[connName].delay = 'minDelay + rand() * deltaDelay'
-connections[connName].w = weightMatrix[connections[connName].i, connections[connName].j]
+connections[connName].w = weightMatrix
 
 #------------------------------------------------------------------------------ 
 # run the simulation and set inputs
