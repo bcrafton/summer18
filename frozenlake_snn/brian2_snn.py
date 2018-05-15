@@ -3,9 +3,6 @@ import random
 import gym
 import math
 from collections import deque
-from keras.models import Sequential
-from keras.layers import Dense
-from keras.optimizers import Adam
 
 import numpy as np
 import matplotlib.cm as cmap
@@ -18,8 +15,6 @@ import brian2 as b2
 from brian2tools import *
 import gzip
 
-reward = 0
-
 np.random.seed(0)
 num_examples = 1000
 update_interval = num_examples
@@ -27,279 +22,165 @@ update_interval = num_examples
 single_example_time =   0.35 * b2.second
 resting_time = 0.15 * b2.second
 
-v_rest_e = -65. * b2.mV 
-v_rest_i = -60. * b2.mV 
-v_reset_e = -65. * b2.mV
-v_reset_i = -45. * b2.mV
-v_thresh_e = -52. * b2.mV
-v_thresh_i = -40. * b2.mV
-refrac_e = 5. * b2.ms
-refrac_i = 2. * b2.ms
-
-weight = {}
-weight['ee_input'] = 78.
-
-delay = {}
-delay['ee_input'] = (0*ms,10*ms)
-delay['ei_input'] = (0*ms,5*ms)
-
 NUM_LAYERS = 1
 
 input_intensity = 2.
 start_input_intensity = input_intensity
-
-tc_pre_ee = 20*b2.ms
-tc_post_1_ee = 20*b2.ms
-tc_post_2_ee = 40*b2.ms
-nu_ee_pre =  0.0001      # learning rate
-nu_ee_post = 0.01       # learning rate
-wmax_ee = 1.0
-exp_ee_pre = 0.2
-exp_ee_post = exp_ee_pre
-STDP_offset = 0.4
-
-tc_theta = 1e7 * b2.ms
-theta_plus_e = 0.05 * b2.mV
-scr_e = 'v = v_reset_e; theta += theta_plus_e; timer = 0*ms'
-offset = 20.0*b2.mV
-v_thresh_e_str = '(v>(theta - offset + v_thresh_e)) and (timer>refrac_e)'
-v_thresh_i_str = 'v>v_thresh_i'
-v_reset_i_str = 'v=v_reset_i'
-
-neuron_eqs_e = '''
-        dv/dt = ((v_rest_e - v) + (I_synE+I_synI) / nS) / (100*ms)  : volt (unless refractory)
-        I_synE = ge * nS *         -v                           : amp
-        I_synI = gi * nS * (-100.*mV-v)                          : amp
-        dge/dt = -ge/(1.0*ms)                                   : 1
-        dgi/dt = -gi/(2.0*ms)                                  : 1
-        '''
-neuron_eqs_e += '\n  dtheta/dt = -theta / (tc_theta)  : volt'
-neuron_eqs_e += '\n  dtimer/dt = 0.1  : second'
-
-neuron_eqs_i = '''
-        dv/dt = ((v_rest_i - v) + (I_synE+I_synI) / nS) / (10*ms)  : volt (unless refractory)
-        I_synE = ge * nS *         -v                           : amp
-        I_synI = gi * nS * (-85.*mV-v)                          : amp
-        dge/dt = -ge/(1.0*ms)                                   : 1
-        dgi/dt = -gi/(2.0*ms)                                  : 1
-        '''
-eqs_stdp_ee = '''
-                post2before                            : 1
-                dpre/dt   =   -pre/(tc_pre_ee)         : 1 (event-driven)
-                dpost1/dt  = -post1/(tc_post_1_ee)     : 1 (event-driven)
-                dpost2/dt  = -post2/(tc_post_2_ee)     : 1 (event-driven)
-            '''
-eqs_stdp_pre_ee = 'pre = 1.; w = clip(w + nu_ee_pre * post1 * reward, 0, wmax_ee)'
-eqs_stdp_post_ee = 'post2before = post2; w = clip(w + nu_ee_post * pre * post2before * reward, 0, wmax_ee); post1 = 1.; post2 = 1.'
 
 #------------------------------------------------------------------------------ 
 # create networks
 #------------------------------------------------------------------------------ 
 
 b2.ion()
-neuron_groups = {}
-input_groups = {}
-connections = {}
-rate_monitors = {}
-spike_counters = {}
 
-neuron_groups['e'] = b2.NeuronGroup(64*NUM_LAYERS, neuron_eqs_e, threshold=v_thresh_e_str, refractory=refrac_e, reset=scr_e, method='euler')
-neuron_groups['i'] = b2.NeuronGroup(64*NUM_LAYERS, neuron_eqs_i, threshold=v_thresh_i_str, refractory=refrac_i, reset=v_reset_i_str, method='euler')
+tau_i = 20 * b2.ms  # Time constant for LIF leak
+v_r = 0 * b2.mV  # Reset potential
+th_i = 16 * b2.mV  # Threshold potential
+tau_sigma = 20 * b2.ms
+beta_sigma = 0.2 / b2.mV
 
-#------------------------------------------------------------------------------ 
-# create network population and recurrent connections
-#------------------------------------------------------------------------------ 
+tau_z = 5 * b2.ms
+w_min_i = -0.1 * b2.mV
+w_max_i = 1.5 * b2.mV
+gamma_i = 0.025 * (w_max_i - w_min_i) * b2.mV
 
-neuron_groups['Ae'] = neuron_groups['e'][0:64]
-neuron_groups['Ai'] = neuron_groups['i'][0:64]
+w_min = -0.4 * b2.mV
+w_max = 1 * b2.mV
+gamma = 0.025 * (w_max - w_min) * b2.mV
 
-neuron_groups['Ae'].v = v_rest_e - 40. * b2.mV
-neuron_groups['Ai'].v = v_rest_i - 40. * b2.mV
-neuron_groups['e'].theta = np.ones((64)) * 20.0 * b2.mV
+@b2.check_units(voltage=b2.volt, dt=b2.second, result=1)
+def sigma(voltage, dt):
+    sv = dt / tau_sigma * b2.exp(beta_sigma * (voltage - th_i))
+    sv = sv.clip(0, 1 - 1e-8)
+    return sv
 
-connName = 'AeAi'
-weightMatrix = np.load('./init/AeAi.npy')
-model = 'w : 1'
-pre = 'ge_post += w'
-post = ''
-connections[connName] = b2.Synapses(neuron_groups['Ae'], neuron_groups['Ai'], model=model, on_pre=pre, on_post=post)
-connections[connName].connect(True)
-connections[connName].w = weightMatrix[connections[connName].i, connections[connName].j]
+class LIF:
+    def __init__(self, tau_i, v_r, sigma, tau_sigma, beta_sigma):
+        self.equ = b2.Equations('dv/dt = -v/tau_i : volt')
+        self.threshold = 'rand() < sigma(v, dt)'
+        self.reset = 'v = v_r'
 
-connName = 'AiAe'
-weightMatrix = np.load('./init/AiAe.npy')
-model = 'w : 1'
-pre = 'gi_post += w'
-post = ''
-connections[connName] = b2.Synapses(neuron_groups['Ai'], neuron_groups['Ae'], model=model, on_pre=pre, on_post=post)
-connections[connName].connect(True)
-connections[connName].w = weightMatrix[connections[connName].i, connections[connName].j]
+lif = LIF(tau_i, v_r, sigma, tau_sigma, beta_sigma)
 
-rate_monitors['Ae'] = b2.PopulationRateMonitor(neuron_groups['Ae'])
-rate_monitors['Ai'] = b2.PopulationRateMonitor(neuron_groups['Ai'])
-spike_counters['Ae'] = b2.SpikeMonitor(neuron_groups['Ae'])
-
+input = b2.PoissonGroup(16, 0*Hz)
+#hidden = b2.NeuronGroup(64, lif.equ, threshold=lif.threshold, reset=lif.reset)
+output = b2.NeuronGroup(4, lif.equ, threshold=lif.threshold, reset=lif.reset)
 
 #------------------------------------------------------------------------------ 
 # create input population and connections from input populations 
+#------------------------------------------------------------------------------
+
+def set_state(state):
+    ret = np.zeros(16)
+    for i in range(16):
+        if state == i:
+            ret[i] = 1
+    return np.reshape(ret, [1, 16])
+
+def set_reward(done, reward):
+    if done and reward == 0:
+        reward = - 100.0
+    elif done:
+        reward = 100.0
+    else:
+        reward = - 1.0
+    return reward
+
+class GapRL:
+    def __init__(self, sigma, tau_z, tau_i, gamma, w_min, w_max, beta_sigma):
+        self.model = '''
+                     sig = sigma(v_post, dt) : 1 (constant over dt)
+                     w : volt
+                     dz/dt = -z/tau_z : 1/volt (clock-driven)
+                     prevSpike : second
+                     '''
+
+        self.on_pre = '''
+                      v_post += w
+                      prevSpike = t
+                      w += gamma * reward * z 
+                      '''
+
+        self.on_post = '''
+                       z += beta_sigma*exp(-(t - prevSpike)/tau_i)
+                       '''
+
+syn = GapRL(sigma, tau_z, tau_i, gamma, w_min, w_max, beta_sigma)
+
+# ih_syn = b2.Synapses(input, hidden, model=syn.model, on_pre=syn.on_pre, on_post=syn.on_post)
+# ho_syn = b2.Synapses(hidden, output, model=syn.model, on_pre=syn.on_pre, on_post=syn.on_post)
+io_syn = b2.Synapses(input, output, model=syn.model, on_pre=syn.on_pre, on_post=syn.on_post)
+io_syn.connect(True)
+io_syn.w = np.random.normal(0.026, 0.01, size=(64)) * b2.volt
+
+counter = SpikeMonitor(output)
+previous_spike_count = np.zeros(4)
+
+net = Network()
+net.add(input)
+# net.add(hidden)
+net.add(output)
+# net.add(ih_syn)
+# net.add(ho_syn)
+net.add(io_syn)
+net.add(counter)
+
 #------------------------------------------------------------------------------ 
-
-input_groups['Xe'] = b2.PoissonGroup(28*28, 0*Hz)
-rate_monitors['Xe'] = b2.PopulationRateMonitor(input_groups['Xe'])
-
-connName = 'XeAe'
-weightMatrix = np.load('./init/XeAe.npy')
-
-model = 'w : 1'
-pre = 'ge_post += w'
-post = ''
-model += eqs_stdp_ee
-pre += '; ' + eqs_stdp_pre_ee
-post = eqs_stdp_post_ee
-
-minDelay = delay['ee_input'][0]
-maxDelay = delay['ee_input'][1]
-deltaDelay = maxDelay - minDelay
-
-connections[connName] = b2.Synapses(input_groups['Xe'], neuron_groups['Ae'], model=model, on_pre=pre, on_post=post)
-connections[connName].connect(True)
-connections[connName].delay = 'minDelay + rand() * deltaDelay'
-connections[connName].w = weightMatrix[connections[connName].i, connections[connName].j]
-
 #------------------------------------------------------------------------------ 
-#------------------------------------------------------------------------------ 
-
-class SNN:
-
-  def __init__(self, neuron_groups, input_groups, connections, rate_monitors, spike_counters):
-
-    self.neuron_groups = neuron_groups
-    self.input_groups = input_groups
-    self.connections = connections
-    self.rate_monitors = rate_monitors
-    self.spike_counters = spike_counters
-
-    self.net = Network()
-    for obj_list in [self.neuron_groups, self.input_groups, self.connections, self.rate_monitors, self.spike_counters]:
-        for key in obj_list:
-            self.net.add(obj_list[key])
-
-    self.previous_spike_count = np.zeros(64)
-    self.assignments = np.ones(64) * -1
-    self.memory = deque(maxlen=1000)
-
-    ### init run
-
-    self.input_groups['Xe'].rates = 0 * Hz
-    self.net.run(0*second)
-
-def get_action(spike_rates):
-    summed_rates = [0] * 10
-    num_assignments = [0] * 10
-
-    for i in xrange(10):
-        num_assignments[i] = len(np.where(self.assignments == i)[0])
-        if num_assignments[i] > 0:
-            summed_rates[i] = np.sum(spike_rates[self.assignments == i]) / num_assignments[i]
-
-    ret = np.argsort(summed_rates)[::-1]
-    return ret
-
-  def set_assignments(self):
-      maximum_rate = [0] * 64    
-
-      for tup in self.memory:
-        for neuron in range(64):
-          
-
-        if num_inputs > 0:
-          rate = np.sum(result_monitor[input_nums == j], axis = 0) / num_inputs
-        
-        for i in xrange(n_e):
-          if rate[i] > maximum_rate[i]:
-            maximum_rate[i] = rate[i]
-            assignments[i] = j 
-
-
-  def infer(self, rates):
-    current_spike_count = np.zeros(64)
-    input_intensity = start_input_intensity
-
-    while np.sum(current_spike_count) < 5:
-      self.input_groups['Xe'].rates = rates * input_intensity * Hz
-      self.net.run(single_example_time, report='text')
-
-      current_spike_count = np.asarray(self.spike_counters['Ae'].count[:]) - self.previous_spike_count
-      self.previous_spike_count = np.copy(self.spike_counters['Ae'].count[:])
-
-      input_intensity += 1
-
-    self.result_monitor.push_back(current_spike_count)
-    self.input_numbers.push_back(current_spike_count)
-
-    self.input_groups['Xe'].rates = 0*Hz
-    self.net.run(resting_time)
-
-  def train(self, rates):
-    self.normalize()
-
-    current_spike_count = np.zeros(64)
-    input_intensity = start_input_intensity
-
-    while np.sum(current_spike_count) < 5:
-      self.input_groups['Xe'].rates = rates * input_intensity * Hz
-      self.net.run(single_example_time, report='text')
-
-      current_spike_count = np.asarray(self.spike_counters['Ae'].count[:]) - self.previous_spike_count
-      self.previous_spike_count = np.copy(self.spike_counters['Ae'].count[:])
-
-      input_intensity += 1
-
-    self.input_groups['Xe'].rates = 0*Hz
-    self.net.run(resting_time)
-
-  def remember(self):
-    self.memory.append((state, action, reward, next_state, done))
-
-  def save(self):
-    connMatrix = connections['XeAe'].w
-    np.save('XeAe', connMatrix)
-
-    np.save('theta_A', neuron_groups['Ae'].theta)
-
-  def normalize(self):
-    len_source = len(self.connections['XeAe'].source)
-    len_target = len(self.connections['XeAe'].target)
-    connection = np.zeros((len_source, len_target))
-    connection[self.connections['XeAe'].i, self.connections['XeAe'].j] = self.connections['XeAe'].w
-    temp_conn = np.copy(connection)
-    colSums = np.sum(temp_conn, axis = 0)
-    colFactors = weight['ee_input']/colSums
-    for j in xrange(64):
-        temp_conn[:,j] *= colFactors[j]
-    self.connections['XeAe'].w = temp_conn[self.connections['XeAe'].i, self.connections['XeAe'].j]
-
-
-snn = SNN(neuron_groups=neuron_groups, input_groups=input_groups, connections=connections, rate_monitors=rate_monitors, spike_counters=spike_counters)
 
 env = gym.make('FrozenLake-v0')
 env.reset()
 
+start = True
+
+scores = deque(maxlen=100)
 num_examples = 1000
 for ii in range(num_examples):
 
-  for step in range(env.spec.timestep_limit):
+  reward = 0
+  state = env.reset()
+  state = set_state(state)
 
-    action = snn.infer(state)
+  done = False
+  step_count = 0
+
+  while (done == False):
+
+    if start:
+      action = env.action_space.sample()
+      start = False
+    else:
+      input.rates = state * 128 * Hz
+      # net.run(single_example_time, report='text')
+      net.run(single_example_time)
+
+      current_spike_count = np.asarray(counter.count[:]) - previous_spike_count
+      previous_spike_count = np.copy(counter.count[:])
+      action = np.argmax(current_spike_count)
+
+      print (current_spike_count)
+
     next_state, reward, done, _ = env.step(action)
+    reward = set_reward(done, reward)
 
-    snn.remember(state, action, reward, next_state, done)
+    print (str(step_count) + "/" + str(env.spec.timestep_limit) + " " + str(action) + " " + str(next_state))
 
-    snn.train(reward)
-    reward = 0
+    step_count = step_count + 1
+
+    # net.run(resting_time, report='text')
+    net.run(resting_time)
 
     if done:
-      break
+      scores.append(reward > 0)
+      mean_score = np.mean(scores)
+      print (mean_score)
+      print (previous_spike_count)
+      print (io_syn.w)
+
+    state = next_state
+    state = set_state(state)
+
+    reward = 0
 
 snn.save()
 
