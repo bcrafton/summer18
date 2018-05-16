@@ -93,7 +93,7 @@ class Env():
         return next_state, reward, done
 
 class Solver():
-    def __init__(self, n_episodes=10000, max_env_steps=None, gamma=1.0, epsilon=0.5, epsilon_min=0.01, epsilon_decay=0.99, alpha=0.04, alpha_decay=0.04, batch_size=32, quiet=False):
+    def __init__(self, n_episodes=1000, max_env_steps=None, gamma=1.0, epsilon=0.5, epsilon_min=0.01, epsilon_decay=0.99, alpha=0.04, alpha_decay=0.04, batch_size=32, quiet=False):
         self.memory = deque(maxlen=64)
 
         self.env = Env()
@@ -171,7 +171,7 @@ class Solver():
                 table = self.model.get_weights()
                 table = table[0]
 
-                if done or step >= 20:
+                if done:
                     self.replay(self.batch_size)
 
                     if self.epsilon > self.epsilon_min:
@@ -182,6 +182,8 @@ class Solver():
 
                     print (step, reward_sum, mean_score)
                     break
+
+        np.save("weights", self.model.get_weights())
         
 
 if __name__ == '__main__':
