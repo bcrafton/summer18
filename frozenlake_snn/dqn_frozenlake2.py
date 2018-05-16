@@ -132,6 +132,8 @@ class DQNCartPoleSolver():
 
                     print (mean_score)
                     # print (self.get_epsilon(e))
+                    # print (self.model.get_weights())
+                    np.save("weights", self.model.get_weights())
 
                     break
         

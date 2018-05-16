@@ -229,6 +229,8 @@ input_groups['Xe'].rates = 0*Hz
 
 net.run(0*second)
 
+prev_weights = connections['XeAe'].w
+
 j = 0
 while j < num_examples:
 
@@ -249,6 +251,9 @@ while j < num_examples:
 
     input_groups['Xe'].rates = 0*Hz
     net.run(resting_time)
+
+    print( np.sum(connections['XeAe'].w - prev_weights) )
+    prev_weights = connections['XeAe'].w
 
 #------------------------------------------------------------------------------ 
 # save results

@@ -102,16 +102,32 @@ class GapRL:
                       '''
 
         self.on_post = '''
-                       z += beta_sigma*exp(-(t - prevSpike)/tau_i)
+                       z += beta_sigma * exp( -(t - prevSpike) / tau_i)
                        '''
 
 syn = GapRL(sigma, tau_z, tau_i, gamma, w_min, w_max, beta_sigma)
 
 # ih_syn = b2.Synapses(input, hidden, model=syn.model, on_pre=syn.on_pre, on_post=syn.on_post)
 # ho_syn = b2.Synapses(hidden, output, model=syn.model, on_pre=syn.on_pre, on_post=syn.on_post)
+
 io_syn = b2.Synapses(input, output, model=syn.model, on_pre=syn.on_pre, on_post=syn.on_post)
 io_syn.connect(True)
-io_syn.w = np.random.normal(0.026, 0.01, size=(64)) * b2.volt
+
+# io_syn.w = np.random.normal(0.026, 0.01, size=(64)) * b2.volt
+
+weights = np.load("weights.npy")
+weights = weights[0]
+weights = weights.flatten()
+
+avg = np.average(weights)
+# print (avg)
+
+weights = weights * (0.026 / np.absolute(avg))
+# avg = np.average(weights)
+# print (avg)
+
+# io_syn.w = np.random.normal(0.026, 0.01, size=(64)) * b2.volt
+io_syn.w = weights * b2.volt
 
 counter = SpikeMonitor(output)
 previous_spike_count = np.zeros(4)
@@ -133,6 +149,7 @@ env.reset()
 
 start = True
 
+wins = 0
 scores = deque(maxlen=100)
 num_examples = 1000
 for ii in range(num_examples):
@@ -158,7 +175,7 @@ for ii in range(num_examples):
       previous_spike_count = np.copy(counter.count[:])
       action = np.argmax(current_spike_count)
 
-      print (current_spike_count)
+      # print (current_spike_count)
 
     next_state, reward, done, _ = env.step(action)
     reward = set_reward(done, reward)
@@ -171,10 +188,11 @@ for ii in range(num_examples):
     net.run(resting_time)
 
     if done:
+      if (reward > 0):
+        wins = wins + 1
       scores.append(reward > 0)
       mean_score = np.mean(scores)
-      print (mean_score)
-      print (previous_spike_count)
+      print (mean_score, wins)
       print (io_syn.w)
 
     state = next_state
