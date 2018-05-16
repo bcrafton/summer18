@@ -26,10 +26,19 @@ C D E F
 class Env():
     def __init__(self):
         self.state = 0
+        self.steps = 0
 
-        self.grid = np.ones(16) * -5
+        self.nrows = 4
+        self.ncols = 4
+
+        self.grid = np.ones(self.nrows * self.ncols) * -5
         self.wins = [15]
         self.fails = [10]
+
+        self.left = []
+        self.right = []
+        self.up = []
+        self.down = []
 
         for i in self.wins:
             self.grid[i] = 100
@@ -37,19 +46,34 @@ class Env():
         for i in self.fails:
             self.grid[i] = -100
 
+        for i in range(self.nrows * self.ncols):
+            if ( i % self.ncols == 3 ):
+                self.right.append(i)
+
+            if ( i % self.ncols == 0 ):
+                self.left.append(i)
+
+            if ( math.floor(i / self.ncols) == (self.nrows-1) ):
+                self.up.append(i)
+
+            if ( math.floor(i / self.ncols) == 0 ):
+                self.down.append(i)
+
     def reset(self):
         self.state = 0
+        self.steps = 0
 
     def step(self, action):
+        self.steps = self.steps + 1
 
         next_state = self.state
-        if (action == 0) and (self.state not in [12, 13, 14, 15]):
+        if (action == 0) and (self.state not in self.up):
             next_state = self.state + 4
-        elif (action == 1) and (self.state not in [0, 1, 2, 3]):
+        elif (action == 1) and (self.state not in self.down):
             next_state = self.state - 4
-        elif (action == 2) and (self.state not in [0, 4, 8, 11]):
+        elif (action == 2) and (self.state not in self.left):
             next_state = self.state - 1
-        elif (action == 3) and (self.state not in [3, 7, 11, 15]):
+        elif (action == 3) and (self.state not in self.right):
             next_state = self.state + 1
 
         if next_state in self.wins:
@@ -60,7 +84,10 @@ class Env():
             done = True
         else:
             reward = -5
-            done = False
+            if (self.steps >= 20):
+                done = True
+            else:
+                done = False
 
         self.state = next_state
         return next_state, reward, done
