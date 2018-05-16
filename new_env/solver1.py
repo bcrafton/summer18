@@ -1,7 +1,5 @@
-# Inspired by https://keon.io/deep-q-learning/
 
 import random
-import gym
 import math
 import numpy as np
 from collections import deque
@@ -9,28 +7,70 @@ from keras.models import Sequential
 from keras.layers import Dense
 from keras.optimizers import Adam
 
-def get_reward(done, reward):
-    """
-    Return a more meaningful reward (i.e. depending on the outcome of every action and not just on winning)
-    :param done: bool indicating if the episode if finished
-    :param reward: reward returned by the env after taking an action
-    :return:
-    """
-    # Failure
-    if done and reward == 0:
-        reward = - 100.0
-    # Win
-    elif done:
-        reward = 100.0
-    # Move to another case
-    else:
-        reward = - 10.0
-    return reward
+import time
+import tkinter as tk
+from PIL import ImageTk, Image
 
-class DQNCartPoleSolver():
-    def __init__(self, n_episodes=100000, max_env_steps=None, gamma=1.0, epsilon=0.5, epsilon_min=0.01, epsilon_decay=0.99, alpha=0.04, alpha_decay=0.04, batch_size=1, quiet=False):
-        self.memory = deque(maxlen=1)
-        self.env = gym.make('FrozenLake-v0')
+PhotoImage = ImageTk.PhotoImage
+UNIT = 100  # pixels
+HEIGHT = 4  # grid height
+WIDTH = 4  # grid width
+
+'''
+C D E F
+8 9 A B
+4 5 6 7
+0 1 2 3
+'''
+
+class Env():
+    def __init__(self):
+        self.state = 0
+
+        self.grid = np.ones(16) * -5
+        self.wins = [15]
+        self.fails = [10]
+
+        for i in self.wins:
+            self.grid[i] = 100
+
+        for i in self.fails:
+            self.grid[i] = -100
+
+    def reset(self):
+        self.state = 0
+
+    def step(self, action):
+
+        next_state = self.state
+        if (action == 0) and (self.state not in [12, 13, 14, 15]):
+            next_state = self.state + 4
+        elif (action == 1) and (self.state not in [0, 1, 2, 3]):
+            next_state = self.state - 4
+        elif (action == 2) and (self.state not in [0, 4, 8, 11]):
+            next_state = self.state - 1
+        elif (action == 3) and (self.state not in [3, 7, 11, 15]):
+            next_state = self.state + 1
+
+        if next_state in self.wins:
+            reward = 100
+            done = True
+        elif next_state in self.fails:
+            reward = -100
+            done = True
+        else:
+            reward = -5
+            done = False
+
+        self.state = next_state
+        return next_state, reward, done
+
+class Solver():
+    def __init__(self, n_episodes=10000, max_env_steps=None, gamma=1.0, epsilon=0.5, epsilon_min=0.01, epsilon_decay=0.99, alpha=0.04, alpha_decay=0.04, batch_size=32, quiet=False):
+        self.memory = deque(maxlen=64)
+
+        self.env = Env()
+
         self.gamma = gamma
         self.epsilon = epsilon
         self.epsilon_min = epsilon_min
@@ -43,11 +83,8 @@ class DQNCartPoleSolver():
         self.decay_step = 10
         if max_env_steps is not None: self.env._max_episode_steps = max_env_steps
 
-        # Init model
         self.model = Sequential()
         self.model.add(Dense(4, input_dim=16, activation='linear'))
-        # self.model.add(Dense(48, activation='linear'))
-        # self.model.add(Dense(4, activation='linear'))
         self.model.compile(loss='mse', optimizer=Adam(lr=self.alpha))
 
     def remember(self, state, action, reward, next_state, done):
@@ -55,14 +92,9 @@ class DQNCartPoleSolver():
 
     def choose_action(self, state, epsilon):
         if (np.random.random() <= epsilon):
-            ret = self.env.action_space.sample()
+            ret = random.randint(0, 3)
         else:
-            # argmax is different than max.
             ret = np.argmax(self.model.predict(state))
-
-        # print (ret)
-        # ret = self.env.action_space.sample() if (np.random.random() <= epsilon) else np.argmax(self.model.predict(state))
-        # print (ret)
 
         return ret
 
@@ -70,10 +102,6 @@ class DQNCartPoleSolver():
         return max(self.epsilon_min, min(self.epsilon, 1.0 - math.log10((t + 1) * self.epsilon_decay)))
 
     def preprocess_state(self, state):
-        # return np.reshape(state, [1, 4])
-        # return state
-        # return np.reshape(state, [1, 1])
-
         ret = np.zeros(16)
         for i in range(16):
             if state == i:
@@ -90,63 +118,45 @@ class DQNCartPoleSolver():
             x_batch.append(state[0])
             y_batch.append(y_target[0])
 
-            # print (np.average(y_target[0]))
-        
-            # print (len(self.model.predict(next_state)))
-            # print (np.max(self.model.predict(next_state)[0]))
-            # print (np.max(self.model.predict(next_state)))
-
         self.model.fit(np.array(x_batch), np.array(y_batch), batch_size=len(x_batch), verbose=0)
 
     def run(self):
-        real_scores = deque(maxlen=100)
-        fluff_scores = deque(maxlen=100)
+        scores = deque(maxlen=100)
 
         for e in range(self.n_episodes):
             state = self.env.reset()
             state = self.preprocess_state(state)
 
-            # print (self.env.spec.timestep_limit)
             reward_sum = 0
             step = 0
             done = False
             while not done:
                 step = step + 1
-
-                # print (state.shape())
                 action = self.choose_action(state, self.get_epsilon(e))
 
-                next_state, reward, done, _ = self.env.step(action)
+                next_state, reward, done = self.env.step(action)
                 next_state = self.preprocess_state(next_state)
-
-                reward = get_reward(done, reward)
                 reward_sum = reward_sum + reward
-
                 self.remember(state, action, reward, next_state, done)
-
-                self.replay(self.batch_size)
 
                 state = next_state
 
-                if done:
-                    # self.replay(self.batch_size)
+                table = self.model.get_weights()
+                table = table[0]
+
+                if done or step >= 20:
+                    self.replay(self.batch_size)
 
                     if self.epsilon > self.epsilon_min:
                         self.epsilon *= self.epsilon_decay ** (e / self.decay_step)
 
-                    real_scores.append(reward_sum > 0)
-                    real_mean_score = np.mean(real_scores)
+                    scores.append(reward_sum > 0)
+                    mean_score = np.mean(scores)
 
-                    fluff_scores.append(reward > 0)
-                    fluff_mean_score = np.mean(fluff_scores)
-
-                    print (step, real_mean_score, fluff_mean_score)
-                    # print (self.get_epsilon(e))
-                    # print (self.model.get_weights())
-
-        np.save("weights", self.model.get_weights())
+                    print (step, reward_sum, mean_score)
+                    break
         
 
 if __name__ == '__main__':
-    agent = DQNCartPoleSolver()
+    agent = Solver()
     agent.run()

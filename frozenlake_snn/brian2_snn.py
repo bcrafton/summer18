@@ -83,7 +83,7 @@ def set_reward(done, reward):
     elif done:
         reward = 100.0
     else:
-        reward = - 1.0
+        reward = - 10.0
     return reward
 
 class GapRL:
@@ -175,7 +175,7 @@ for ii in range(num_examples):
       previous_spike_count = np.copy(counter.count[:])
       action = np.argmax(current_spike_count)
 
-      # print (current_spike_count)
+      print (current_spike_count)
 
     next_state, reward, done, _ = env.step(action)
     reward = set_reward(done, reward)
