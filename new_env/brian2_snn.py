@@ -186,7 +186,7 @@ avg = np.average(weights)
 weights = weights * (0.026 / np.absolute(avg))
 '''
 
-io_syn.w = np.random.uniform(w_min, w_max, size=(64)) * 10 * b2.volt
+io_syn.w = np.random.uniform(w_min, w_max, size=(64)) * 1000 * b2.volt
 # io_syn.w = np.random.normal(0.026, 0.01, size=(64)) * b2.volt
 # io_syn.w = weights * b2.volt
 
@@ -222,6 +222,7 @@ for ii in range(num_examples):
   done = False
   step_count = 0
 
+  prev = io_syn.w * 1000
   while (done == False):
 
     if start:
@@ -252,7 +253,7 @@ for ii in range(num_examples):
       scores.append(reward > 0)
       mean_score = np.mean(scores)
       print (mean_score, wins)
-      print (io_syn.w)
+      print (io_syn.w * 1000 - prev)
 
       np.save("snn_weights", io_syn.w)
 
@@ -260,8 +261,6 @@ for ii in range(num_examples):
     state = set_state(state)
 
     reward = 0
-
-snn.save()
 
 
 
