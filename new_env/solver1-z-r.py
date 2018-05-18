@@ -18,6 +18,19 @@ C D E F
 0 1 2 3
 '''
 
+def num_to_state(state):
+    ret = np.zeros(16)
+    for i in range(16):
+        if state == i:
+            ret[i] = 1
+    # return np.reshape(ret, 16)
+    return np.reshape(ret, [1, 16])
+
+def state_to_num(state):
+    for i in range(16):
+        if state[0][i]:
+            return i
+
 class Env():
     def __init__(self):
         self.state = 0
@@ -99,6 +112,7 @@ class Solver():
         self.epsilon_decay = epsilon_decay
         self.alpha = alpha
         self.alpha_decay = alpha_decay
+
         self.n_episodes = n_episodes
         self.batch_size = batch_size
         self.quiet = quiet
@@ -109,6 +123,8 @@ class Solver():
         self.model.add(Dense(4, input_dim=16, activation='linear'))
         self.model.compile(loss='mse', optimizer=Adam(lr=self.alpha))
 
+        self.weights = np.random.normal(10.0, 3.0, size=(16,4))
+
     def remember(self, state, action, reward, next_state, done):
         self.memory.append((state, action, reward, next_state, done))
 
@@ -116,58 +132,55 @@ class Solver():
         if (np.random.random() <= epsilon):
             ret = random.randint(0, 3)
         else:
-            ret = np.argmax(self.model.predict(state))
+            ret = np.argmax(state.dot(self.weights))
 
         return ret
 
     def get_epsilon(self, t):
         return max(self.epsilon_min, min(self.epsilon, 1.0 - math.log10((t + 1) * self.epsilon_decay)))
 
-    def preprocess_state(self, state):
-        ret = np.zeros(16)
-        for i in range(16):
-            if state == i:
-                ret[i] = 1
-        return np.reshape(ret, [1, 16])
-
-    def replay(self, batch_size):
-        x_batch, y_batch = [], []
-        minibatch = random.sample(self.memory, min(len(self.memory), batch_size))
-
-        for state, action, reward, next_state, done in minibatch:
-            y_target = self.model.predict(state)
-            y_target[0][action] = reward if done else reward + self.gamma * np.max(self.model.predict(next_state))
-            x_batch.append(state[0])
-            y_batch.append(y_target[0])
-
-        self.model.fit(np.array(x_batch), np.array(y_batch), batch_size=len(x_batch), verbose=0)
-
     def run(self):
         scores = deque(maxlen=100)
 
         for e in range(self.n_episodes):
             state = self.env.reset()
-            state = self.preprocess_state(state)
+            state = num_to_state(state)
 
             reward_sum = 0
             step = 0
             done = False
+
+            elig = np.zeros((16, 4))
+
+            prev = self.weights
+
             while not done:
                 step = step + 1
                 action = self.choose_action(state, self.get_epsilon(e))
 
                 next_state, reward, done = self.env.step(action)
-                next_state = self.preprocess_state(next_state)
+                next_state = num_to_state(next_state)
                 reward_sum = reward_sum + reward
-                self.remember(state, action, reward, next_state, done)
+
+                print (state_to_num(state), state_to_num(next_state), action)
+
+                for i in range(16):
+                    for j in range(4):
+                        if (i == state_to_num(state)) and (action == j):
+                            elig[i][j] = 16
+                        else:
+                            elig[i][j] = max(elig[i][j] - 1, 0)
+
+                gradient = elig * reward * (1/10)
+                gradient = np.array(gradient)
+                # print (gradient)
+                self.weights = self.weights + gradient
 
                 state = next_state
-
-                table = self.model.get_weights()
-                table = table[0]
-
                 if done:
-                    self.replay(self.batch_size)
+
+                    print (self.weights)
+                    print (self.weights - prev)
 
                     if self.epsilon > self.epsilon_min:
                         self.epsilon *= self.epsilon_decay ** (e / self.decay_step)

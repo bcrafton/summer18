@@ -114,6 +114,10 @@ tau_sigma = 20 * b2.ms
 beta_sigma = 0.2 / b2.mV
 
 tau_z = 5 * b2.ms
+# tau_decay = 1 * b2.second
+tau_decay = 50 * b2.ms
+tau_post = 20 * b2.ms
+
 w_min_i = -0.1 * b2.mV
 w_max_i = 1.5 * b2.mV
 gamma_i = 0.025 * (w_max_i - w_min_i) * b2.mV
@@ -152,25 +156,25 @@ def set_state(state):
     return np.reshape(ret, [1, 16])
 
 class GapRL:
-    def __init__(self, sigma, tau_z, tau_i, gamma, w_min, w_max, beta_sigma):
+    def __init__(self, sigma, tau_decay, tau_post, gamma, w_min, w_max, beta_sigma):
         self.model = '''
                      sig = sigma(v_post, dt) : 1 (constant over dt)
                      w : volt
-                     dz/dt = -z/tau_z : 1/volt (clock-driven)
+                     dz/dt = -z/tau_decay : 1/volt (clock-driven)
                      prevSpike : second
                      '''
 
         self.on_pre = '''
                       v_post += w
                       prevSpike = t
-                      w += gamma * reward * z 
+                      w += gamma * reward * z
                       '''
 
         self.on_post = '''
-                       z += beta_sigma * exp( -(t - prevSpike) / tau_i)
+                       z += beta_sigma * exp( -(t - prevSpike) / tau_post)
                        '''
 
-syn = GapRL(sigma, tau_z, tau_i, gamma, w_min, w_max, beta_sigma)
+syn = GapRL(sigma, tau_decay, tau_post, gamma, w_min, w_max, beta_sigma)
 
 # ih_syn = b2.Synapses(input, hidden, model=syn.model, on_pre=syn.on_pre, on_post=syn.on_post)
 # ho_syn = b2.Synapses(hidden, output, model=syn.model, on_pre=syn.on_pre, on_post=syn.on_post)
@@ -185,11 +189,11 @@ weights = weights.flatten()
 avg = np.average(weights)
 weights = weights * (0.026 / np.absolute(avg))
 '''
-weights = np.load("snn_weights_1150.npy")
+# weights = np.load("snn_weights_1150.npy")
 
-# io_syn.w = np.random.uniform(w_min, w_max, size=(64)) * 1000 * b2.volt
+io_syn.w = np.random.uniform(w_min, w_max, size=(64)) * 1000 * b2.volt
 # io_syn.w = np.random.normal(0.026, 0.01, size=(64)) * b2.volt
-io_syn.w = weights * b2.volt
+# io_syn.w = weights * b2.volt
 
 counter = SpikeMonitor(output)
 previous_spike_count = np.zeros(4)
@@ -255,6 +259,8 @@ for ii in range(num_examples):
       mean_score = np.mean(scores)
       print (mean_score, wins)
       print (io_syn.w * 1000 - prev)
+      # print (io_syn.w)
+      print (io_syn.z)
 
       np.save("snn_weights", io_syn.w)
 

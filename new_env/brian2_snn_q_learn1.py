@@ -239,7 +239,8 @@ weights = weights * (0.026 / np.absolute(avg))
 '''
 # weights = np.load("snn_weights_1150.npy")
 
-io_syn.w = np.random.uniform(w_min, w_max, size=(64)) * 1000 * b2.volt
+io_syn.w = np.ones(64) * 0.25 * b2.volt
+# io_syn.w = np.random.uniform(w_min, w_max, size=(64)) * 1000 * b2.volt
 # io_syn.w = np.random.normal(0.026, 0.01, size=(64)) * b2.volt
 # io_syn.w = weights * b2.volt
 
