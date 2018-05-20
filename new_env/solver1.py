@@ -11,6 +11,75 @@ import time
 import brian2 as b2
 from brian2tools import *
 
+#------------------------------------------------------------------------------ 
+#------------------------------------------------------------------------------ 
+
+def action_to_str(action):
+  return '{:+05.3f}'.format(action)
+
+def to_str(actions):
+  return [action_to_str(actions[0]), action_to_str(actions[2]) + " " + action_to_str(actions[3]), action_to_str(actions[1])]
+
+def disp_norm(x):
+
+  x = np.asarray(x)
+  x = x.reshape(16,4)
+  max_val = np.max( np.absolute(x) )
+  x = x / max_val
+  x = np.round(x, 3)
+
+  for i in range(4):
+    grid_str = ["", "", ""]
+    for j in range(4):
+      state = (4 - i - 1) * 4 + j
+      state_str = to_str( x[state] )
+
+      grid_str[0] += "         " + state_str[0]
+      grid_str[1] += "   " + state_str[1]
+      grid_str[2] += "         " + state_str[2]
+
+    print (grid_str[0])
+    print (grid_str[1])
+    print (grid_str[2])
+    print ("")
+
+def disp(x):
+
+  x = np.asarray(x)
+  x = x.reshape(16,4)
+  x = np.round(x, 3)
+
+  for i in range(4):
+    grid_str = ["", "", ""]
+    for j in range(4):
+      state = (4 - i - 1) * 4 + j
+      state_str = to_str( x[state] )
+
+      grid_str[0] += "         " + state_str[0]
+      grid_str[1] += "   " + state_str[1]
+      grid_str[2] += "         " + state_str[2]
+
+    print (grid_str[0])
+    print (grid_str[1])
+    print (grid_str[2])
+    print ("")
+
+def num_to_state(state):
+    ret = np.zeros(16)
+    for i in range(16):
+        if state == i:
+            ret[i] = 1
+    # return np.reshape(ret, 16)
+    return np.reshape(ret, [1, 16])
+
+def state_to_num(state):
+    for i in range(16):
+        if state[0][i]:
+            return i
+
+#------------------------------------------------------------------------------ 
+#------------------------------------------------------------------------------ 
+
 '''
 C D E F
 8 9 A B
@@ -28,6 +97,8 @@ class Env():
 
         self.grid = np.ones(self.nrows * self.ncols) * -5
         self.wins = [15]
+        self.small_rewards = [(3, 14), (0, 11)]
+        self.tiny_rewards = [(3, 13), (0, 7)]
         self.fails = [10]
 
         self.left = []
@@ -57,6 +128,7 @@ class Env():
     def reset(self):
         self.state = 0
         self.steps = 0
+        return self.state
 
     def step(self, action):
         self.steps = self.steps + 1
@@ -78,7 +150,13 @@ class Env():
             reward = -100
             done = True
         else:
-            reward = -5
+            if (action, self.state) in self.small_rewards:
+                reward = 10
+            elif (action, self.state) in self.tiny_rewards:
+                reward = 5
+            else:
+                reward = -5
+
             if (self.steps >= 20):
                 done = True
             else:
@@ -87,8 +165,11 @@ class Env():
         self.state = next_state
         return next_state, reward, done
 
+#------------------------------------------------------------------------------ 
+#------------------------------------------------------------------------------ 
+
 class Solver():
-    def __init__(self, n_episodes=1000, max_env_steps=None, gamma=1.0, epsilon=0.5, epsilon_min=0.01, epsilon_decay=0.99, alpha=0.04, alpha_decay=0.04, batch_size=32, quiet=False):
+    def __init__(self, n_episodes=1000, max_env_steps=None, gamma=1.0, epsilon=0.5, epsilon_min=0.01, epsilon_decay=0.99, alpha=0.1, alpha_decay=0.04, batch_size=32, quiet=False):
         self.memory = deque(maxlen=64)
 
         self.env = Env()
@@ -123,13 +204,6 @@ class Solver():
     def get_epsilon(self, t):
         return max(self.epsilon_min, min(self.epsilon, 1.0 - math.log10((t + 1) * self.epsilon_decay)))
 
-    def preprocess_state(self, state):
-        ret = np.zeros(16)
-        for i in range(16):
-            if state == i:
-                ret[i] = 1
-        return np.reshape(ret, [1, 16])
-
     def replay(self, batch_size):
         x_batch, y_batch = [], []
         minibatch = random.sample(self.memory, min(len(self.memory), batch_size))
@@ -147,7 +221,7 @@ class Solver():
 
         for e in range(self.n_episodes):
             state = self.env.reset()
-            state = self.preprocess_state(state)
+            state = num_to_state(state)
 
             reward_sum = 0
             step = 0
@@ -157,7 +231,7 @@ class Solver():
                 action = self.choose_action(state, self.get_epsilon(e))
 
                 next_state, reward, done = self.env.step(action)
-                next_state = self.preprocess_state(next_state)
+                next_state = num_to_state(next_state)
                 reward_sum = reward_sum + reward
                 self.remember(state, action, reward, next_state, done)
 
@@ -169,13 +243,13 @@ class Solver():
                 if done:
                     self.replay(self.batch_size)
 
-                    if self.epsilon > self.epsilon_min:
-                        self.epsilon *= self.epsilon_decay ** (e / self.decay_step)
+                    if (reward > 0) and (self.epsilon > self.epsilon_min):
+                        self.epsilon *= 0.7
 
                     scores.append(reward_sum > 0)
                     mean_score = np.mean(scores)
 
-                    print (step, reward_sum, mean_score)
+                    print (e, step, reward_sum, mean_score)
                     break
 
         np.save("weights", self.model.get_weights())

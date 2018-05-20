@@ -64,8 +64,28 @@ def disp(x):
     print (grid_str[2])
     print ("")
 
+def num_to_state(state):
+    ret = np.zeros(16)
+    for i in range(16):
+        if state == i:
+            ret[i] = 1
+    # return np.reshape(ret, 16)
+    return np.reshape(ret, [1, 16])
+
+def state_to_num(state):
+    for i in range(16):
+        if state[0][i]:
+            return i
+
 #------------------------------------------------------------------------------ 
 #------------------------------------------------------------------------------ 
+
+'''
+C D E F
+8 9 A B
+4 5 6 7
+0 1 2 3
+'''
 
 class Env():
     def __init__(self):
@@ -77,6 +97,8 @@ class Env():
 
         self.grid = np.ones(self.nrows * self.ncols) * -5
         self.wins = [15]
+        self.small_rewards = [(3, 14), (0, 11)]
+        self.tiny_rewards = [(3, 13), (0, 7)]
         self.fails = [10]
 
         self.left = []
@@ -128,7 +150,13 @@ class Env():
             reward = -100
             done = True
         else:
-            reward = -5
+            if (action, self.state) in self.small_rewards:
+                reward = 10
+            elif (action, self.state) in self.tiny_rewards:
+                reward = 5
+            else:
+                reward = -5
+
             if (self.steps >= 20):
                 done = True
             else:
@@ -140,9 +168,6 @@ class Env():
 #------------------------------------------------------------------------------ 
 #------------------------------------------------------------------------------ 
 
-num_examples = 1000
-update_interval = num_examples
-
 single_example_time =   0.35 * b2.second
 resting_time = 0.15 * b2.second
 
@@ -152,14 +177,13 @@ input_intensity = 2.
 start_input_intensity = input_intensity
 
 #------------------------------------------------------------------------------ 
-# create networks
 #------------------------------------------------------------------------------ 
 
 b2.ion()
 
-tau_i = 20 * b2.ms  # Time constant for LIF leak
-v_r = 0 * b2.mV  # Reset potential
-th_i = 16 * b2.mV  # Threshold potential
+tau_i = 20 * b2.ms 
+v_r = 0 * b2.mV  
+th_i = 16 * b2.mV  
 tau_sigma = 20 * b2.ms
 beta_sigma = 0.2 / b2.mV
 
@@ -187,76 +211,43 @@ class LIF:
 lif = LIF(tau_i, v_r, sigma, tau_sigma, beta_sigma)
 
 input = b2.PoissonGroup(16, 0*b2.Hz)
-#hidden = b2.NeuronGroup(64, lif.equ, threshold=lif.threshold, reset=lif.reset)
 output = b2.NeuronGroup(4, lif.equ, threshold=lif.threshold, reset=lif.reset)
 
 #------------------------------------------------------------------------------ 
-# create input population and connections from input populations 
 #------------------------------------------------------------------------------
-
-def num_to_state(state):
-    ret = np.zeros(16)
-    for i in range(16):
-        if state == i:
-            ret[i] = 1
-    # return np.reshape(ret, 16)
-    return np.reshape(ret, [1, 16])
-
-def state_to_num(state):
-    for i in range(16):
-        if state[0][i]:
-            return i
 
 class GapRL:
     def __init__(self, sigma, tau_z, tau_i, gamma, w_min, w_max, beta_sigma):
         self.model = '''
                      w : volt
-                     prevSpike : second
                      '''
 
+        # on pre, increase post synaptic neuron voltage by w.
         self.on_pre = '''
                       v_post += w
-                      prevSpike = t
                       '''
 
         self.on_post = '''
                        '''
 
 syn = GapRL(sigma, tau_z, tau_i, gamma, w_min, w_max, beta_sigma)
-
-# ih_syn = b2.Synapses(input, hidden, model=syn.model, on_pre=syn.on_pre, on_post=syn.on_post)
-# ho_syn = b2.Synapses(hidden, output, model=syn.model, on_pre=syn.on_pre, on_post=syn.on_post)
-
 io_syn = b2.Synapses(input, output, model=syn.model, on_pre=syn.on_pre, on_post=syn.on_post)
 io_syn.connect(True)
-
-'''
-weights = np.load("weights.npy")
-weights = weights[0]
-weights = weights.flatten()
-avg = np.average(weights)
-weights = weights * (0.026 / np.absolute(avg))
-'''
-# weights = np.load("snn_weights_1150.npy")
-
-io_syn.w = np.random.uniform(w_min, w_max, size=(64)) * 1000 * b2.volt
-# io_syn.w = np.random.normal(0.026, 0.01, size=(64)) * b2.volt
-# io_syn.w = weights * b2.volt
-
+io_syn.w = np.ones(64) * 0.25 * b2.volt
 counter = b2.SpikeMonitor(output)
 previous_spike_count = np.zeros(4)
 
 net = b2.Network()
 net.add(input)
-# net.add(hidden)
 net.add(output)
-# net.add(ih_syn)
-# net.add(ho_syn)
 net.add(io_syn)
 net.add(counter)
 
+#------------------------------------------------------------------------------ 
+#------------------------------------------------------------------------------
+
 class Solver():
-    def __init__(self, n_episodes=1000, max_env_steps=None, gamma=1.0, epsilon=0.5, epsilon_min=0.01, epsilon_decay=0.99, alpha=0.04, alpha_decay=0.04, batch_size=32, quiet=False):
+    def __init__(self, n_episodes=1000, max_env_steps=None, gamma=1.0, epsilon=0.5, epsilon_min=0.01, epsilon_decay=0.99, alpha=0.1, alpha_decay=0.04, batch_size=32, quiet=False):
         self.memory = deque(maxlen=64)
 
         self.env = Env()
@@ -274,41 +265,26 @@ class Solver():
         if max_env_steps is not None: self.env._max_episode_steps = max_env_steps
 
         self.model = Sequential()
-        self.model.add(Dense(4, input_shape=(16,), activation='linear'))
+        self.model.add(Dense(4, input_dim=16, activation='linear'))
         self.model.compile(loss='mse', optimizer=Adam(lr=self.alpha))
 
     def remember(self, state, action, reward, next_state, done):
         self.memory.append((state, action, reward, next_state, done))
 
+    def choose_action(self, state, epsilon):
+        if (np.random.random() <= epsilon):
+            ret = random.randint(0, 3)
+        else:
+            ret = np.argmax(self.model.predict(state))
+
+        return ret
+
     def get_epsilon(self, t):
         return max(self.epsilon_min, min(self.epsilon, 1.0 - math.log10((t + 1) * self.epsilon_decay)))
 
-    '''
-    def preprocess_state(self, state):
-        ret = np.zeros(16)
-        for i in range(16):
-            if state == i:
-                ret[i] = 1
-        return np.reshape(ret, [1, 16])
-    '''
-
     def replay(self, batch_size):
         x_batch, y_batch = [], []
-
-        # wow that was frusterating.
-        # from brian2 import *
-        # breaks all calls to random.
-        # wasted a bunch of time
         minibatch = random.sample(self.memory, min(len(self.memory), batch_size))
-
-        # idx = np.random.choice( len(self.memory), self.batch_size )
-        # minibatch = self.memory[idx]
-
-        # sz = min(self.batch_size, len(self.memory))
-        # minibatch = self.memory[:sz]
-
-        # minibatch = self.memory
-        # minibatch = list(minibatch)
 
         for state, action, reward, next_state, done in minibatch:
             y_target = self.model.predict(state)
@@ -338,7 +314,7 @@ class Solver():
         done = False
         step_count = 0
 
-        prev = io_syn.w * 1000
+        prev = self.model.get_weights()[0]
         while (done == False):
           step_count = step_count + 1
 
@@ -346,21 +322,33 @@ class Solver():
             action = 0
             start = False
           else:
-            input.rates = state * 128 * b2.Hz
+            input.rates = state * 1000 * b2.Hz
             net.run(single_example_time)
 
             current_spike_count = np.asarray(counter.count[:]) - previous_spike_count
             previous_spike_count = np.copy(counter.count[:])
-            action = np.argmax(current_spike_count)
+
+            if (np.random.random() <= self.epsilon):
+                action = random.randint(0, 3)
+            else:
+                action = np.argmax(current_spike_count)  
 
             print (current_spike_count)
 
           next_state, reward, done = self.env.step(action)
           next_state = num_to_state(next_state)
 
-          self.remember(state, action, reward, next_state, done)          
+          itr = str(ii) + " "
+          itr = itr + str(step_count) + "/" + str(20) + " "
+          itr = itr + str(state_to_num(state)) + " " + str(action) + " " + str(state_to_num(next_state)) + " "
+          itr = itr + str(reward) + " "
+          itr = itr + str(self.epsilon)
+          print (itr)
 
-          print (str(step_count) + "/" + str(20) + " " + str(action) + " " + str(state_to_num(next_state)))
+          self.remember(state, action, reward, next_state, done)  
+
+          if (reward > 0) and (self.epsilon > self.epsilon_min):
+              self.epsilon *= 0.7
 
           net.run(resting_time)
 
@@ -368,24 +356,35 @@ class Solver():
             if (reward > 0):
               wins = wins + 1
 
+            self.replay(self.batch_size)
+
             scores.append(reward > 0)
             mean_score = np.mean(scores)
             print (mean_score, wins)
 
-            weights = self.model.get_weights()[0].flatten()
-            weights = weights * ((w_max-w_min) / np.absolute(np.average(weights)))
+            weights = self.model.get_weights()[0]
+            # bias = self.model.get_weights()[1]
+
+            # print (weights)
+            # print (bias)
+
+            # weights = weights.dot(bias)
+            weights = weights.flatten()
+            weights = weights * ((w_max-w_min) * 10 / np.absolute(np.average(weights)))
             weights = weights + np.absolute(np.min(weights))
             # weights = weights * b2.volt
 
             # io_syn.w = self.model.get_weights()[0].flatten() * b2.volt
             io_syn.w = weights
 
-            disp_norm (io_syn.w * 1000 - prev)
-            disp (io_syn.w)
+            # show me what next states yield highest reward.
+            # for num in range(16):
+            #    print (self.model.predict(num_to_state(num)))
+
+            disp (self.model.get_weights()[0] - prev)
+            disp (self.model.get_weights()[0])
 
             np.save("snn_weights", io_syn.w)
-
-            self.replay(self.batch_size)
 
           state = next_state
           reward = 0        
