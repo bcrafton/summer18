@@ -11,6 +11,8 @@ import time
 import brian2 as b2
 from brian2tools import *
 
+from operator import itemgetter
+
 #------------------------------------------------------------------------------ 
 #------------------------------------------------------------------------------ 
 
@@ -171,6 +173,7 @@ class Env():
 class Solver():
     def __init__(self, n_episodes=1000, max_env_steps=None, gamma=1.0, epsilon=0.5, epsilon_min=0.01, epsilon_decay=0.99, alpha=0.1, alpha_decay=0.04, batch_size=32, quiet=False):
         self.memory = deque(maxlen=64)
+        self.hist = {}
 
         self.env = Env()
 
@@ -218,14 +221,21 @@ class Solver():
 
     def run(self):
         scores = deque(maxlen=100)
+        sum_avg_delta = 0
 
-        for e in range(self.n_episodes):
+        for e in range(1000):
             state = self.env.reset()
             state = num_to_state(state)
 
             reward_sum = 0
-            step = 0
             done = False
+            step = 0
+            prev = self.model.get_weights()[0]
+            sum_avg_delta = sum_avg_delta + np.average(np.absolute(prev))
+
+            if (np.mean(scores) > 0.5) and (e > 100):
+                break
+
             while not done:
                 step = step + 1
                 action = self.choose_action(state, self.get_epsilon(e))
@@ -235,10 +245,19 @@ class Solver():
                 reward_sum = reward_sum + reward
                 self.remember(state, action, reward, next_state, done)
 
-                state = next_state
+                state_num = state_to_num(state)
+                if (state_num, action) in self.hist:
+                    self.hist[(state_num, action)] = self.hist[(state_num, action)] + 1
+                else:
+                    self.hist[(state_num, action)] = 1
 
-                table = self.model.get_weights()
-                table = table[0]
+                itr = str(e) + " "
+                itr = itr + str(step) + "/" + str(20) + " "
+                itr = itr + str(state_to_num(state)) + " " + str(action) + " " + str(state_to_num(next_state)) + " "
+                itr = itr + str(reward) + " "
+                print (itr)
+
+                state = next_state
 
                 if done:
                     self.replay(self.batch_size)
@@ -249,10 +268,16 @@ class Solver():
                     scores.append(reward_sum > 0)
                     mean_score = np.mean(scores)
 
-                    print (e, step, reward_sum, mean_score)
-                    break
+                    print (e, step, mean_score, self.epsilon, sum_avg_delta)
 
-        np.save("weights", self.model.get_weights())
+                    disp (self.model.get_weights()[0] - prev)
+                    disp (self.model.get_weights()[0])
+
+                    # print (self.hist)
+                    for key in sorted(self.hist, key=itemgetter(0)):
+                        print (key, self.hist[key])
+
+                    break
         
 
 if __name__ == '__main__':

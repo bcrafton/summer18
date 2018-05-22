@@ -6,6 +6,8 @@ from collections import deque
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.optimizers import Adam
+from keras.constraints import non_neg
+import keras
 
 import time
 import brian2 as b2
@@ -89,6 +91,9 @@ C D E F
 0 1 2 3
 '''
 
+def manhatten(coord, dest):
+    return abs(dest[0] - coord[0]) + abs(dest[1] - coord[1])
+
 class Env():
     def __init__(self):
         self.state = 0
@@ -97,22 +102,16 @@ class Env():
         self.nrows = 4
         self.ncols = 4
 
-        self.grid = np.ones(self.nrows * self.ncols) * -5
         self.wins = [15]
+        self.fails = [10]
+
         self.small_rewards = [(3, 14), (0, 11)]
         self.tiny_rewards = [(3, 13), (0, 7)]
-        self.fails = [10]
 
         self.left = []
         self.right = []
         self.up = []
         self.down = []
-
-        for i in self.wins:
-            self.grid[i] = 100
-
-        for i in self.fails:
-            self.grid[i] = -100
 
         for i in range(self.nrows * self.ncols):
             if ( i % self.ncols == 3 ):
@@ -146,18 +145,18 @@ class Env():
             next_state = self.state + 1
 
         if next_state in self.wins:
-            reward = 100
+            reward = 1000
             done = True
         elif next_state in self.fails:
-            reward = -100
+            reward = 0
             done = True
         else:
             if (action, self.state) in self.small_rewards:
-                reward = 10
+                reward = 25
             elif (action, self.state) in self.tiny_rewards:
-                reward = 5
+                reward = 25
             else:
-                reward = -5
+                reward = 25
 
             if (self.steps >= 20):
                 done = True
@@ -237,7 +236,6 @@ io_syn = b2.Synapses(input, output, model=syn.model, on_pre=syn.on_pre, on_post=
 io_syn.connect(True)
 io_syn.w = np.ones(64) * 0.25 * b2.volt
 counter = b2.SpikeMonitor(output)
-previous_spike_count = np.zeros(4)
 
 net = b2.Network()
 net.add(input)
@@ -249,7 +247,7 @@ net.add(counter)
 #------------------------------------------------------------------------------
 
 class Solver():
-    def __init__(self, n_episodes=1000, max_env_steps=None, gamma=1.0, epsilon=0.5, epsilon_min=0.01, epsilon_decay=0.99, alpha=0.1, alpha_decay=0.04, batch_size=32, quiet=False):
+    def __init__(self, n_episodes=1000, max_env_steps=None, gamma=1.0, epsilon=0.5, epsilon_min=0.01, epsilon_decay=0.99, alpha=1.00, alpha_decay=0.04, batch_size=32, quiet=False):
         self.memory = deque(maxlen=64)
         self.hist = {}
 
@@ -267,9 +265,19 @@ class Solver():
         self.decay_step = 10
         if max_env_steps is not None: self.env._max_episode_steps = max_env_steps
 
-        self.model = Sequential()
-        self.model.add(Dense(4, input_dim=16, activation='linear'))
+        # self.model.add(Dense(4, input_dim=16, activation='linear', use_bias=False, kernel_constraint=non_neg()))
+        layer = keras.layers.Dense(4, input_dim=16, activation='linear', kernel_constraint=non_neg())
+        self.model = Sequential([layer])
+        # model = keras.models.Model(inputs=layer_in, outputs=layer_out)
         self.model.compile(loss='mse', optimizer=Adam(lr=self.alpha))
+
+        print ("the weights")
+        print (self.model.get_weights())
+
+        init_weights = [np.ones(shape=(16, 4)) * 1000.0, np.zeros(shape=(4))]
+        self.model.set_weights(init_weights)
+
+        self.previous_spike_count = np.zeros(4)
 
     def remember(self, state, action, reward, next_state, done):
         self.memory.append((state, action, reward, next_state, done))
@@ -277,13 +285,15 @@ class Solver():
     def choose_action(self, state, epsilon):
         if (np.random.random() <= epsilon):
             ret = random.randint(0, 3)
+            rand = True
         else:
             ret = np.argmax(self.model.predict(state))
+            rand = False
 
-        return ret
+        return ret, rand
 
     def get_epsilon(self, t):
-        return max(self.epsilon_min, min(self.epsilon, 1.0 - math.log10((t + 1) * self.epsilon_decay)))
+        return max(self.epsilon_min, self.epsilon)
 
     def replay(self, batch_size):
         x_batch, y_batch = [], []
@@ -291,97 +301,127 @@ class Solver():
 
         for state, action, reward, next_state, done in minibatch:
             y_target = self.model.predict(state)
-            y_target[0][action] = reward if done else reward + self.gamma * np.max(self.model.predict(next_state))
+            y_target[0][action] = reward+5 if done else reward+5 + self.gamma * np.max(self.model.predict(next_state))
             x_batch.append(state[0])
             y_batch.append(y_target[0])
 
         self.model.fit(np.array(x_batch), np.array(y_batch), batch_size=len(x_batch), verbose=0)
 
+    def spike_weights(self):
+        weights = self.model.get_weights()[0]
+        # weights = np.transpose(weights)
+        # weights = weights.flatten()
+        weights = weights - np.min(weights) + 1
+        weights = weights * ((w_max-w_min) * 2 / np.absolute(np.average(weights)))
+        # weights = weights + np.absolute(np.min(weights))
+        return weights
+
     def run(self):
-      scores = deque(maxlen=100)
-      sum_avg_delta = 0
-      previous_spike_count = np.zeros(4)
-      start = True
+        scores = deque(maxlen=100)
+        sum_avg_delta = 0
 
-      for e in range(self.n_episodes):
-        state = self.env.reset()
+        for e in range(100000):
+            state = self.env.reset()
+            state = num_to_state(state)
+
+            reward_sum = 0
+            done = False
+            step = 0
+            prev = self.model.get_weights()[0]
+            sum_avg_delta = sum_avg_delta + np.average(np.absolute(prev))
+
+            if (np.mean(scores) > 0.5) and (e > 100):
+                break
+
+            while not done:
+                step = step + 1
+                qaction, rand = self.choose_action(state, self.get_epsilon(e))
+
+                if True:
+                # if rand:
+                    snn_action = qaction
+                else:
+                    snn_action, spikes, io_syn_weights, _ = self.run_snn()
+
+                state_num = state_to_num(state)
+                diff = self.model.get_weights()[0][state_num][qaction] - self.model.get_weights()[0][state_num][snn_action]
+                if (qaction != snn_action):
+                    print ("diff = " + str(diff))
+                    print (self.model.get_weights()[0][state_to_num(state)], io_syn_weights, spikes)
+
+                action = snn_action
+                next_state, reward, done = self.env.step(action)
+                next_state = num_to_state(next_state)
+                reward_sum = reward_sum + reward
+                self.remember(state, action, reward, next_state, done)
+
+                '''
+                state_num = state_to_num(state)
+                if (state_num, action) in self.hist:
+                    self.hist[(state_num, action)] = self.hist[(state_num, action)] + 1
+                else:
+                    self.hist[(state_num, action)] = 1
+                '''
+
+                itr = str(e) + " "
+                itr = itr + str(step) + "/" + str(20) + " "
+                itr = itr + str(state_to_num(state)) + " (" + str(qaction) + ", " + str(snn_action) + ") " + str(state_to_num(next_state)) + " "
+                itr = itr + str(reward) + " "
+                itr = itr + str(self.epsilon) + " "
+                print (itr)
+
+                state = next_state
+
+                if done:
+                    self.replay(self.batch_size)
+
+                    if (reward_sum > 1000) and (self.epsilon > self.epsilon_min):
+                        self.epsilon *= 0.7
+
+                    scores.append(reward_sum > 1000)
+                    mean_score = np.mean(scores)
+
+                    print (e, step, mean_score, self.epsilon, sum_avg_delta)
+
+                    # disp (self.model.get_weights()[0] - prev)
+                    disp (self.model.get_weights()[0])
+
+                    # print (self.hist)
+                    # for key in sorted(self.hist, key=itemgetter(0)):
+                    #     print (key, self.hist[key])
+
+                    break
+
+    def run_snn(self):
+
+        # print (io_syn[1]._indices())
+
+        state = self.env.state
         state = num_to_state(state)
-        reward = 0
 
-        done = False
-        step = 0
-        prev = self.model.get_weights()[0]
-        sum_avg_delta = sum_avg_delta + np.average(np.absolute(prev))
+        weights = self.spike_weights()
+        for ii in range(16):
+            for jj in range(4):
+                io_syn.w[ii, jj] = weights[ii, jj]
 
-        while not done:
-          step = step + 1
+        tmp = io_syn.w[self.env.state, :]
+        tmp = np.array(tmp)
+        io_syn_weights = tmp
 
-          if start:
-            action = 0
-            start = False
-          else:
-            input.rates = state * 1000 * b2.Hz
-            net.run(single_example_time)
-            # take the current spiking count here.
-            current_spike_count = np.asarray(counter.count[:]) - previous_spike_count
-            input.rates = 0 * b2.Hz
-            net.run(resting_time)
-            # set previous to be after resting.
-            previous_spike_count = np.copy(counter.count[:])
+        # take the current spiking count here.
+        input.rates = state * 1000 * b2.Hz
+        net.run(single_example_time)
+        current_spike_count = np.asarray(counter.count[:]) - self.previous_spike_count
+        voltages = np.array(output.v / b2.volt)
 
-            if (np.random.random() <= self.epsilon):
-                action = random.randint(0, 3)
-            else:
-                action = np.argmax(current_spike_count)  
-            print (current_spike_count)
+        # set previous to be after resting.
+        input.rates = 0 * b2.Hz
+        net.run(resting_time)
+        self.previous_spike_count = np.copy(counter.count[:])
 
-          next_state, reward, done = self.env.step(action)
-          next_state = num_to_state(next_state)
-          self.remember(state, action, reward, next_state, done) 
+        action = np.argmax(current_spike_count) 
 
-          state_num = state_to_num(state)
-          if (state_num, action) in self.hist:
-              self.hist[(state_num, action)] = self.hist[(state_num, action)] + 1
-          else:
-              self.hist[(state_num, action)] = 1
-
-          itr = str(e) + " "
-          itr = itr + str(step) + "/" + str(20) + " "
-          itr = itr + str(state_to_num(state)) + " " + str(action) + " " + str(state_to_num(next_state)) + " "
-          itr = itr + str(reward) + " "
-          itr = itr + str(self.epsilon)
-          print (itr)
-
-          state = next_state
-
-          if done:
-
-            self.replay(self.batch_size)
-
-            if (reward > 0) and (self.epsilon > self.epsilon_min):
-              self.epsilon *= 0.7 
-
-            scores.append(reward > 0)
-            mean_score = np.mean(scores)
-            print (e, step, mean_score, self.epsilon, sum_avg_delta)
-
-            weights = self.model.get_weights()[0]
-            weights = weights.flatten()
-            weights = weights * ((w_max-w_min) * 10 / np.absolute(np.average(weights)))
-            weights = weights + np.absolute(np.min(weights))
-
-            io_syn.w = weights
-
-            disp (self.model.get_weights()[0] - prev)
-            disp (self.model.get_weights()[0])
-
-            # print (self.hist)
-            for key in sorted(self.hist, key=itemgetter(0)):
-              print (key, self.hist[key])
-
-            break
-
-          reward = 0
+        return action, current_spike_count, io_syn_weights, voltages
 
 if __name__ == '__main__':
     agent = Solver()
