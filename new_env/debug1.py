@@ -337,8 +337,7 @@ class Solver():
                 step = step + 1
                 qaction, rand = self.choose_action(state, self.get_epsilon(e))
 
-                if True:
-                # if rand:
+                if rand:
                     snn_action = qaction
                 else:
                     snn_action, spikes, io_syn_weights, _ = self.run_snn()
