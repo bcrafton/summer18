@@ -138,8 +138,18 @@ class Solver():
         T = 1000
         dt = 0.5
         time_steps = int(T / dt)
+
         Wsynl1 = np.absolute(np.random.normal(1.0, 0.5, size=(16,64)))
+        idx = np.flatnonzero(Wsynl1)
+        N = np.count_nonzero(Wsynl1 != 0) - int(round(0.5 * Wsynl1.size))
+        np.put(Wsynl1, np.random.choice(idx, size=N, replace=False), 0)
+        mask1 = Wsynl1 == 0
+
         Wsynl2 = np.absolute(np.random.normal(1.0, 0.5, size=(64,4)))
+        idx = np.flatnonzero(Wsynl2)
+        N = np.count_nonzero(Wsynl2 != 0) - int(round(0.75 * Wsynl2.size))
+        np.put(Wsynl2, np.random.choice(idx, size=N, replace=False), 0)
+        mask2 = Wsynl2 == 0
 
         scores = deque(maxlen=100)
         for e in range(5000):
@@ -159,6 +169,15 @@ class Solver():
             # Wsyn = self.model.get_weights()[0] / np.average(self.model.get_weights()[0])
             # Wsyn = self.spike_weights()
             while not done:
+                '''
+                if not ((np.count_nonzero(Wsynl1) > 400) and (np.count_nonzero(Wsynl1) < 600)):
+                    print (np.count_nonzero(Wsynl1))
+                    assert ((np.count_nonzero(Wsynl1) > 400) and (np.count_nonzero(Wsynl1) < 600))
+                '''
+                if not ((np.count_nonzero(Wsynl1) > 400)):
+                    print (np.count_nonzero(Wsynl1))
+                    assert ((np.count_nonzero(Wsynl1) > 400))
+
                 step = step + 1
 
                 ################
@@ -182,25 +201,27 @@ class Solver():
                 # eligl2 = np.zeros(shape=(64, 4))
 
                 for t in range(time_steps):
-                    vl1 = vl1 * hidden_not_fired
                     input_fired = np.random.rand(1, 16) < rates * dt
                     input_fires[t] = input_fired
 
                     Isynl1 = np.dot(input_fired, Wsynl1)
-                    dvl1 = 0.02 * vl1 * vl1
+                    vl1 = vl1 * hidden_not_fired
+                    dvl1 = 0.1 * vl1 * vl1
                     vl1 = vl1 + (dvl1 + Isynl1 + 0.01) * dt
-                    vl1 = vl1[0]
+                    # print (vl1)
+                    # vl1 = vl1[0]
 
-                    vl2 = vl2 * output_not_fired
                     hidden_fired = vl1 > 35
                     hidden_not_fired = vl1 < 35
                     hidden_fired_counts = hidden_fired_counts + hidden_fired
                     hidden_fires[t] = hidden_fired
 
                     Isynl2 = np.dot(hidden_fired, Wsynl2)
-                    dvl2 = 0.02 * vl2 * vl2
+                    vl2 = vl2 * output_not_fired
+                    dvl2 = 0.1 * vl2 * vl2
                     vl2 = vl2 + (dvl2 + Isynl2 + 0.01) * dt
-                    vl2 = vl2[0]
+                    # print (vl2)
+                    # vl2 = vl2[0]
 
                     output_fired = vl2 > 35
                     output_not_fired = vl2 < 35
@@ -213,7 +234,13 @@ class Solver():
                     neg_idx = np.where(elig < 0)
                     elig[neg_idx] = 0
                     '''
+
                 ################
+                # print (Wsynl1)
+                # print (hidden_fired_counts)
+                print (output_fired_counts)
+                ################
+
                 hidden_fires_post = np.zeros(shape=(2000,64))
                 hidden_fires_pre = np.zeros(shape=(2000,64))
 
@@ -249,6 +276,8 @@ class Solver():
                 eligl1 = pre - post
                 neg_idx = np.where(eligl1 < 0)
                 eligl1[neg_idx] = 0
+                if np.max(eligl1):
+                    eligl1 = eligl1 / np.max(eligl1)
                 ########
                 output_fires_post = np.zeros(shape=(2000,4))
                 output_fires_pre = np.zeros(shape=(2000,4))
@@ -285,6 +314,9 @@ class Solver():
                 eligl2 = pre - post
                 neg_idx = np.where(eligl2 < 0)
                 eligl2[neg_idx] = 0
+                if np.max(eligl2):
+                    eligl2 = eligl2 / np.max(eligl2)
+
                 ################
 
                 if (np.random.random() <= self.epsilon):
@@ -298,10 +330,10 @@ class Solver():
                 self.remember(state, action, reward, next_state, done)
 
                 ################
-                gradient = eligl1 * reward_sum * (1/1000)
+                gradient = eligl1 * reward_sum * (1/1000) * mask1
                 Wsynl1 = (9 * Wsynl1 + gradient) / (9 + eligl1)
 
-                gradient = eligl2 * reward_sum * (1/1000)
+                gradient = eligl2 * reward_sum * (1/1000) * mask2
                 Wsynl2 = (9 * Wsynl2 + gradient) / (9 + eligl2)
                 ################
 
@@ -316,10 +348,10 @@ class Solver():
                 if done:
                     self.replay(self.batch_size)
 
-                    if (reward_sum > 1000) and (self.epsilon > self.epsilon_min):
+                    if (reward_sum > 1500) and (self.epsilon > self.epsilon_min):
                         self.epsilon *= 0.7
 
-                    scores.append(reward_sum > 1000)
+                    scores.append(reward_sum > 1500)
                     mean_score = np.mean(scores)
 
                     print (e, step, mean_score, self.epsilon)

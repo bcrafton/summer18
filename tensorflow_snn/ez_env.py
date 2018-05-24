@@ -45,11 +45,11 @@ class Env():
                     # print (ii, jj, kk, diff)
 
                     if (diff > 0):
-                        self.moves[ii][jj][kk] = 110
+                        self.moves[ii][jj][kk] = 50
                     elif (diff < 0):
                         self.moves[ii][jj][kk] = 10
                     else:
-                        self.moves[ii][jj][kk] = 10
+                        self.moves[ii][jj][kk] = 20
 
     def reset(self):
         self.state = [0, 0]
