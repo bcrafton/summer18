@@ -138,9 +138,8 @@ class Solver():
         T = 1000
         dt = 0.5
         time_steps = int(T / dt)
-        # Wsyn = np.ones(shape=(16, 4)) * 0.5
-        Wsyn = np.random.normal(1.0, 0.5, size=(16,4))
-        Wsyn = np.absolute(Wsyn)
+        Wsynl1 = np.absolute(np.random.normal(1.0, 0.5, size=(16,64)))
+        Wsynl2 = np.absolute(np.random.normal(1.0, 0.5, size=(64,4)))
 
         scores = deque(maxlen=100)
         for e in range(5000):
@@ -163,35 +162,48 @@ class Solver():
                 step = step + 1
 
                 ################
-                v = np.zeros(4)
+                vl1 = np.zeros(64)
+                vl2 = np.zeros(4)
 
                 input_fires = np.zeros(shape=(2000,16))
+                hidden_fires = np.zeros(shape=(2000,64))
                 output_fires = np.zeros(shape=(2000,4))
+
+                hidden_fired = np.zeros(64)
+                hidden_not_fired = np.zeros(64)
+                hidden_fired_counts = np.zeros(64)
 
                 output_fired = np.zeros(4)
                 output_not_fired = np.zeros(4)
                 output_fired_counts = np.zeros(4)
 
                 rates = state * 0.02
-                elig = np.zeros(shape=(16, 4))
+                # eligl1 = np.zeros(shape=(16, 64))
+                # eligl2 = np.zeros(shape=(64, 4))
 
                 for t in range(time_steps):
-                    v = v * output_not_fired
-                  
+                    vl1 = vl1 * hidden_not_fired
                     input_fired = np.random.rand(1, 16) < rates * dt
                     input_fires[t] = input_fired
 
-                    Isyn = np.dot(input_fired, Wsyn)
-                    Csyn = np.sum(Wsyn, axis=0) ** 2
-                    # print (Isyn, Csyn)
-                    # print (np.average(Wsyn))
-                    
-                    dv = 0.02 * v * v
-                    v = v + (dv + Isyn + 0.01) * dt
-                    v = v[0]
+                    Isynl1 = np.dot(input_fired, Wsynl1)
+                    dvl1 = 0.02 * vl1 * vl1
+                    vl1 = vl1 + (dvl1 + Isynl1 + 0.01) * dt
+                    vl1 = vl1[0]
 
-                    output_fired = v > 35
-                    output_not_fired = v < 35
+                    vl2 = vl2 * output_not_fired
+                    hidden_fired = vl1 > 35
+                    hidden_not_fired = vl1 < 35
+                    hidden_fired_counts = hidden_fired_counts + hidden_fired
+                    hidden_fires[t] = hidden_fired
+
+                    Isynl2 = np.dot(hidden_fired, Wsynl2)
+                    dvl2 = 0.02 * vl2 * vl2
+                    vl2 = vl2 + (dvl2 + Isynl2 + 0.01) * dt
+                    vl2 = vl2[0]
+
+                    output_fired = vl2 > 35
+                    output_not_fired = vl2 < 35
                     output_fired_counts = output_fired_counts + output_fired
                     output_fires[t] = output_fired
 
@@ -202,7 +214,42 @@ class Solver():
                     elig[neg_idx] = 0
                     '''
                 ################
+                hidden_fires_post = np.zeros(shape=(2000,64))
+                hidden_fires_pre = np.zeros(shape=(2000,64))
 
+                for i in range(64):
+                    flag = 0
+                    for j in range(2000):
+                        if (hidden_fires[j][i]):
+                            flag = 15
+                        if flag:
+                            hidden_fires_post[j][i] = 1
+                            flag = flag - 1
+
+                    flag = 0
+                    for j in reversed(range(2000)):
+                        if (hidden_fires[j][i]):
+                            flag = 30
+                        if flag:
+                            hidden_fires_pre[j][i] = 1
+                            flag = flag - 1
+
+                
+                input_fires = np.transpose(input_fires)
+                hidden_fires_post = np.transpose(hidden_fires_post)
+                hidden_fires_pre = np.transpose(hidden_fires_pre)
+
+                post = np.zeros(shape=(16,64))
+                pre = np.zeros(shape=(16,64))
+                for i in range(64):
+                    for j in range(16):
+                        post[j][i] = np.count_nonzero(np.logical_and(input_fires[j], hidden_fires_post[i]))
+                        pre[j][i] = np.count_nonzero(np.logical_and(input_fires[j], hidden_fires_pre[i]))
+
+                eligl1 = pre - post
+                neg_idx = np.where(eligl1 < 0)
+                eligl1[neg_idx] = 0
+                ########
                 output_fires_post = np.zeros(shape=(2000,4))
                 output_fires_pre = np.zeros(shape=(2000,4))
 
@@ -224,32 +271,25 @@ class Solver():
                             flag = flag - 1
 
                 
-                input_fires = np.transpose(input_fires)
+                hidden_fires = np.transpose(hidden_fires)
                 output_fires_post = np.transpose(output_fires_post)
                 output_fires_pre = np.transpose(output_fires_pre)
 
-                post = np.zeros(shape=(16,4))
-                pre = np.zeros(shape=(16,4))
+                post = np.zeros(shape=(64,4))
+                pre = np.zeros(shape=(64,4))
                 for i in range(4):
-                    for j in range(16):
-                        post[j][i] = np.count_nonzero(np.logical_and(input_fires[j], output_fires_post[i]))
-                        pre[j][i] = np.count_nonzero(np.logical_and(input_fires[j], output_fires_pre[i]))
+                    for j in range(64):
+                        post[j][i] = np.count_nonzero(np.logical_and(hidden_fires[j], output_fires_post[i]))
+                        pre[j][i] = np.count_nonzero(np.logical_and(hidden_fires[j], output_fires_pre[i]))
 
-                # this was for spike count elig
-                '''
-                if ( np.max(elig) ):
-                    elig = elig / np.max(elig)
-                '''
-
-                # stdp eligibility.
-                elig = pre - post
-                neg_idx = np.where(elig < 0)
-                elig[neg_idx] = 0
+                eligl2 = pre - post
+                neg_idx = np.where(eligl2 < 0)
+                eligl2[neg_idx] = 0
+                ################
 
                 if (np.random.random() <= self.epsilon):
                     action = random.randint(0, 3)
                 else:
-                    # action = np.argmax(output_fired_counts)
                     action = np.random.choice(np.flatnonzero(output_fired_counts == output_fired_counts.max()))
 
                 next_state, reward, done = self.env.step(action)
@@ -257,17 +297,19 @@ class Solver():
                 reward_sum = reward_sum + reward
                 self.remember(state, action, reward, next_state, done)
 
-                gradient = elig * reward_sum * (1/1000)
-                Wsyn = (9 * Wsyn + gradient) / (9 + elig)
+                ################
+                gradient = eligl1 * reward_sum * (1/1000)
+                Wsynl1 = (9 * Wsynl1 + gradient) / (9 + eligl1)
+
+                gradient = eligl2 * reward_sum * (1/1000)
+                Wsynl2 = (9 * Wsynl2 + gradient) / (9 + eligl2)
+                ################
 
                 itr = str(e) + " "
                 itr = itr + str(step) + "/" + str(20) + " "
                 itr = itr + str(state_to_num(state)) + " " + str(action) + " " + str(state_to_num(next_state)) + " "
                 itr = itr + str(reward) + " "
                 print (itr)
-                # print (elig)
-                # print (output_fired_counts)
-                # print(Wsyn)
 
                 state = next_state
 
