@@ -140,6 +140,7 @@ class Solver():
         time_steps = int(T / dt)
         # Wsyn = np.ones(shape=(16, 4)) * 0.5
         Wsyn = np.random.normal(1.0, 0.5, size=(16,4))
+        Wsyn = np.absolute(Wsyn)
 
         scores = deque(maxlen=100)
         for e in range(1000):
@@ -162,11 +163,14 @@ class Solver():
                 ################
                 v = np.zeros(4)
 
+                synapse_fires = []
+                output_fire = []
+
                 fired = np.zeros(4)
                 not_fired = np.zeros(4)
                 fired_counts = np.zeros(4)
 
-                rates = state * 0.1
+                rates = state * 0.02
                 elig = np.zeros(shape=(16, 4))
 
                 for t in range(time_steps):
@@ -175,7 +179,7 @@ class Solver():
                     f = np.random.rand(1, 16) < rates * dt
                     Isyn = np.dot(f, Wsyn)
                     
-                    dv = 0.04 * v * v
+                    dv = 0.1 * v * v
                     v = v + (dv + Isyn) * dt
                     v = v[0]
 
@@ -183,7 +187,7 @@ class Solver():
                     not_fired = v < 35
                     fired_counts = fired_counts + fired
 
-                    elig = elig + (np.repeat(np.transpose(f), 4, axis=1)) * 1000 - 1
+                    elig = elig + (np.repeat(np.transpose(f), 4, axis=1)) * Wsyn * np.random.normal(1.0, 0.3, size=(16, 4)) * 1000 - 1
                     neg_idx = np.where(elig < 0)
                     elig[neg_idx] = 0
                     # elig = elig + (np.repeat(np.transpose(f), 4, axis=1) * 1000) - 1
@@ -197,7 +201,8 @@ class Solver():
                                 elig[ii][jj] = max(elig[ii][jj]-1, 0)
                     '''
                 ################
-                elig = elig / np.max(elig)
+                if ( np.max(elig) ):
+                    elig = elig / np.max(elig)
                 # print (elig)
                 print (fired_counts)
 
@@ -214,7 +219,7 @@ class Solver():
                 self.remember(state, action, reward, next_state, done)
 
                 gradient = elig * reward_sum * (1/1000)
-                Wsyn = (9 * Wsyn + gradient) / (9 + elig)
+                Wsyn = (4 * Wsyn + gradient) / (4 + elig)
                 print(Wsyn)
 
                 itr = str(e) + " "
