@@ -143,7 +143,7 @@ class Solver():
         Wsyn = np.absolute(Wsyn)
 
         scores = deque(maxlen=100)
-        for e in range(1000):
+        for e in range(5000):
 
             state = self.env.reset()
             state = num_to_state(state)
@@ -160,58 +160,97 @@ class Solver():
             # Wsyn = self.model.get_weights()[0] / np.average(self.model.get_weights()[0])
             # Wsyn = self.spike_weights()
             while not done:
+                step = step + 1
+
                 ################
                 v = np.zeros(4)
 
-                synapse_fires = []
-                output_fire = []
+                input_fires = np.zeros(shape=(2000,16))
+                output_fires = np.zeros(shape=(2000,4))
 
-                fired = np.zeros(4)
-                not_fired = np.zeros(4)
-                fired_counts = np.zeros(4)
+                output_fired = np.zeros(4)
+                output_not_fired = np.zeros(4)
+                output_fired_counts = np.zeros(4)
 
                 rates = state * 0.02
                 elig = np.zeros(shape=(16, 4))
 
                 for t in range(time_steps):
-                    v = v * not_fired
+                    v = v * output_not_fired
                   
-                    f = np.random.rand(1, 16) < rates * dt
-                    Isyn = np.dot(f, Wsyn)
+                    input_fired = np.random.rand(1, 16) < rates * dt
+                    input_fires[t] = input_fired
+
+                    Isyn = np.dot(input_fired, Wsyn)
+                    Csyn = np.sum(Wsyn, axis=0) ** 2
+                    # print (Isyn, Csyn)
+                    # print (np.average(Wsyn))
                     
-                    dv = 0.1 * v * v
-                    v = v + (dv + Isyn) * dt
+                    dv = 0.02 * v * v
+                    v = v + (dv + Isyn + 0.01) * dt
                     v = v[0]
 
-                    fired = v > 35
-                    not_fired = v < 35
-                    fired_counts = fired_counts + fired
+                    output_fired = v > 35
+                    output_not_fired = v < 35
+                    output_fired_counts = output_fired_counts + output_fired
+                    output_fires[t] = output_fired
 
-                    elig = elig + (np.repeat(np.transpose(f), 4, axis=1)) * Wsyn * np.random.normal(1.0, 0.3, size=(16, 4)) * 1000 - 1
+                    # spike count eligibility.
+                    '''
+                    elig = elig + (np.repeat(np.transpose(input_fired), 4, axis=1)) * Wsyn * np.random.normal(1.0, 0.3, size=(16, 4)) * 1000 - 1
                     neg_idx = np.where(elig < 0)
                     elig[neg_idx] = 0
-                    # elig = elig + (np.repeat(np.transpose(f), 4, axis=1) * 1000) - 1
-
-                    '''
-                    for ii in range(16):
-                        for jj in range(4):
-                            if jj in fired:
-                                elig[ii][jj] = elig[ii][jj] + 10
-                            else:
-                                elig[ii][jj] = max(elig[ii][jj]-1, 0)
                     '''
                 ################
+
+                output_fires_post = np.zeros(shape=(2000,4))
+                output_fires_pre = np.zeros(shape=(2000,4))
+
+                for i in range(4):
+                    flag = 0
+                    for j in range(2000):
+                        if (output_fires[j][i]):
+                            flag = 15
+                        if flag:
+                            output_fires_post[j][i] = 1
+                            flag = flag - 1
+
+                    flag = 0
+                    for j in reversed(range(2000)):
+                        if (output_fires[j][i]):
+                            flag = 30
+                        if flag:
+                            output_fires_pre[j][i] = 1
+                            flag = flag - 1
+
+                
+                input_fires = np.transpose(input_fires)
+                output_fires_post = np.transpose(output_fires_post)
+                output_fires_pre = np.transpose(output_fires_pre)
+
+                post = np.zeros(shape=(16,4))
+                pre = np.zeros(shape=(16,4))
+                for i in range(4):
+                    for j in range(16):
+                        post[j][i] = np.count_nonzero(np.logical_and(input_fires[j], output_fires_post[i]))
+                        pre[j][i] = np.count_nonzero(np.logical_and(input_fires[j], output_fires_pre[i]))
+
+                # this was for spike count elig
+                '''
                 if ( np.max(elig) ):
                     elig = elig / np.max(elig)
-                # print (elig)
-                print (fired_counts)
+                '''
 
-                step = step + 1
+                # stdp eligibility.
+                elig = pre - post
+                neg_idx = np.where(elig < 0)
+                elig[neg_idx] = 0
 
                 if (np.random.random() <= self.epsilon):
                     action = random.randint(0, 3)
                 else:
-                    action = np.argmax(fired_counts)
+                    # action = np.argmax(output_fired_counts)
+                    action = np.random.choice(np.flatnonzero(output_fired_counts == output_fired_counts.max()))
 
                 next_state, reward, done = self.env.step(action)
                 next_state = num_to_state(next_state)
@@ -219,14 +258,16 @@ class Solver():
                 self.remember(state, action, reward, next_state, done)
 
                 gradient = elig * reward_sum * (1/1000)
-                Wsyn = (4 * Wsyn + gradient) / (4 + elig)
-                print(Wsyn)
+                Wsyn = (9 * Wsyn + gradient) / (9 + elig)
 
                 itr = str(e) + " "
                 itr = itr + str(step) + "/" + str(20) + " "
                 itr = itr + str(state_to_num(state)) + " " + str(action) + " " + str(state_to_num(next_state)) + " "
                 itr = itr + str(reward) + " "
                 print (itr)
+                # print (elig)
+                # print (output_fired_counts)
+                # print(Wsyn)
 
                 state = next_state
 
