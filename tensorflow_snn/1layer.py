@@ -167,14 +167,16 @@ class Solver():
 
                 ################
                 Isyn = np.zeros(4)
+                g = np.zeros(shape=(1, 16))
                 v = np.zeros(4)
                 u = np.zeros(4)
 
                 input_fires = np.zeros(shape=(2000,16))
-                output_fires = np.zeros(shape=(2000,4))
+                input_fired_counts = np.zeros(16)
 
                 output_fired = np.zeros(4)
                 output_not_fired = np.zeros(4)
+                output_fires = np.zeros(shape=(2000,4))
                 output_fired_counts = np.zeros(4)
 
                 # what is freq / ms
@@ -183,29 +185,43 @@ class Solver():
                 rates = state * (25.0 / 1000.0)
 
                 for t in range(time_steps):
+                    '''
                     Isyn = Isyn - 0.5
                     neg_idx = np.where(Isyn < 0)
                     Isyn[neg_idx] = 0
-
-                    v = v * output_not_fired
-                    v = v + output_fired * -65
-                    u = u + output_fired * 8
+                    '''
                   
                     input_fired = np.random.rand(1, 16) < rates * dt
                     input_fires[t] = input_fired
+                    input_fired_counts = input_fired_counts + input_fired
 
-                    Isyn = Isyn + np.dot(input_fired, Wsyn) * 25
+                    '''
+                    Isyn = Isyn + np.dot(input_fired, Wsyn) * 15 # average weight = 0.5, want 7 for current.
+                    '''
+
+                    # this is slightly different than the matlab code.
+                    # them: 1000x100 * 100x1 (1000x1)
+                    # us:   1x16     * 16x4  (1x4)
+                    # 100, 1000 = in, out
+                    # 16, 4     = in, out
+                    g = g + input_fired
+                    Isyn = np.dot(g, Wsyn)
+                    Isyn = Isyn - (np.dot(g, Wsyn) * v)
+                    g = (1 - dt/10) * g
+
                     dv = (0.04 * v + 5) * v + 140 - u
                     v = v + (dv + Isyn) * dt
                     du = 0.02 * (0.2 * v - u)
                     u = u + dt * du
 
-                    # print (v)
-
                     output_fired = v > 35
                     output_not_fired = v < 35
                     output_fires[t] = output_fired
                     output_fired_counts = output_fired_counts + output_fired
+
+                    v = v * output_not_fired
+                    v = v + output_fired * -65
+                    u = u + output_fired * 8
 
                 output_fires_post = np.zeros(shape=(2000,4))
                 output_fires_pre = np.zeros(shape=(2000,4))
@@ -214,7 +230,7 @@ class Solver():
                     flag = 0
                     for j in range(2000):
                         if (output_fires[j][i]):
-                            flag = 15
+                            flag = 10
                         if flag:
                             output_fires_post[j][i] = 1
                             flag = flag - 1
@@ -222,7 +238,7 @@ class Solver():
                     flag = 0
                     for j in reversed(range(2000)):
                         if (output_fires[j][i]):
-                            flag = 30
+                            flag = 10
                         if flag:
                             output_fires_pre[j][i] = 1
                             flag = flag - 1
@@ -242,6 +258,7 @@ class Solver():
                 elig = pre - post
                 neg_idx = np.where(elig < 0)
                 elig[neg_idx] = 0
+                elig = elig * np.random.normal(1.0, 0.4, size=(16,4))
 
                 if (np.random.random() <= self.epsilon):
                     action = random.randint(0, 3)
@@ -263,6 +280,16 @@ class Solver():
                 # print (itr)
 
                 ################
+                print(output_fired_counts)
+                '''
+                print("-------------")
+                print(input_fired_counts)
+                print(output_fired_counts)
+                print (Wsyn[state_to_num(state)])
+                print (itr)
+                '''
+
+                '''
                 if np.average(output_fired_counts) < 4:
                     print("-------------")
                     print(output_fired_counts)
@@ -273,6 +300,7 @@ class Solver():
                     print(output_fired_counts)
                     print (Wsyn[state_to_num(state)])
                     print (itr)
+                '''
                 ################
 
                 state = next_state
