@@ -1,7 +1,7 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-from ez_env import Env
+from ez_env_draw import Env
 
 import random
 import math
@@ -64,15 +64,15 @@ def disp(x):
     print ("")
 
 def num_to_state(state):
-    ret = np.zeros(16)
-    for i in range(16):
+    ret = np.zeros(25)
+    for i in range(25):
         if state == i:
             ret[i] = 1
     # return np.reshape(ret, 16)
-    return np.reshape(ret, [1, 16])
+    return np.reshape(ret, [1, 25])
 
 def state_to_num(state):
-    for i in range(16):
+    for i in range(25):
         if state[0][i]:
             return i
 
@@ -96,10 +96,10 @@ class Solver():
         if max_env_steps is not None: self.env._max_episode_steps = max_env_steps
 
         self.model = Sequential()
-        self.model.add(Dense(4, input_dim=16, activation='linear', use_bias=False, kernel_constraint=non_neg()))
+        self.model.add(Dense(4, input_dim=25, activation='linear', use_bias=False, kernel_constraint=non_neg()))
         self.model.compile(loss='mse', optimizer=Adam(lr=self.alpha))
 
-        init_weights = [np.ones(shape=(16, 4)) * 1000.0, np.zeros(shape=(4))]
+        init_weights = [np.ones(shape=(25, 4)) * 1000.0, np.zeros(shape=(4))]
         self.model.set_weights(init_weights)
 
     def remember(self, state, action, reward, next_state, done):
@@ -140,7 +140,7 @@ class Solver():
         time_steps = int(T / dt)
 
         #############
-        Wsyn = np.random.normal(1.0, 0.25, size=(4,16))
+        Wsyn = np.random.normal(1.0, 0.25, size=(4,25))
         Wsyn = np.transpose(Wsyn)
 
         # Wsyn = np.random.normal(1.0, 0.25, size=(16,4))
@@ -162,18 +162,18 @@ class Solver():
             if (np.mean(scores) > 0.5) and (e > 100):
                 break
 
-            elig = np.zeros(shape=(16,4))
+            elig = np.zeros(shape=(25,4))
             while not done:
                 step = step + 1
 
                 ################
                 Isyn = np.zeros(4)
-                g = np.zeros(shape=(1, 16))
+                g = np.zeros(shape=(1, 25))
                 v = np.zeros(4)
                 u = np.zeros(4)
 
-                input_fires = np.zeros(shape=(2000,16))
-                input_fired_counts = np.zeros(16)
+                input_fires = np.zeros(shape=(2000,25))
+                input_fired_counts = np.zeros(25)
 
                 output_fired = np.zeros(4)
                 output_not_fired = np.zeros(4)
@@ -192,7 +192,7 @@ class Solver():
                     Isyn[neg_idx] = 0
                     '''
                   
-                    input_fired = np.random.rand(1, 16) < rates * dt
+                    input_fired = np.random.rand(1, 25) < rates * dt
                     input_fires[t] = input_fired
                     input_fired_counts = input_fired_counts + input_fired
 
@@ -250,10 +250,10 @@ class Solver():
                 output_fires_post = np.transpose(output_fires_post)
                 output_fires_pre = np.transpose(output_fires_pre)
 
-                post = np.zeros(shape=(16,4))
-                pre = np.zeros(shape=(16,4))
+                post = np.zeros(shape=(25,4))
+                pre = np.zeros(shape=(25,4))
                 for i in range(4):
-                    for j in range(16):
+                    for j in range(25):
                         post[j][i] = np.count_nonzero(np.logical_and(input_fires[j], output_fires_post[i]))
                         pre[j][i] = np.count_nonzero(np.logical_and(input_fires[j], output_fires_pre[i]))
 
@@ -267,20 +267,13 @@ class Solver():
                 reward_sum = reward_sum + reward
                 self.remember(state, action, reward, next_state, done)
 
-                '''
-                elig = pre - post
-                neg_idx = np.where(elig < 0)
-                elig[neg_idx] = 0
-                elig = elig * np.random.normal(1.0, 0.4, size=(16,4))
-                '''
-
                 elig[state_to_num(state)][action] = 16
                 elig = elig - 1
                 neg_idx = np.where(elig < 0)
                 elig[neg_idx] = 0
 
                 gradient = elig * reward_sum * (1 / 1000)
-                Wsyn = (9 * Wsyn + gradient) / (9 + elig)
+                Wsyn = (80 * Wsyn + gradient) / (80 + elig)
 
                 itr = str(e) + " "
                 itr = itr + str(step) + "/" + str(20) + " "
@@ -289,7 +282,7 @@ class Solver():
                 # print (itr)
 
                 ################
-                print(output_fired_counts)
+                # print(output_fired_counts)
                 '''
                 print("-------------")
                 print(input_fired_counts)
@@ -322,6 +315,33 @@ class Solver():
 
                     scores.append(reward_sum > 1000)
                     mean_score = np.mean(scores)
+
+                    pWsyn = np.copy(Wsyn).reshape(5,5,4)
+                    '''
+                    for i in range(5):
+                        for j in range(5):
+                            for action in range(4):
+                                pWsyn[i][j][action] = i * 5 + j * 4 + action
+                    '''
+
+                    '''
+                    tmp = np.copy(pWsyn)
+                    pWsyn[:, 0, :] = tmp[:, 4, :]
+                    pWsyn[:, 1, :] = tmp[:, 3, :]
+                    pWsyn[:, 2, :] = tmp[:, 2, :]
+                    pWsyn[:, 3, :] = tmp[:, 1, :]
+                    pWsyn[:, 4, :] = tmp[:, 0, :]
+                    '''
+
+                    tmp = np.copy(pWsyn)
+                    pWsyn[0, :, :] = tmp[4, :, :]
+                    pWsyn[1, :, :] = tmp[3, :, :]
+                    pWsyn[2, :, :] = tmp[2, :, :]
+                    pWsyn[3, :, :] = tmp[1, :, :]
+                    pWsyn[4, :, :] = tmp[0, :, :]
+
+                    print(pWsyn)
+                    self.env.print_value_all(pWsyn)
 
                     print (e, step, mean_score, self.epsilon)
 
