@@ -6,6 +6,8 @@ import math
 import cPickle as pickle
 import gzip
 
+from collections import deque
+
 def load_data():
   global training_set, training_labels, testing_set, testing_labels
   f = gzip.open('mnist.pkl.gz', 'rb')
@@ -37,6 +39,10 @@ Wsyn = Wsyn * (1e-2 / np.average(Wsyn))
 
 #############
 
+spikes = deque(maxlen=100)
+labels = deque(maxlen=100)
+assignments = np.zeros(200)
+
 ex_number = 0
 start_input_intensity = 5
 input_intensity = start_input_intensity
@@ -44,7 +50,7 @@ input_intensity = start_input_intensity
 while ex_number < 5000:
 
     prev = Wsyn
-
+    
     ################
     Isyn = np.zeros(28*28)
     g = np.zeros(shape=(1, 28*28))
@@ -130,10 +136,13 @@ while ex_number < 5000:
 
     if np.sum(output_fired_counts) < 10:
         input_intensity += 1
+        '''
         print (np.average(input_fired_counts), np.max(input_fired_counts), np.sum(input_fired_counts))
         print (np.average(output_fired_counts), np.max(output_fired_counts), np.sum(output_fired_counts))
+        '''
     else:
         #################
+        '''
         print ("---------")
         print (ex_number, input_intensity)
 
@@ -146,6 +155,50 @@ while ex_number < 5000:
 
         print ( np.average(np.absolute(Wsyn)),     np.max(np.absolute(Wsyn))     )
         print ( np.average(np.absolute(gradient)), np.max(np.absolute(gradient)) )
+        '''
+
+        # were getting : (11, 1, 200) for print (np.shape(np.asarray(spikes)))
+        # we want (100, 200), (11, 200)
+
+        spikes.append(output_fired_counts.flatten())
+        labels.append(training_labels[ex_number])
+
+        print (np.sum(input_fired_counts), np.sum(output_fired_counts), training_labels[ex_number])
+
+        if ( ex_number >= 10 and (ex_number % 10 == 0) ):
+            assignments = np.zeros(200)
+            maximum_rate = np.zeros(200)
+
+            for num in range(10):
+                idx = np.where(np.asarray(labels) == num)[0]
+                num_assignments = len(idx)
+
+                if num_assignments > 0:
+                    rate = (1.0 * np.sum(np.asarray(spikes)[idx], axis = 0)) / num_assignments
+
+                    print (num_assignments)
+                    # print (np.shape(np.asarray(spikes)))
+                    # print np.asarray(spikes)[idx]
+
+                    for out_neuron_idx in range(200):
+                        if maximum_rate[out_neuron_idx] < rate[out_neuron_idx]:
+                            maximum_rate[out_neuron_idx] = rate[out_neuron_idx]
+                            assignments[out_neuron_idx] = num
+
+
+            print (maximum_rate)
+            print (assignments)
+
+        '''
+        if ( ex_number >= 200 and (ex_number % 100 == 0) ):
+            summed_rates = [0] * 10
+            num_assignments = [0] * 10
+            for num in range(10):
+                num_assignments[num] = len(np.where(assignments == num)[0])
+                if num_assignments[num] > 0:
+                    summed_rates[num] = np.sum(spike_rates[assignments == num]) / num_assignments[num]
+            return np.argsort(summed_rates)[::-1]
+        '''
 
         # print (np.average(Wsyn))
         # print (np.sum(Wsyn))
