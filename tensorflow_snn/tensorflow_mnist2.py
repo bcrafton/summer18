@@ -119,16 +119,21 @@ def calc_gradient(idx, start_idx, end_idx, gradient, spikes, labels):
 
         
         input_fires = np.transpose(input_fires)
-        output_fires_post = np.transpose(output_fires_post)
-        output_fires_pre = np.transpose(output_fires_pre)
+        # output_fires_post = np.transpose(output_fires_post)
+        # output_fires_pre = np.transpose(output_fires_pre)
 
         post = np.zeros(shape=(28*28,200))
         pre = np.zeros(shape=(28*28,200))
 
+        '''
         for i in range(200):
             for j in range(28*28):
                 post[j][i] = np.count_nonzero(np.logical_and(input_fires[j], output_fires_post[i]))
                 pre[j][i] = np.count_nonzero(np.logical_and(input_fires[j], output_fires_pre[i]))
+        '''
+
+        post = np.dot(input_fires, output_fires_post)
+        pre = np.dot(input_fires, output_fires_pre)
 
         if np.sum(output_fired_counts) < 10:
             input_intensity += 1
@@ -146,30 +151,30 @@ def calc_gradient(idx, start_idx, end_idx, gradient, spikes, labels):
 assignments = np.zeros(200)
 
 ex_number = 0
-while ex_number < 25000:
+while ex_number < 10000:
     threads = []
     
-    gradient = [None] * 16
-    spikes = [None] * 16
-    labels = [None] * 16
+    gradient = [None] * 4
+    spikes = [None] * 4
+    labels = [None] * 4
     
     all_spikes = []
     all_labels = []
     
-    for t in range(16):
+    for t in range(4):
         start_idx = ex_number + t * 100
         end_idx = ex_number + (t + 1) * 100
         print(t, start_idx, end_idx)
         thread = threading.Thread(target=calc_gradient, args=(t, start_idx, end_idx, gradient, spikes, labels))
         threads.append(thread)
         
-    for t in range(16):
+    for t in range(4):
         threads[t].start()
     
-    for t in range(16):
+    for t in range(4):
         threads[t].join()
     
-    for t in range(16):
+    for t in range(4):
         Wsyn = Wsyn + gradient[t]
         all_spikes.extend(spikes[t])
         all_labels.extend(labels[t])
@@ -179,11 +184,11 @@ while ex_number < 25000:
     for i in range(200):
         Wsyn[:, i] *= col_norm[i]
         
-    ex_number += 16 * 100
+    ex_number += 4 * 100
 
     ##############################################
 
-    if ( ex_number >= 1 and (ex_number % 3200 == 1600) ):
+    if ( ex_number >= 1 and (ex_number % 800 == 400) ):
         assignments = np.zeros(200)
         maximum_rate = np.zeros(200)
 
@@ -202,9 +207,9 @@ while ex_number < 25000:
         print (maximum_rate)
         print (assignments)
 
-    if ( ex_number >= 1 and (ex_number % 3200 == 0) ):
+    if ( ex_number >= 1 and (ex_number % 800 == 0) ):
         correct = 0
-        for ex in range(1600):
+        for ex in range(400):
             spike_sums = np.zeros(10)
             for num in range(10):
                 idx = np.where(np.asarray(assignments) == num)[0]
@@ -216,7 +221,7 @@ while ex_number < 25000:
             correct += (predict[-1] == all_labels[ex])
           
 
-        print (1.0 * correct / 1600)
+        print (1.0 * correct / 400)
 
         #################
 

@@ -125,10 +125,18 @@ while ex_number < 25000:
     post = np.zeros(shape=(28*28,200))
     pre = np.zeros(shape=(28*28,200))
 
+    '''
     for i in range(200):
         for j in range(28*28):
             post[j][i] = np.count_nonzero(np.logical_and(input_fires[j], output_fires_post[i]))
             pre[j][i] = np.count_nonzero(np.logical_and(input_fires[j], output_fires_pre[i]))
+    '''
+
+    # compare = np.dot(input_fires, np.transpose(output_fires_post))
+    # print (np.equal( compare, post ))
+
+    post = np.dot(input_fires, np.transpose(output_fires_post))
+    pre = np.dot(input_fires, np.transpose(output_fires_pre))
 
     gradient = (pre - post) * (1e-3)
     Wsyn = Wsyn + gradient
