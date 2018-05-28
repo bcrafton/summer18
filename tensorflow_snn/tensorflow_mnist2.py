@@ -143,35 +143,33 @@ def calc_gradient(idx, start_idx, end_idx, gradient, spikes, labels):
     
 #############
 
-spikes = deque(maxlen=1000)
-labels = deque(maxlen=1000)
 assignments = np.zeros(200)
 
 ex_number = 0
-for ex_number in range(25000):
+while ex_number < 25000:
     threads = []
     
-    gradient = [None] * 4
-    spikes = [None] * 4
-    labels = [None] * 4
+    gradient = [None] * 16
+    spikes = [None] * 16
+    labels = [None] * 16
     
     all_spikes = []
     all_labels = []
     
-    for t in range(4):
-        start_idx = ex_number + t * 1
-        end_idx = ex_number + (t + 1) * 1
+    for t in range(16):
+        start_idx = ex_number + t * 100
+        end_idx = ex_number + (t + 1) * 100
         print(t, start_idx, end_idx)
         thread = threading.Thread(target=calc_gradient, args=(t, start_idx, end_idx, gradient, spikes, labels))
         threads.append(thread)
         
-    for t in range(4):
+    for t in range(16):
         threads[t].start()
     
-    for t in range(4):
+    for t in range(16):
         threads[t].join()
     
-    for t in range(4):
+    for t in range(16):
         Wsyn = Wsyn + gradient[t]
         all_spikes.extend(spikes[t])
         all_labels.extend(labels[t])
@@ -181,19 +179,17 @@ for ex_number in range(25000):
     for i in range(200):
         Wsyn[:, i] *= col_norm[i]
         
-    ex_number += 4 * 1
+    ex_number += 16 * 100
 
     ##############################################
 
-    if ( ex_number >= 1 and (ex_number % 20 == 10) ):
+    if ( ex_number >= 1 and (ex_number % 3200 == 1600) ):
         assignments = np.zeros(200)
         maximum_rate = np.zeros(200)
 
         for num in range(10):
             idx = np.where(np.asarray(all_labels) == num)[0]
             num_assignments = len(idx)
-
-            print(np.shape(np.asarray(all_spikes)))
 
             if num_assignments > 0:
                 rate = (1.0 * np.sum(np.asarray(all_spikes)[idx], axis = 0)) / num_assignments
@@ -206,23 +202,21 @@ for ex_number in range(25000):
         print (maximum_rate)
         print (assignments)
 
-    if ( ex_number >= 1 and (ex_number % 20 == 0) ):
+    if ( ex_number >= 1 and (ex_number % 3200 == 0) ):
         correct = 0
-        for ex in range(800):
+        for ex in range(1600):
             spike_sums = np.zeros(10)
             for num in range(10):
                 idx = np.where(np.asarray(assignments) == num)[0]
                 if ( len(idx) > 0 ):
-                    # print ( np.sum(all_spikes[ex][idx]), len(idx) )
                     spike_sums[num] = 1.0 * np.sum(all_spikes[ex][idx]) / len(idx)
 
-            # print (spike_sums)
             predict = np.argsort(spike_sums)
             print (predict, predict[-1], all_labels[ex])
             correct += (predict[-1] == all_labels[ex])
           
 
-        print (1.0 * correct / 100)
+        print (1.0 * correct / 1600)
 
         #################
 
