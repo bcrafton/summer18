@@ -46,8 +46,8 @@ for i in range(20*20):
 
 #############
 
-spikes = deque(maxlen=100)
-labels = deque(maxlen=100)
+spikes = deque(maxlen=1000)
+labels = deque(maxlen=1000)
 assignments = np.zeros(20*20)
 
 ex_number = 0
@@ -172,7 +172,7 @@ while ex_number < 25000:
 
         print (training_labels[ex_number], np.sum(input_fired_counts), np.sum(output_fired_counts), np.sum(pre), np.sum(post), np.sum(pre - post))
 
-        if ( ex_number >= 1 and (ex_number % 200 == 100) ):
+        if ( ex_number >= 1 and (ex_number % 2000 == 1000) ):
             assignments = np.zeros(20*20)
             maximum_rate = np.zeros(20*20)
 
@@ -195,9 +195,9 @@ while ex_number < 25000:
             print (maximum_rate)
             print (assignments)
 
-        if ( ex_number >= 1 and (ex_number % 200 == 0) ):
+        if ( ex_number >= 1 and (ex_number % 2000 == 0) ):
             correct = 0
-            for ex in range(100):
+            for ex in range(1000):
                 spike_sums = np.zeros(10)
                 for num in range(10):
                     idx = np.where(np.asarray(assignments) == num)[0]
