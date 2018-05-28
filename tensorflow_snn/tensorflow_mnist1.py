@@ -33,15 +33,22 @@ time_steps = int(T / dt)
 #############
 
 load_data()
-Wsyn = np.random.normal(0, 1.0, size=(28*28, 200))
+# Wsyn = np.random.normal(0, 1.0, size=(28*28, 20*20))
+Wsyn = np.load('XeAe.npy')
 Wsyn = np.absolute(Wsyn)
-Wsyn = Wsyn * (1e-2 / np.average(Wsyn))
+
+# Wsyn = Wsyn * (1e-2 / np.average(Wsyn))
+
+col_norm = np.average(Wsyn, axis = 0)
+col_norm = 1e-2 / col_norm
+for i in range(20*20):
+    Wsyn[:, i] *= col_norm[i]
 
 #############
 
 spikes = deque(maxlen=100)
 labels = deque(maxlen=100)
-assignments = np.zeros(200)
+assignments = np.zeros(20*20)
 
 ex_number = 0
 start_input_intensity = 5
@@ -54,16 +61,16 @@ while ex_number < 25000:
     ################
     Isyn = np.zeros(28*28)
     g = np.zeros(shape=(1, 28*28))
-    v = np.zeros(200)
-    u = np.zeros(200)
+    v = np.zeros(20*20)
+    u = np.zeros(20*20)
 
     input_fires = np.zeros(shape=(time_steps, 28*28))
     input_fired_counts = np.zeros(28*28)
 
-    output_fired = np.zeros(200)
-    output_not_fired = np.zeros(200)
-    output_fires = np.zeros(shape=(time_steps, 200))
-    output_fired_counts = np.zeros(200)
+    output_fired = np.zeros(20*20)
+    output_not_fired = np.zeros(20*20)
+    output_fires = np.zeros(shape=(time_steps, 20*20))
+    output_fired_counts = np.zeros(20*20)
 
     # what is freq / ms
     # Hz / 1000
@@ -97,10 +104,10 @@ while ex_number < 25000:
         v = v * output_not_fired
         v = v + output_fired * 0
 
-    output_fires_post = np.zeros(shape=(time_steps,200))
-    output_fires_pre = np.zeros(shape=(time_steps,200))
+    output_fires_post = np.zeros(shape=(time_steps,20*20))
+    output_fires_pre = np.zeros(shape=(time_steps,20*20))
 
-    for i in range(200):
+    for i in range(20*20):
         flag = 0
         for j in range(time_steps):
             if (output_fires[j][i]):
@@ -122,23 +129,17 @@ while ex_number < 25000:
     output_fires_post = np.transpose(output_fires_post)
     output_fires_pre = np.transpose(output_fires_pre)
 
-    post = np.zeros(shape=(28*28,200))
-    pre = np.zeros(shape=(28*28,200))
+    post = np.zeros(shape=(28*28,20*20))
+    pre = np.zeros(shape=(28*28,20*20))
 
-    for i in range(200):
+    for i in range(20*20):
         for j in range(28*28):
             post[j][i] = np.count_nonzero(np.logical_and(input_fires[j], output_fires_post[i]))
             pre[j][i] = np.count_nonzero(np.logical_and(input_fires[j], output_fires_pre[i]))
 
     gradient = (pre - post) * (1e-3)
-    Wsyn = Wsyn + gradient
-
+    # Wsyn = Wsyn + gradient
     # Wsyn = Wsyn * (1e-2 / np.average(Wsyn))
-
-    col_norm = np.average(Wsyn, axis = 0)
-    col_norm = 1e-2 / col_norm
-    for i in range(200):
-        Wsyn[:, i] *= col_norm[i]
 
     if np.sum(output_fired_counts) < 10:
         input_intensity += 1
@@ -172,8 +173,8 @@ while ex_number < 25000:
         print (training_labels[ex_number], np.sum(input_fired_counts), np.sum(output_fired_counts), np.sum(pre), np.sum(post), np.sum(pre - post))
 
         if ( ex_number >= 1 and (ex_number % 200 == 100) ):
-            assignments = np.zeros(200)
-            maximum_rate = np.zeros(200)
+            assignments = np.zeros(20*20)
+            maximum_rate = np.zeros(20*20)
 
             for num in range(10):
                 idx = np.where(np.asarray(labels) == num)[0]
@@ -186,7 +187,7 @@ while ex_number < 25000:
                     # print (np.shape(np.asarray(spikes)))
                     # print np.asarray(spikes)[idx]
 
-                    for out_neuron_idx in range(200):
+                    for out_neuron_idx in range(20*20):
                         if maximum_rate[out_neuron_idx] < rate[out_neuron_idx]:
                             maximum_rate[out_neuron_idx] = rate[out_neuron_idx]
                             assignments[out_neuron_idx] = num
