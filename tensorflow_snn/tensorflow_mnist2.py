@@ -49,7 +49,7 @@ def calc_gradient(idx, start_idx, end_idx, gradient, spikes, labels):
 
     while start_idx < end_idx:
     
-        print ("thread #" + str(idx) + " " + str(start_idx))
+        print ("thread #" + str(idx) + " " + str(start_idx) + " " + str(input_intensity))
 
         ################
         Isyn = np.zeros(28*28)
@@ -104,7 +104,7 @@ def calc_gradient(idx, start_idx, end_idx, gradient, spikes, labels):
             flag = 0
             for j in range(time_steps):
                 if (output_fires[j][i]):
-                    flag = 10
+                    flag = 9
                 if flag:
                     output_fires_post[j][i] = 1
                     flag = flag - 1
