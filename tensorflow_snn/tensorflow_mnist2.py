@@ -104,7 +104,7 @@ def calc_gradient(idx, start_idx, end_idx, gradient, spikes, labels):
             flag = 0
             for j in range(time_steps):
                 if (output_fires[j][i]):
-                    flag = 9
+                    flag = 10
                 if flag:
                     output_fires_post[j][i] = 1
                     flag = flag - 1
@@ -140,7 +140,7 @@ def calc_gradient(idx, start_idx, end_idx, gradient, spikes, labels):
         else:
             input_intensity = start_input_intensity
             
-            gradient[idx] = gradient[idx] + (pre - post) * (1e-3)
+            gradient[idx] = gradient[idx] + (pre - post) * (2e-4)
             spikes[idx].append(output_fired_counts.flatten())
             labels[idx].append(training_labels[start_idx])
             
@@ -151,7 +151,7 @@ def calc_gradient(idx, start_idx, end_idx, gradient, spikes, labels):
 assignments = np.zeros(200)
 
 ex_number = 0
-while ex_number < 10000:
+while ex_number < 40000:
     threads = []
     
     gradient = [None] * 4
@@ -160,6 +160,8 @@ while ex_number < 10000:
     
     all_spikes = []
     all_labels = []
+
+    prev = Wsyn
     
     for t in range(4):
         start_idx = ex_number + t * 100
@@ -174,16 +176,31 @@ while ex_number < 10000:
     for t in range(4):
         threads[t].join()
     
+    print ("averages: ")
+    print (np.average(np.absolute(gradient[0])))
+    print (np.average(np.absolute(gradient[1])))
+    print (np.average(np.absolute(gradient[2])))
+    print (np.average(np.absolute(gradient[3])))
+    print (np.average(np.absolute(Wsyn)))
+    print ("min and max: ")
+    print (np.max(Wsyn), np.min(Wsyn))
+
     for t in range(4):
         Wsyn = Wsyn + gradient[t]
         all_spikes.extend(spikes[t])
         all_labels.extend(labels[t])
 
+    # Wsyn = np.clip(Wsyn, -0.1, 0.1)
+
     col_norm = np.average(Wsyn, axis = 0)
     col_norm = 1e-2 / col_norm
     for i in range(200):
         Wsyn[:, i] *= col_norm[i]
-        
+
+    print ("difference: ")
+    print (np.sum(np.absolute(Wsyn - prev)), np.sum(np.absolute(Wsyn)))
+    # assert( np.sum(np.absolute(Wsyn - prev)) > (np.sum(np.absolute(Wsyn)) * 0.01) )
+
     ex_number += 4 * 100
 
     ##############################################
@@ -217,9 +234,10 @@ while ex_number < 10000:
                     spike_sums[num] = 1.0 * np.sum(all_spikes[ex][idx]) / len(idx)
 
             predict = np.argsort(spike_sums)
-            print (predict, predict[-1], all_labels[ex])
             correct += (predict[-1] == all_labels[ex])
-          
+
+            # print (np.sort(spike_sums), predict, predict[-1], all_labels[ex])
+            print (predict, predict[-1], all_labels[ex])
 
         print (1.0 * correct / 400)
 
