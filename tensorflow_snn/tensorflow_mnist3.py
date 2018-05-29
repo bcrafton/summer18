@@ -64,6 +64,7 @@ def calc_gradient(idx, start_idx, end_idx, gradient, spikes, labels):
         output_not_fired = np.zeros(20*20)
         output_fires = np.zeros(shape=(time_steps, 20*20))
         output_fired_counts = np.zeros(20*20)
+        refractory = np.zeros(20*20)
 
         # what is freq / ms
         # Hz / 1000
@@ -94,14 +95,20 @@ def calc_gradient(idx, start_idx, end_idx, gradient, spikes, labels):
             # so we will do (-0.07 * dt)
             dv = -0.07 * dt
             v = np.clip(v + (dv + Isyn) * dt, 0, 35)
+            not_refractory = (refractory == 0)
+            v = v * not_refractory
 
             output_fired = v >= 35
             output_not_fired = v < 35
             output_fires[t] = output_fired
             output_fired_counts = output_fired_counts + output_fired
+            
+            refractory = refractory + output_fired * 5
+            refractory = np.clip(refractory - 1, 0, 4)
 
             v = v * output_not_fired
-            v = v + output_fired * 0
+            # what was the point of this...
+            # v = v + output_fired * 0
 
         output_fires_post = np.zeros(shape=(time_steps,20*20))
         output_fires_pre = np.zeros(shape=(time_steps,20*20))
@@ -164,23 +171,23 @@ ex_number = 0
 while ex_number < 24000:
     threads = []
     
-    gradient = [None] * 4
-    spikes = [None] * 4
-    labels = [None] * 4
+    gradient = [None] * 10
+    spikes = [None] * 10
+    labels = [None] * 10
 
     prev = Wsyn
     
-    for t in range(4):
-        start_idx = ex_number + t * 25
-        end_idx = ex_number + (t + 1) * 25
+    for t in range(10):
+        start_idx = ex_number + t * 20
+        end_idx = ex_number + (t + 1) * 20
         print(t, start_idx, end_idx)
         thread = threading.Thread(target=calc_gradient, args=(t, start_idx, end_idx, gradient, spikes, labels))
         threads.append(thread)
         
-    for t in range(4):
+    for t in range(10):
         threads[t].start()
     
-    for t in range(4):
+    for t in range(10):
         threads[t].join()
     
     print ("averages: ")
@@ -192,7 +199,7 @@ while ex_number < 24000:
     print ("min and max: ")
     print (np.max(Wsyn), np.min(Wsyn))
 
-    for t in range(4):
+    for t in range(10):
         Wsyn = Wsyn + gradient[t]
         all_spikes.extend(spikes[t])
         all_labels.extend(labels[t])
@@ -208,7 +215,7 @@ while ex_number < 24000:
     print (np.sum(np.absolute(Wsyn - prev)), np.sum(np.absolute(Wsyn)))
     # assert( np.sum(np.absolute(Wsyn - prev)) > (np.sum(np.absolute(Wsyn)) * 0.01) )
 
-    ex_number += 4 * 25
+    ex_number += 10 * 20
 
     ##############################################
 
