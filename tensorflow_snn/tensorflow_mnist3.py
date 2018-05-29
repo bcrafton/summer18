@@ -103,7 +103,7 @@ def calc_gradient(idx, start_idx, end_idx, gradient, spikes, labels):
             output_fires[t] = output_fired
             output_fired_counts = output_fired_counts + output_fired
             
-            refractory = refractory + output_fired * 5
+            refractory = refractory + output_fired * 10
             refractory = np.clip(refractory - 1, 0, 4)
 
             v = v * output_not_fired
@@ -125,7 +125,7 @@ def calc_gradient(idx, start_idx, end_idx, gradient, spikes, labels):
             flag = 0
             for j in reversed(range(time_steps)):
                 if (output_fires[j][i]):
-                    flag = 8
+                    flag = 10
                 if flag:
                     output_fires_pre[j][i] = 1
                     flag = flag - 1
@@ -155,7 +155,7 @@ def calc_gradient(idx, start_idx, end_idx, gradient, spikes, labels):
         
             input_intensity = start_input_intensity
             
-            gradient[idx] = gradient[idx] + (pre - post) * (1e-6)
+            gradient[idx] = gradient[idx] + (pre - post) * (5e-8)
             spikes[idx].append(output_fired_counts.flatten())
             labels[idx].append(training_labels[start_idx])
             
