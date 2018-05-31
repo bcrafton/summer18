@@ -30,12 +30,31 @@ T = 1000
 dt = 2
 time_steps = int(T / dt)
 
+# max_weight = 5e-4
+# min_weight = 5e-6
+
+max_weight = 8e-4
+min_weight = 4e-6
+
+avg_weight = 5e-5
+learning_rate = 5e-9
+
 #############
 
 load_data()
 Wsyn = np.random.normal(0, 1.0, size=(28*28, 20*20))
 Wsyn = np.absolute(Wsyn)
-Wsyn = Wsyn * (5e-5 / np.average(Wsyn))
+# Wsyn = np.load('XeAe.npy')
+assert( (np.prod(Wsyn.shape) - np.count_nonzero(Wsyn >= 0)) == 0 )
+Wsyn = Wsyn * (avg_weight / np.average(Wsyn))
+
+Wsyn_e = np.random.normal(0, 1.0, size=(20*20, 20*20))
+Wsyn_e = np.absolute(Wsyn_e)
+Wsyn_e = Wsyn_e * (avg_weight / np.average(Wsyn_e))
+
+Wsyn_i = np.random.normal(0, 1.0, size=(20*20, 20*20))
+Wsyn_i = np.absolute(Wsyn_i)
+Wsyn_i = Wsyn_i * (avg_weight / np.average(Wsyn_i))
 
 #############
 
@@ -52,19 +71,43 @@ def calc_gradient(idx, start_idx, end_idx, gradient, spikes, labels):
         print ("thread #" + str(idx) + " " + str(start_idx) + " " + str(input_intensity))
 
         ################
-        Isyn = np.zeros(28*28)
-        g = np.zeros(shape=(1, 28*28))
         v = np.zeros(20*20)
         u = np.zeros(20*20)
+        
+        v_i = np.zeros(20*20)
+        u_i = np.zeros(20*20)
+        
+        Isyn = np.zeros(28*28)
+        g = np.zeros(shape=(1, 28*28))
+        
+        Isyn_e = np.zeros(20*20)
+        g_e = np.zeros(20*20)
+        
+        Isyn_i = np.zeros(20*20)
+        g_i = np.zeros(shape=(1, 20*20))
 
+        ################
+        
         input_fires = np.zeros(shape=(time_steps, 28*28))
         input_fired_counts = np.zeros(28*28)
-
+        
+        ################
+        
         output_fired = np.zeros(20*20)
         output_not_fired = np.zeros(20*20)
         output_fires = np.zeros(shape=(time_steps, 20*20))
         output_fired_counts = np.zeros(20*20)
         refractory = np.zeros(20*20)
+        
+        ################
+        
+        inh_fired = np.zeros(20*20)
+        inh_not_fired = np.zeros(20*20)
+        inh_fires = np.zeros(shape=(time_steps, 20*20))
+        inh_fired_counts = np.zeros(20*20)
+        inh_refractory = np.zeros(20*20)
+        
+        ################
 
         # what is freq / ms
         # Hz / 1000
@@ -77,24 +120,28 @@ def calc_gradient(idx, start_idx, end_idx, gradient, spikes, labels):
         rates = rates / 1000 # divide to get ms
 
         for t in range(time_steps):
+        
+            ####################################
+        
             input_fired = np.random.rand(1, 28*28) < rates * dt
             input_fires[t] = input_fired
             input_fired_counts = input_fired_counts + input_fired
-
-            # Isyn = np.dot(input_fired, Wsyn)
-            # dv = 0.001 * v * v
-            # dv = 0
-            # v = np.clip(v + (dv + Isyn) * dt, 0, 35)
             
+            ####################################
+
             g = g + input_fired
             Isyn = np.dot(g, Wsyn)
-            Isyn = Isyn.flatten()
+            Isyn = Isyn.flatten ()
             g = np.max((1 - dt/10) * g, 0)
+            
+            g_e = g_e + inh_fired
+            Isyn_e = np.dot(g_e, Wsyn_e) # this is the 400x400 synapses
+            Isyn_e = Isyn_e.flatten()
+            g_e = np.max((1 - dt/10) * g_e, 0)
 
-            # we want to be able to decay 2 spikes = 70mV
-            # so we will do (-0.07 * dt)
             dv = -0.07 * dt
-            v = np.clip(v + (dv + Isyn) * dt, 0, 35)
+            v = np.clip(v + (dv + Isyn - Isyn_e) * dt, 0, 35)
+            # v = np.clip(v + (dv + Isyn) * dt, 0, 35)
             not_refractory = (refractory == 0)
             v = v * not_refractory
 
@@ -107,11 +154,36 @@ def calc_gradient(idx, start_idx, end_idx, gradient, spikes, labels):
             refractory = np.clip(refractory - 1, 0, 4)
 
             v = v * output_not_fired
-            # what was the point of this...
-            # v = v + output_fired * 0
 
-        output_fires_post = np.zeros(shape=(time_steps,20*20))
-        output_fires_pre = np.zeros(shape=(time_steps,20*20))
+            ####################################
+            
+            g_i = g_i + output_fired
+            Isyn_i = np.dot(g_i, Wsyn_i)
+            Isyn_i = Isyn_i.flatten()
+            g_i = np.max((1 - dt/5) * g_i, 0)
+            
+            # print ("exc", np.average(g), np.average(Isyn))
+            # print ("inh", np.average(g_i), np.average(Isyn_i))
+
+            dv_i = -0.07 * dt
+            v_i = np.clip(v_i + (dv_i + Isyn_i) * dt, 0, 35)
+            not_inh_refractory = (inh_refractory == 0)
+            v_i = v_i * not_inh_refractory
+
+            inh_fired = v_i >= 35
+            inh_not_fired = v_i < 35
+            inh_fires[t] = inh_fired
+            inh_fired_counts = inh_fired_counts + inh_fired
+            
+            inh_refractory = inh_refractory + inh_fired * 10
+            inh_refractory = np.clip(inh_refractory - 1, 0, 4)
+
+            v_i = v_i * inh_not_fired
+            
+            ####################################
+
+        output_fires_post = np.zeros(shape=(time_steps, 20*20))
+        output_fires_pre = np.zeros(shape=(time_steps, 20*20))
 
         for i in range(20*20):
             flag = 0
@@ -132,30 +204,20 @@ def calc_gradient(idx, start_idx, end_idx, gradient, spikes, labels):
 
         
         input_fires = np.transpose(input_fires)
-        # output_fires_post = np.transpose(output_fires_post)
-        # output_fires_pre = np.transpose(output_fires_pre)
-
-        post = np.zeros(shape=(28*28,20*20))
-        pre = np.zeros(shape=(28*28,20*20))
-
-        '''
-        for i in range(20*20):
-            for j in range(28*28):
-                post[j][i] = np.count_nonzero(np.logical_and(input_fires[j], output_fires_post[i]))
-                pre[j][i] = np.count_nonzero(np.logical_and(input_fires[j], output_fires_pre[i]))
-        '''
-
         post = np.dot(input_fires, output_fires_post)
         pre = np.dot(input_fires, output_fires_pre)
+        
+        ##############################################
 
         if np.sum(output_fired_counts) < 10:
             input_intensity += 1
         else:
-            print ( np.sum(input_fired_counts), np.sum(output_fired_counts) )
+            print ( np.sum(input_fired_counts), np.sum(output_fired_counts), np.sum(inh_fired_counts) )
+            print ( np.average(input_fired_counts), np.average(output_fired_counts), np.average(inh_fired_counts) )
         
             input_intensity = start_input_intensity
             
-            gradient[idx] = gradient[idx] + (pre - post) * (1e-8)
+            gradient[idx] = gradient[idx] + (pre - post) * learning_rate
             spikes[idx].append(output_fired_counts.flatten())
             labels[idx].append(training_labels[start_idx])
             
@@ -181,9 +243,10 @@ while ex_number < 24000:
     for t in range(n_threads):
         start_idx = ex_number + t * 20
         end_idx = ex_number + (t + 1) * 20
-        print(t, start_idx, end_idx)
         thread = threading.Thread(target=calc_gradient, args=(t, start_idx, end_idx, gradient, spikes, labels))
         threads.append(thread)
+        
+        print(t, start_idx, end_idx)
         
     for t in range(n_threads):
         threads[t].start()
@@ -205,10 +268,10 @@ while ex_number < 24000:
         all_spikes.extend(spikes[t])
         all_labels.extend(labels[t])
 
-    Wsyn = np.clip(Wsyn, 5e-6, 5e-4)
+    Wsyn = np.clip(Wsyn, min_weight, max_weight)
 
     col_norm = np.average(Wsyn, axis = 0)
-    col_norm = 5e-5 / col_norm
+    col_norm = avg_weight / col_norm
     for i in range(20*20):
         Wsyn[:, i] *= col_norm[i]
 
@@ -251,7 +314,6 @@ while ex_number < 24000:
             predict = np.argsort(spike_sums)
             correct += (predict[-1] == all_labels[ex])
 
-            # print (np.sort(spike_sums), predict, predict[-1], all_labels[ex])
             print (predict, predict[-1], all_labels[ex])
 
         print (1.0 * correct / 1200)

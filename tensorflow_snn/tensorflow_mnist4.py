@@ -30,12 +30,23 @@ T = 1000
 dt = 2
 time_steps = int(T / dt)
 
+# max_weight = 5e-4
+# min_weight = 5e-6
+
+max_weight = 8e-4
+min_weight = 4e-6
+
+avg_weight = 5e-5
+learning_rate = 5e-9
+
 #############
 
 load_data()
-Wsyn = np.random.normal(0, 1.0, size=(28*28, 20*20))
-Wsyn = np.absolute(Wsyn)
-Wsyn = Wsyn * (5e-5 / np.average(Wsyn))
+# Wsyn = np.random.normal(0, 1.0, size=(28*28, 20*20))
+Wsyn = np.load('XeAe.npy')
+assert( (np.prod(Wsyn.shape) - np.count_nonzero(Wsyn >= 0)) == 0 )
+# Wsyn = np.absolute(Wsyn)
+Wsyn = Wsyn * (avg_weight / np.average(Wsyn))
 
 #############
 
@@ -155,7 +166,7 @@ def calc_gradient(idx, start_idx, end_idx, gradient, spikes, labels):
         
             input_intensity = start_input_intensity
             
-            gradient[idx] = gradient[idx] + (pre - post) * (1e-8)
+            gradient[idx] = gradient[idx] + (pre - post) * learning_rate
             spikes[idx].append(output_fired_counts.flatten())
             labels[idx].append(training_labels[start_idx])
             
@@ -205,10 +216,10 @@ while ex_number < 24000:
         all_spikes.extend(spikes[t])
         all_labels.extend(labels[t])
 
-    Wsyn = np.clip(Wsyn, 5e-6, 5e-4)
+    Wsyn = np.clip(Wsyn, min_weight, max_weight)
 
     col_norm = np.average(Wsyn, axis = 0)
-    col_norm = 5e-5 / col_norm
+    col_norm = avg_weight / col_norm
     for i in range(20*20):
         Wsyn[:, i] *= col_norm[i]
 
