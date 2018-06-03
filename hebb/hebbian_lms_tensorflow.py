@@ -1,7 +1,6 @@
 
 import os
 import sys
-os.environ["CUDA_VISIBLE_DEVICES"]="1"
 import tensorflow as tf
 import time
 
@@ -31,20 +30,22 @@ dtype = tf.float32
 load_data()
 
 ##########################
-w = tf.placeholder(shape=(28*28, 20*20), dtype=dtype)
-x = tf.placeholder(shape=(28*28, 1),     dtype=dtype)
-xt = tf.transpose(x)
-xw = tf.matmul(xt, w)
-avg = tf.reduce_mean(xw) # no axis means avg of whole matrix
-xw = tf.divide(xw, avg)
-xw = tf.pow(xw, 3)
-sig = tf.sigmoid(xw)
-e = tf.subtract(sig, tf.multiply(xw, 0.5))
-gradient = tf.add(tf.multiply(tf.matmul(x, e), 0.001), w)
+# with tf.device("/cpu:0"):
+with tf.device("/gpu:0"):
+  w = tf.placeholder(shape=(28*28, 20*20), dtype=dtype)
+  x = tf.placeholder(shape=(28*28, 1),     dtype=dtype)
+  xt = tf.transpose(x)
+  xw = tf.matmul(xt, w)
+  avg = tf.reduce_mean(xw) # no axis means avg of whole matrix
+  xw = tf.divide(xw, avg)
+  xw = tf.pow(xw, 3)
+  sig = tf.sigmoid(xw)
+  e = tf.subtract(sig, tf.multiply(xw, 0.5))
+  gradient = tf.add(tf.multiply(tf.matmul(x, e), 0.001), w)
 ##########################
-init = tf.global_variables_initializer()
-sess = tf.Session()
-sess.run(init)
+config = tf.ConfigProto(graph_options=tf.GraphOptions(optimizer_options=tf.OptimizerOptions(opt_level=tf.OptimizerOptions.L0)))
+sess = tf.Session(config=config)
+sess.run(tf.global_variables_initializer())
 ##########################
 
 start = time.time()
@@ -70,6 +71,7 @@ for i in range(50000):
     weights[:, j] *= col_norm[j]
   
 end = time.time()
+print end-start
 
 ##########################
 
