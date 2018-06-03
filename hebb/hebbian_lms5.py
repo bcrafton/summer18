@@ -90,9 +90,9 @@ for i in range(50000):
 
   stdp = np.copy(w)
   stdp = stdp / np.max(stdp)
-  stdp = np.power(w, 3)
+  stdp = np.power(w, 2)
   
-  w += 0.00001 * np.dot(x, xw) * stdp
+  w += 0.0001 * np.dot(x, xw) * stdp
 
   col_norm = np.average(w, axis = 0)
   col_norm = 0.5 / col_norm

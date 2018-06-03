@@ -29,9 +29,12 @@ def sigmoid(x):
   return 1 / (1 + np.exp(-x))
   
 num_output = 20*20
-w = np.absolute(np.random.normal(0.5, 0.25, size=(28*28, num_output)))
+w = np.load('XeAe.npy')
+w = w * (0.5 / np.average(w))
+# w = np.absolute(np.random.normal(0.5, 0.25, size=(28*28, num_output)))
 
 #####################################
+'''
 prev = np.copy(w)
 for itr in range(15):
   for i in range(50000):
@@ -54,11 +57,12 @@ for itr in range(15):
     if (i % 1000 == 0):
         print (np.sum(np.absolute(w - prev)), np.sum(w), np.sum(np.absolute(w - prev)) / np.sum(w))
         prev = np.copy(w)
+'''
 #####################################
 max_rates = np.zeros(num_output)
 assignments = np.zeros(num_output)
 
-for i in range(50000):
+for i in range(10000):
   x = np.array(training_set[i]).reshape(28*28, 1)
   x = x / np.average(x)
   
@@ -76,7 +80,7 @@ print (assignments)
 #####################################
 correct = 0
 
-for i in range(50000):
+for i in range(10000):
   x = np.array(training_set[i]).reshape(28*28, 1)
   x = x / np.average(x)
   
@@ -102,6 +106,6 @@ for i in range(50000):
   # print (predict, training_labels[i])
   correct += predict == training_labels[i]
   
-print (1.0 * correct) / 5000
+print (1.0 * correct) / 10000
 #####################################
 
