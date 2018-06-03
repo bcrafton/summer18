@@ -102,6 +102,6 @@ for i in range(50000):
   # print (predict, training_labels[i])
   correct += predict == training_labels[i]
   
-print (1.0 * correct) / 5000
+print (1.0 * correct) / 50000
 #####################################
 

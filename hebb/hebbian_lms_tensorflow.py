@@ -1,32 +1,77 @@
 
-# https://stackoverflow.com/questions/41804380/testing-gpu-with-tensorflow-matrix-multiplication
-
-# On Titan X (Pascal)
-# 8192 x 8192 matmul took: 0.10 sec, 11304.59 G ops/sec
-# http://stackoverflow.com/questions/41804380/testing-gpu-with-tensorflow-matrix-multiplication
-
 import os
 import sys
 os.environ["CUDA_VISIBLE_DEVICES"]="1"
 import tensorflow as tf
 import time
 
-n = 8192
-dtype = tf.float32
+import numpy as np
+import math
+import cPickle as pickle
+import gzip
 
-w = tf.Variable(tf.random_uniform((28*28, 20*20), dtype=dtype))
-x = tf.Variable(tf.random_uniform((28*28, 1), dtype=dtype))
+def load_data():
+  global training_set, training_labels, testing_set, testing_labels
+  f = gzip.open('mnist.pkl.gz', 'rb')
+  train, valid, test = pickle.load(f)
+
+  [training_set, training_labels] = train
+  [validation_set, validation_labels] = valid
+  [testing_set, testing_labels] = test
+
+  for i in range( len(training_set) ):
+    training_set[i] = training_set[i].reshape(28*28)
+
+  for i in range( len(testing_set) ):
+    testing_set[i] = testing_set[i].reshape(28*28)
+
+  f.close()
+
+dtype = tf.float32
+load_data()
+
+##########################
+w = tf.placeholder(shape=(28*28, 20*20), dtype=dtype)
+x = tf.placeholder(shape=(28*28, 1),     dtype=dtype)
 xt = tf.transpose(x)
 xw = tf.matmul(xt, w)
+avg = tf.reduce_mean(xw) # no axis means avg of whole matrix
+xw = tf.divide(xw, avg)
+xw = tf.pow(xw, 3)
 sig = tf.sigmoid(xw)
 e = tf.subtract(sig, tf.multiply(xw, 0.5))
-gradient = tf.add(tf.multiply(tf.matmul(x, e), 0.0001), w)
-
+gradient = tf.add(tf.multiply(tf.matmul(x, e), 0.001), w)
+##########################
 init = tf.global_variables_initializer()
 sess = tf.Session()
 sess.run(init)
+##########################
 
 start = time.time()
+
+# weights = tf.random_normal(shape=(28*28, 20*20), mean=0.5, stddev=0.1)
+weights = np.absolute(np.random.normal(0.5, 0.1, size=(28*28, 20*20)))
 for i in range(50000):
-  sess.run(gradient.op)
+  # move this into tensorflow.
+  input = np.array(training_set[i]).reshape(28*28, 1)
+  input = input / np.average(input)
+  # input = tf.convert_to_tensor(input)
+  
+  grad = sess.run(gradient, feed_dict={x: input, w: weights})
+  # print(type(grad))
+  
+  # move this into tensorflow.
+  weights = weights + grad
+  
+  # move this into tensorflow.
+  col_norm = np.average(weights, axis = 0)
+  col_norm = 0.5 / col_norm
+  for j in range(20*20):
+    weights[:, j] *= col_norm[j]
+  
 end = time.time()
+
+##########################
+
+
+
