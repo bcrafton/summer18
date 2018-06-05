@@ -156,13 +156,17 @@ class DQNCartPoleSolver():
                 prev1 = self.weights1
                 prev2 = self.weights2
                 prev3 = self.weights3
+                
+            grad1 = np.zeros(shape=(8, 24))
+            grad2 = np.zeros(shape=(24, 48))
+            grad3 = np.zeros(shape=(48, 2))
 
             elig1 = np.zeros(shape=(8, 24))
             elig2 = np.zeros(shape=(24, 48))
             elig3 = np.zeros(shape=(48, 2))
             
             while not done:
-            
+                i += 1
                 if SPIKE:
 
                     out1 = np.dot(state, self.weights1)
@@ -173,18 +177,10 @@ class DQNCartPoleSolver():
                     err = sig - 0.5 * xw1
                     # why does this not work?
                     # err = np.dot(np.transpose(state), err)
-                    grad1 = np.ones(shape=np.shape(err)) * np.max(err) - err
-                    grad1 = np.power(grad1, 3)
-                    grad1 = np.dot(np.transpose(state), grad1)
-                    
-                    '''
-                    elig1 = np.power(elig1, 1.25)
-                    elig1 = elig1 + grad1
-                    elig1 = elig1 / np.max(elig1)
-                    '''
-                    # elig1 = update_elig(elig1, grad1)
-                    elig1 = elig1 + grad1
-                    elig1 *= 0.95
+                    elig_grad1 = np.ones(shape=np.shape(err)) * np.max(err) - err
+                    elig_grad1 = np.power(elig_grad1, 3)
+                    elig_grad1 = np.dot(np.transpose(state), elig_grad1)
+                    elig1 = update_elig(elig1, elig_grad1)
 
                     xw2 = np.dot(xw1, self.weights2)
                     xw2 = xw2 / np.max(xw2)
@@ -193,18 +189,10 @@ class DQNCartPoleSolver():
                     err = sig - 0.5 * xw2
                     # why does this not work?
                     # err = np.dot(np.transpose(xw1), err)
-                    grad2 = np.ones(shape=np.shape(err)) * np.max(err) - err
-                    grad2 = np.power(grad2, 3)
-                    grad2 = np.dot(np.transpose(xw1), grad2)
-                    
-                    '''
-                    elig2 = np.power(elig2, 1.25)
-                    elig2 = elig2 + grad2
-                    elig2 = elig2 / np.max(elig2)
-                    '''
-                    # elig2 = update_elig(elig2, grad2)
-                    elig2 = elig2 + grad2
-                    elig2 *= 0.95
+                    elig_grad2 = np.ones(shape=np.shape(err)) * np.max(err) - err
+                    elig_grad2 = np.power(elig_grad2, 3)
+                    elig_grad2 = np.dot(np.transpose(xw1), elig_grad2)
+                    elig2 = update_elig(elig2, elig_grad2)
                     
                     xw3 = np.dot(xw2, self.weights3)
                     xw3 = xw3 / np.max(xw3)
@@ -213,30 +201,28 @@ class DQNCartPoleSolver():
                     err = sig - 0.5 * xw3
                     # why does this not work?
                     # err = np.dot(np.transpose(xw2), err)
-                    grad3 = np.ones(shape=np.shape(err)) * np.max(err) - err
-                    grad3 = np.power(grad3, 3)
-                    grad3 = np.dot(np.transpose(xw2), grad3)
-                    
-                    '''
-                    elig3 = np.power(elig3, 1.25)
-                    elig3 = elig3 + grad3
-                    elig3 = elig3 / np.max(elig3)
-                    '''
-                    # elig3 = update_elig(elig3, grad3)
-                    elig3 = elig3 + grad3
-                    elig3 *= 0.95
+                    elig_grad3 = np.ones(shape=np.shape(err)) * np.max(err) - err
+                    elig_grad3 = np.power(elig_grad3, 3)
+                    elig_grad3 = np.dot(np.transpose(xw2), elig_grad3)
+                    elig3 = update_elig(elig3, elig_grad3)
 
                     action = np.argmax(xw3)
                     next_state, reward, done, _ = self.env.step(action)
                     next_state = self.preprocess_state(next_state)
-                    
                     reward = get_reward(state, next_state)
                     state = next_state
                     
+                    '''
                     self.weights1 = (self.weights1 + lr * reward * elig1)
                     self.weights2 = (self.weights2 + lr * reward * elig2)
                     self.weights3 = (self.weights3 + lr * reward * elig3)
+                    '''
                     
+                    grad1 += lr * reward * elig1
+                    grad2 += lr * reward * elig2
+                    grad3 += lr * reward * elig3
+                    
+                    '''
                     col_norm = np.average(self.weights1, axis = 0)
                     col_norm = 0.5 / col_norm
                     for j in range(24):
@@ -251,8 +237,8 @@ class DQNCartPoleSolver():
                     col_norm = 0.5 / col_norm
                     for j in range(2):
                       self.weights3[:, j] *= col_norm[j]
+                    '''
                 
-                    i += 1
                 if not SPIKE: 
                     action = self.choose_action(state, self.epsilon)
                     next_state, reward, done, _ = self.env.step(action)
@@ -262,11 +248,31 @@ class DQNCartPoleSolver():
                     
                     self.remember(state, action, reward, next_state, done)
                     state = next_state
-                    i += 1
-
+                    
             scores.append(i)
             mean_score = np.mean(scores)
             self.epsilon *= 0.99
+            
+            if SPIKE:
+                self.weights1 += grad1
+                self.weights2 += grad2
+                self.weights3 += grad3
+                
+                col_norm = np.average(self.weights1, axis = 0)
+                col_norm = 0.5 / col_norm
+                for j in range(24):
+                  self.weights1[:, j] *= col_norm[j]
+                
+                col_norm = np.average(self.weights2, axis = 0)
+                col_norm = 0.5 / col_norm
+                for j in range(48):
+                  self.weights2[:, j] *= col_norm[j]
+                
+                col_norm = np.average(self.weights3, axis = 0)
+                col_norm = 0.5 / col_norm
+                for j in range(2):
+                  self.weights3[:, j] *= col_norm[j]
+                  
             if not SPIKE: 
                 self.replay(self.batch_size) 
             
