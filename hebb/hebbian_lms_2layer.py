@@ -40,8 +40,8 @@ w2 = np.absolute(np.random.normal(1.0, 0.25, size=(layer2, layer3)))
 prev1 = np.copy(w1)
 prev2 = np.copy(w2)
 
-for itr in range(15):
-  for i in range(5000):
+for itr in range(1):
+  for i in range(10000):
     x = np.array(training_set[i]).reshape(layer1, 1)
     x = x / np.average(x)
 
@@ -51,7 +51,8 @@ for itr in range(15):
     
     sig = sigmoid(xw1)
     e = sig - 0.5 * xw1
-    w1 += 0.00001 * np.dot(x, e)
+    w1 += 0.001 * np.dot(x, e)
+    w1 = np.clip(w1, 0.1, 5)
     
     col_norm = np.average(w1, axis = 0)
     col_norm = 1.0 / col_norm
@@ -64,7 +65,8 @@ for itr in range(15):
     
     sig = sigmoid(xw2)
     e = sig - 0.5 * xw2
-    w2 += 0.00001 * np.dot(np.transpose(xw1), e)
+    w2 += 0.001 * np.dot(np.transpose(xw1), e)
+    w2 = np.clip(w2, 0.1, 5)
 
     col_norm = np.average(w2, axis = 0)
     col_norm = 1.0 / col_norm
@@ -84,7 +86,7 @@ assignments1 = np.zeros(layer2)
 max_rates2 = np.zeros(layer3)
 assignments2 = np.zeros(layer3)
 
-for i in range(5000):
+for i in range(10000):
   x = np.array(training_set[i]).reshape(layer1, 1)
   x = x / np.average(x)
 
@@ -113,7 +115,7 @@ print (assignments2)
 #####################################
 correct = 0
 
-for i in range(5000):
+for i in range(10000):
   x = np.array(training_set[i]).reshape(layer1, 1)
   x = x / np.average(x)
 
