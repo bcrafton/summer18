@@ -141,6 +141,10 @@ class DQNCartPoleSolver():
                 prev1 = self.weights1
                 prev2 = self.weights2
                 prev3 = self.weights3
+
+            elig1 = np.zeros(shape=(8, 24))
+            elig2 = np.zeros(shape=(24, 48))
+            elig3 = np.zeros(shape=(48, 2))
             
             while not done:
             
@@ -152,24 +156,39 @@ class DQNCartPoleSolver():
                     # xw1 = np.power(xw1, 3)
                     sig = sigmoid(xw1)
                     err = sig - 0.5 * xw1
-                    elig1 = np.ones(shape=np.shape(err)) * np.max(err) - err
-                    elig1 = np.power(elig1, 3)
+                    # why does this not work?
+                    # err = np.dot(np.transpose(state), err)
+                    grad1 = np.ones(shape=np.shape(err)) * np.max(err) - err
+                    grad1 = np.power(grad1, 3)
+                    grad1 = np.dot(np.transpose(state), grad1)
+                    elig1 = elig1 + grad1
+                    elig1 *= 0.95
 
                     xw2 = np.dot(xw1, self.weights2)
                     xw2 = xw2 / np.max(xw2)
                     # xw2 = np.power(xw2, 3)
                     sig = sigmoid(xw2)
                     err = sig - 0.5 * xw2
-                    elig2 = np.ones(shape=np.shape(err)) * np.max(err) - err
-                    elig2 = np.power(elig2, 3)
+                    # why does this not work?
+                    # err = np.dot(np.transpose(xw1), err)
+                    grad2 = np.ones(shape=np.shape(err)) * np.max(err) - err
+                    grad2 = np.power(grad2, 3)
+                    grad2 = np.dot(np.transpose(xw1), grad2)
+                    elig2 = elig2 + grad2
+                    elig2 *= 0.95
                     
                     xw3 = np.dot(xw2, self.weights3)
                     xw3 = xw3 / np.max(xw3)
                     # xw3 = np.power(xw3, 3)
                     sig = sigmoid(xw3)
                     err = sig - 0.5 * xw3
-                    elig3 = np.ones(shape=np.shape(err)) * np.max(err) - err
-                    elig3 = np.power(elig3, 3)
+                    # why does this not work?
+                    # err = np.dot(np.transpose(xw2), err)
+                    grad3 = np.ones(shape=np.shape(err)) * np.max(err) - err
+                    grad3 = np.power(grad3, 3)
+                    grad3 = np.dot(np.transpose(xw2), grad3)
+                    elig3 = elig3 + grad3
+                    elig3 *= 0.95
 
                     action = np.argmax(xw3)
                     
