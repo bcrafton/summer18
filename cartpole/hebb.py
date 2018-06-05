@@ -149,25 +149,27 @@ class DQNCartPoleSolver():
                     out1 = np.dot(state, self.weights1)
                     xw1 = np.dot(state, self.weights1)
                     xw1 = xw1 / np.max(xw1)
-                    xw1 = np.power(xw1, 3)
+                    # xw1 = np.power(xw1, 3)
                     sig = sigmoid(xw1)
                     err = sig - 0.5 * xw1
                     elig1 = np.ones(shape=np.shape(err)) * np.max(err) - err
-                    # print (np.min(elig1), np.max(elig1))
+                    elig1 = np.power(elig1, 3)
 
                     xw2 = np.dot(xw1, self.weights2)
                     xw2 = xw2 / np.max(xw2)
-                    xw2 = np.power(xw2, 3)
+                    # xw2 = np.power(xw2, 3)
                     sig = sigmoid(xw2)
                     err = sig - 0.5 * xw2
                     elig2 = np.ones(shape=np.shape(err)) * np.max(err) - err
+                    elig2 = np.power(elig2, 3)
                     
                     xw3 = np.dot(xw2, self.weights3)
                     xw3 = xw3 / np.max(xw3)
-                    xw3 = np.power(xw3, 3)
+                    # xw3 = np.power(xw3, 3)
                     sig = sigmoid(xw3)
                     err = sig - 0.5 * xw3
                     elig3 = np.ones(shape=np.shape(err)) * np.max(err) - err
+                    elig3 = np.power(elig3, 3)
 
                     action = np.argmax(xw3)
                     
