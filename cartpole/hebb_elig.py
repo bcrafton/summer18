@@ -10,7 +10,8 @@ from keras.layers import Dense
 from keras.optimizers import Adam
 
 SPIKE = 1
-lr = 0.02
+NUM_SCORES = 100
+lr = 0.0005
 
 def update_elig(elig, grad):
   elig = np.copy(elig)
@@ -53,7 +54,7 @@ def get_reward(state, next_state):
     # reward = np.clip(0.5 + (diff_pos + diff_ang), 0, 1)
     
     if (diff_pos + diff_ang > 0):
-      reward = 1
+      reward = 2
     else:
       reward = 0
       
@@ -145,7 +146,7 @@ class DQNCartPoleSolver():
             self.epsilon *= self.epsilon_decay
 
     def run(self):
-        scores = deque(maxlen=10)
+        scores = deque(maxlen=NUM_SCORES)
 
         for e in range(self.n_episodes):
             state = self.preprocess_state(self.env.reset())
@@ -205,19 +206,23 @@ class DQNCartPoleSolver():
             
             if SPIKE:
                 elig1 = elig1 / np.max(elig1)
-                elig1 = np.power(elig1, 2)
+                elig1_num = np.copy(elig1)
+                elig1_num = np.power(elig1_num, 2)
+                elig1_num = elig1_num / np.average(elig1)
                 
                 elig2 = elig2 / np.max(elig2)
-                elig2 = np.power(elig2, 2)
+                elig2_num = np.copy(elig2)
+                elig2_num = np.power(elig2_num, 2)
+                elig2_num = elig2_num / np.average(elig2)
                 
                 elig3 = elig3 / np.max(elig3)
-                elig3 = np.power(elig3, 2)
+                elig3_num = np.copy(elig3)
+                elig3_num = np.power(elig3_num, 2)
+                elig3_num = elig3_num / np.average(elig3)
             
-                self.weights1 = (self.weights1 + lr * reward * elig1) / (1 + lr * elig1)
-                self.weights2 = (self.weights2 + lr * reward * elig2) / (1 + lr * elig2)
-                self.weights3 = (self.weights3 + lr * reward * elig3) / (1 + lr * elig3)
-                
-                # print (np.min(elig1), np.max(elig1))
+                self.weights1 = (self.weights1 + lr * reward * elig1_num) / (1 + lr * elig1)
+                self.weights2 = (self.weights2 + lr * reward * elig2_num) / (1 + lr * elig2)
+                self.weights3 = (self.weights3 + lr * reward * elig3_num) / (1 + lr * elig3)
                 
                 col_norm = np.average(self.weights1, axis = 0)
                 col_norm = 0.5 / col_norm
@@ -237,7 +242,7 @@ class DQNCartPoleSolver():
             if not SPIKE: 
                 self.replay(self.batch_size) 
             
-            if e % 10 == 0:
+            if e % NUM_SCORES == 0:
                 print('[Episode {}] - Mean survival time over last 100 episodes was {} ticks.'.format(e, mean_score))
                 
             if e % 500 == 0:
