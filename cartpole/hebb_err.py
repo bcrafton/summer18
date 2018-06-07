@@ -67,7 +67,7 @@ def get_reward(state, next_state, done):
     return reward
   
 class DQNCartPoleSolver():
-    def __init__(self, n_episodes=100000, n_win_ticks=195, max_env_steps=None, gamma=1.0, epsilon=1.0, epsilon_min=0.01, epsilon_log_decay=0.995, alpha=0.01, alpha_decay=0.01, batch_size=64, monitor=False, quiet=False):
+    def __init__(self, n_episodes=5000, n_win_ticks=195, max_env_steps=None, gamma=1.0, epsilon=0.5, epsilon_min=0.01, epsilon_log_decay=0.995, alpha=0.01, alpha_decay=0.01, batch_size=64, monitor=False, quiet=False):
         self.memory = deque(maxlen=100000)
         self.env = gym.make('CartPole-v0')
         if monitor: self.env = gym.wrappers.Monitor(self.env, '../data/cartpole-1', force=True)
@@ -217,7 +217,12 @@ class DQNCartPoleSolver():
                     elig_grad3 = np.dot(np.transpose(xw2), xw3) * np.power(self.weights3, 2)
                     elig3 = update_elig(elig3, elig_grad3)
 
-                    action = np.argmax(xw3)
+                    action = 0
+                    if (np.random.random() <= self.epsilon):
+                        action = self.env.action_space.sample()
+                    else:
+                        action = np.argmax(xw3)
+                        
                     next_state, reward, done, _ = self.env.step(action)
                     # print (next_state)
                     next_state = self.preprocess_state(next_state)
@@ -270,13 +275,15 @@ class DQNCartPoleSolver():
             # def most val print statement:
             # print ( np.average(np.asarray(rewards)), np.count_nonzero(np.asarray(actions)), len(actions), lr)
             
-            self.epsilon *= 0.99
+            if SPIKE:
+              if self.epsilon > self.epsilon_min:
+                  self.epsilon *= 0.999
             
             scores.append(i)
             mean_score = np.mean(scores)
             
             if (mean_score > 150):
-                print('[Episode {}] - Mean survival time over last 100 episodes was {} ticks.'.format(e, mean_score))
+                print (e, mean_score, self.epsilon)
                 
                 assert(np.min(self.weights1) >= 0)
                 assert(np.min(self.weights2) >= 0)
@@ -348,7 +355,7 @@ class DQNCartPoleSolver():
                 self.replay(self.batch_size) 
             
             if (((e+1) % self.n_episodes == 0) and e > 0):
-                print('[Episode {}] - Mean survival time over last 100 episodes was {} ticks.'.format(e, mean_score))
+                print (e, mean_score, self.epsilon)
              
             if (((e+1) % self.n_episodes == 0) and e > 0):
                 if SPIKE:
