@@ -8,10 +8,11 @@ from collections import deque
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.optimizers import Adam
+from keras.constraints import non_neg
 
 def get_reward(state, next_state, done):
     if done:
-        return -0.5
+        return 0
 
     state = state.flatten()
     next_state = next_state.flatten()
@@ -42,12 +43,15 @@ def get_reward(state, next_state, done):
     reward = np.clip(reward, -1, 1)
     '''
     
-    reward = 0.15 - np.absolute(ang2)
+    if (np.absolute(ang2) > 0.15):
+        reward = 0.01
+    else:    
+        reward = 0.1
     
     return reward
 
 class DQNCartPoleSolver():
-    def __init__(self, n_episodes=1000, n_win_ticks=195, max_env_steps=None, gamma=1.0, epsilon=1.0, epsilon_min=0.01, epsilon_log_decay=0.995, alpha=0.01, alpha_decay=0.01, batch_size=64, monitor=False, quiet=False):
+    def __init__(self, n_episodes=10000, n_win_ticks=195, max_env_steps=None, gamma=1.0, epsilon=0.5, epsilon_min=0.1, epsilon_log_decay=0.995, alpha=0.01, alpha_decay=0.01, batch_size=64, monitor=False, quiet=False):
         self.memory = deque(maxlen=100000)
         self.env = gym.make('CartPole-v0')
         if monitor: self.env = gym.wrappers.Monitor(self.env, '../data/cartpole-1', force=True)
@@ -64,11 +68,20 @@ class DQNCartPoleSolver():
         if max_env_steps is not None: self.env._max_episode_steps = max_env_steps
 
         # Init model
+        
+        
         self.model = Sequential()
-        self.model.add(Dense(24, input_dim=8, activation='tanh'))
-        self.model.add(Dense(48, activation='tanh'))
-        self.model.add(Dense(2, activation='linear'))
+        self.model.add(Dense(24, input_dim=8, use_bias=False, kernel_constraint=non_neg(), activation='tanh'))
+        self.model.add(Dense(48, use_bias=False, kernel_constraint=non_neg(), activation='tanh'))
+        self.model.add(Dense(2, kernel_constraint=non_neg(), use_bias=False, activation='linear'))
         self.model.compile(loss='mse', optimizer=Adam(lr=self.alpha, decay=self.alpha_decay))
+        '''
+        self.model = Sequential()
+        self.model.add(Dense(24, input_dim=8, use_bias=False, activation='tanh'))
+        self.model.add(Dense(48, use_bias=False, activation='tanh'))
+        self.model.add(Dense(2, use_bias=False, activation='linear'))
+        self.model.compile(loss='mse', optimizer=Adam(lr=self.alpha, decay=self.alpha_decay))
+        '''
 
     def remember(self, state, action, reward, next_state, done):
         self.memory.append((state, action, reward, next_state, done))
@@ -77,7 +90,7 @@ class DQNCartPoleSolver():
         return self.env.action_space.sample() if (np.random.random() <= epsilon) else np.argmax(self.model.predict(state))
 
     def get_epsilon(self, t):
-        return max(self.epsilon_min, min(self.epsilon, 1.0 - math.log10((t + 1) * self.epsilon_decay)))
+        return max(self.epsilon_min, self.epsilon)
 
     def preprocess_state(self, state):
         ret = np.zeros(8)

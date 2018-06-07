@@ -12,6 +12,10 @@ from keras.optimizers import Adam
 SPIKE = 1
 NUM_SCORES = 100
 
+load_layer1 = True
+load_layer2 = False
+load_layer3 = False
+
 def update_elig(elig, grad):
   elig = np.copy(elig)
   grad = np.copy(grad)
@@ -31,7 +35,7 @@ def sigmoid(x):
 
 def get_reward(state, next_state, done):
     if done:
-       return -0.5
+        return -0.5
 
     state = state.flatten()
     next_state = next_state.flatten()
@@ -67,7 +71,7 @@ def get_reward(state, next_state, done):
     return reward
   
 class DQNCartPoleSolver():
-    def __init__(self, n_episodes=5000, n_win_ticks=195, max_env_steps=None, gamma=1.0, epsilon=0.5, epsilon_min=0.01, epsilon_log_decay=0.995, alpha=0.01, alpha_decay=0.01, batch_size=64, monitor=False, quiet=False):
+    def __init__(self, n_episodes=10000, n_win_ticks=195, max_env_steps=None, gamma=1.0, epsilon=0.5, epsilon_min=0.01, epsilon_log_decay=0.995, alpha=0.01, alpha_decay=0.01, batch_size=64, monitor=False, quiet=False):
         self.memory = deque(maxlen=100000)
         self.env = gym.make('CartPole-v0')
         if monitor: self.env = gym.wrappers.Monitor(self.env, '../data/cartpole-1', force=True)
@@ -83,9 +87,28 @@ class DQNCartPoleSolver():
         self.quiet = quiet
         if max_env_steps is not None: self.env._max_episode_steps = max_env_steps
 
+        '''
         self.weights1 = np.absolute(np.random.normal(0.5, 0.01, size=(8, 24)))
         self.weights2 = np.absolute(np.random.normal(0.5, 0.01, size=(24, 48)))
         self.weights3 = np.absolute(np.random.normal(0.5, 0.01, size=(48, 2)))
+        '''
+        
+        if load_layer1:
+            self.weights1 = np.load('./weights/weights1.npy')
+        else:
+            self.weights1 = np.absolute(np.random.normal(0.5, 0.01, size=(8, 24)))
+            
+        if load_layer2:
+            self.weights2 = np.load('./weights/weights2.npy')
+        else:
+            self.weights2 = np.absolute(np.random.normal(0.5, 0.01, size=(24, 48)))
+        
+        if load_layer3:
+            self.weights3 = np.load('./weights/weights3.npy')
+        else:
+            self.weights3 = np.absolute(np.random.normal(0.5, 0.01, size=(48, 2)))
+            
+        self.epsilon = 0.10
 
         col_norm = np.average(self.weights1, axis = 0)
         col_norm = 0.5 / col_norm
@@ -238,19 +261,22 @@ class DQNCartPoleSolver():
                     
                     # err = (elig1 / np.average(self.weights1)) - self.weights1
                     # self.weights1 += lr * err * reward
-                    err = elig1 / np.average(elig1) * np.average(self.weights1) - self.weights1
-                    self.weights1 = np.clip(self.weights1 + lr * err * reward, 0.05, 5)
+                    if not load_layer1:
+                        err = elig1 / np.average(elig1) * np.average(self.weights1) - self.weights1
+                        self.weights1 = np.clip(self.weights1 + lr * err * reward, 0.05, 5)
                     
                     # err = (elig2 / np.average(self.weights2)) - self.weights2
                     # self.weights2 += lr * err * reward
-                    err = elig2 / np.average(elig2) * np.average(self.weights2) - self.weights2
-                    self.weights2 = np.clip(self.weights2 + lr * err * reward, 0.05, 5)
+                    if not load_layer2:
+                        err = elig2 / np.average(elig2) * np.average(self.weights2) - self.weights2
+                        self.weights2 = np.clip(self.weights2 + lr * err * reward, 0.05, 5)
                     
                     # err = (elig3 / np.average(self.weights3)) - self.weights3
                     # self.weights3 += lr * err * reward
-                    err = elig3 / np.average(elig3) * np.average(self.weights3) - self.weights3
-                    grad = lr * err * reward
-                    self.weights3 = np.clip(self.weights3 + grad, 0.05, 5)
+                    if not load_layer3:
+                        err = elig3 / np.average(elig3) * np.average(self.weights3) - self.weights3
+                        grad = lr * err * reward
+                        self.weights3 = np.clip(self.weights3 + grad, 0.05, 5)
                     
                     # print (np.max(err), np.min(err))
                     
@@ -315,18 +341,19 @@ class DQNCartPoleSolver():
                 
                 break
             '''
+            '''
             if (mean_score > 190):
                 np.save("weights1", self.weights1)
                 np.save("weights2", self.weights2)
                 np.save("weights3", self.weights3)
                 break
-              
-            if (mean_score > 100):
+            '''
+            if (mean_score > 150):
                 lr = 0.0005
-            elif (mean_score > 25):
+            elif (mean_score > 115):
                 lr = 0.001
-            if (mean_score < 25):
-                lr = 0.01
+            else:
+                lr = 0.005
             
             if SPIKE:
                 '''
@@ -362,10 +389,10 @@ class DQNCartPoleSolver():
             if not SPIKE: 
                 self.replay(self.batch_size) 
             
-            if (((e+1) % self.n_episodes == 0) and e > 0):
+            if (((e+1) % 100 == 0) and e > 0):
                 print (e, mean_score, self.epsilon)
              
-            if (((e+1) % self.n_episodes == 0) and e > 0):
+            if (((e+1) % 500 == 0) and e > 0):
                 if SPIKE:
                     assert(np.min(self.weights1) >= 0)
                     assert(np.min(self.weights2) >= 0)
