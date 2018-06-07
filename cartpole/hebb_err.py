@@ -31,7 +31,7 @@ def sigmoid(x):
 
 def get_reward(state, next_state, done):
     if done:
-       return -1
+       return -0.5
 
     state = state.flatten()
     next_state = next_state.flatten()
@@ -83,9 +83,9 @@ class DQNCartPoleSolver():
         self.quiet = quiet
         if max_env_steps is not None: self.env._max_episode_steps = max_env_steps
 
-        self.weights1 = np.absolute(np.random.normal(0.1, 0.01, size=(8, 24)))
-        self.weights2 = np.absolute(np.random.normal(0.1, 0.01, size=(24, 48)))
-        self.weights3 = np.absolute(np.random.normal(0.1, 0.01, size=(48, 2)))
+        self.weights1 = np.absolute(np.random.normal(0.5, 0.01, size=(8, 24)))
+        self.weights2 = np.absolute(np.random.normal(0.5, 0.01, size=(24, 48)))
+        self.weights3 = np.absolute(np.random.normal(0.5, 0.01, size=(48, 2)))
 
         col_norm = np.average(self.weights1, axis = 0)
         col_norm = 0.5 / col_norm
@@ -282,6 +282,7 @@ class DQNCartPoleSolver():
             scores.append(i)
             mean_score = np.mean(scores)
             
+            '''
             if (mean_score > 150):
                 print (e, mean_score, self.epsilon)
                 
@@ -312,8 +313,9 @@ class DQNCartPoleSolver():
                 prev2 = self.weights2
                 prev3 = self.weights3
                 
-                break 
-            elif (mean_score > 100):
+                break
+            '''
+            if (mean_score > 100):
                 lr = 0.0005
             elif (mean_score > 25):
                 lr = 0.001

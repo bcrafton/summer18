@@ -1,0 +1,56 @@
+[33mWARN: gym.spaces.Box autodetected dtype as <class 'numpy.float32'>. Please provide explicit dtype.[0m
+4999 85.63 0.00999066636637756
+96.000 0.045 0.000 1.171
+576.000 0.582 0.001 1.350
+48.000 0.034 0.001 1.381
+[33mWARN: gym.spaces.Box autodetected dtype as <class 'numpy.float32'>. Please provide explicit dtype.[0m
+4999 57.14 0.00999066636637756
+96.000 0.011 0.000 1.144
+576.000 0.342 0.001 1.315
+48.000 0.037 0.001 1.378
+[33mWARN: gym.spaces.Box autodetected dtype as <class 'numpy.float32'>. Please provide explicit dtype.[0m
+4999 37.62 0.00999066636637756
+96.000 0.080 0.001 1.003
+576.000 0.211 0.000 1.068
+48.000 0.082 0.002 1.279
+[33mWARN: gym.spaces.Box autodetected dtype as <class 'numpy.float32'>. Please provide explicit dtype.[0m
+4999 73.95 0.00999066636637756
+96.000 0.038 0.000 1.151
+576.000 1.701 0.003 1.305
+48.000 0.104 0.002 1.375
+[33mWARN: gym.spaces.Box autodetected dtype as <class 'numpy.float32'>. Please provide explicit dtype.[0m
+1000 150.11 0.18366386467309628
+96.076 0.782 0.008 0.986
+572.539 4.040 0.007 0.982
+47.742 0.284 0.006 1.128
+[33mWARN: gym.spaces.Box autodetected dtype as <class 'numpy.float32'>. Please provide explicit dtype.[0m
+1066 150.26 0.17192773488132373
+96.052 0.608 0.006 0.896
+572.785 3.239 0.006 0.916
+47.814 0.200 0.004 1.083
+[33mWARN: gym.spaces.Box autodetected dtype as <class 'numpy.float32'>. Please provide explicit dtype.[0m
+4999 129.87 0.00999066636637756
+96.000 0.093 0.001 1.170
+576.000 0.283 0.000 1.367
+48.000 0.038 0.001 1.366
+[33mWARN: gym.spaces.Box autodetected dtype as <class 'numpy.float32'>. Please provide explicit dtype.[0m
+4999 129.04 0.00999066636637756
+96.000 0.061 0.001 1.190
+576.000 0.188 0.000 1.348
+48.000 0.038 0.001 1.362
+[33mWARN: gym.spaces.Box autodetected dtype as <class 'numpy.float32'>. Please provide explicit dtype.[0m
+4999 80.35 0.00999066636637756
+96.000 0.053 0.001 1.176
+576.000 0.259 0.000 1.354
+48.000 0.023 0.000 1.374
+[33mWARN: gym.spaces.Box autodetected dtype as <class 'numpy.float32'>. Please provide explicit dtype.[0m
+1878 150.23 0.07629962104389189
+96.050 0.334 0.003 1.101
+572.426 4.043 0.007 1.170
+47.737 0.263 0.005 1.256
+[33mWARN: gym.spaces.Box autodetected dtype as <class 'numpy.float32'>. Please provide explicit dtype.[0m
+4999 72.19 0.00999066636637756
+96.000 0.046 0.000 1.177
+576.000 0.337 0.001 1.351
+48.000 0.053 0.001 1.378
+[33mWARN: gym.spaces.Box autodetected dtype as <class 'numpy.float32'>. Please provide explicit dtype.[0m
