@@ -11,7 +11,7 @@ from keras.optimizers import Adam
 
 SPIKE = 1
 NUM_SCORES = 100
-lr = 0.0001
+lr = 0.001
 
 def update_elig(elig, grad):
   elig = np.copy(elig)
@@ -51,13 +51,17 @@ def get_reward(state, next_state):
     else:
       diff_ang = ang2 - ang1
       
+    '''
     from_zero = np.absolute(ang2)
     if (from_zero < 10):
       reward += 1 - (from_zero / 10)
     
-    reward += 50 * (diff_pos + diff_ang)
+    reward += 100 * (diff_ang)
     reward = np.clip(reward, -1, 1)
-      
+    '''
+    
+    reward = 0.075 - np.absolute(ang2)
+    
     return reward
   
 class DQNCartPoleSolver():
@@ -77,9 +81,24 @@ class DQNCartPoleSolver():
         self.quiet = quiet
         if max_env_steps is not None: self.env._max_episode_steps = max_env_steps
 
-        self.weights1 = np.absolute(np.random.normal(0.5, 0.2, size=(8, 24)))
-        self.weights2 = np.absolute(np.random.normal(0.5, 0.2, size=(24, 48)))
-        self.weights3 = np.absolute(np.random.normal(0.5, 0.2, size=(48, 2)))
+        self.weights1 = np.absolute(np.random.normal(0.1, 0.01, size=(8, 24)))
+        self.weights2 = np.absolute(np.random.normal(0.1, 0.01, size=(24, 48)))
+        self.weights3 = np.absolute(np.random.normal(0.1, 0.01, size=(48, 2)))
+
+        col_norm = np.average(self.weights1, axis = 0)
+        col_norm = 0.5 / col_norm
+        for j in range(24):
+          self.weights1[:, j] *= col_norm[j]
+        
+        col_norm = np.average(self.weights2, axis = 0)
+        col_norm = 0.5 / col_norm
+        for j in range(48):
+          self.weights2[:, j] *= col_norm[j]
+        
+        col_norm = np.average(self.weights3, axis = 0)
+        col_norm = 0.5 / col_norm
+        for j in range(2):
+          self.weights3[:, j] *= col_norm[j]
         
         # Init model
         self.model = Sequential()
@@ -165,6 +184,7 @@ class DQNCartPoleSolver():
             rewards = []
             eligs = []
             actions = []
+            
             while not done:
                 i += 1
                 
@@ -188,11 +208,14 @@ class DQNCartPoleSolver():
                     elig3 = update_elig(elig3, elig_grad3)
 
                     action = np.argmax(xw3)
-                    actions.append(action)
                     next_state, reward, done, _ = self.env.step(action)
+                    # print (next_state)
                     next_state = self.preprocess_state(next_state)
                     reward = get_reward(state, next_state)
                     state = next_state
+                    
+                    actions.append(action)
+                    rewards.append(reward)
                     
                     # fluct1 = np.absolute(np.random.normal(0.1, 0.04, size=(8, 24)))
                     # fluct2 = np.absolute(np.random.normal(0.1, 0.04, size=(24, 48)))
@@ -200,36 +223,38 @@ class DQNCartPoleSolver():
                     
                     # err = (elig1 / np.average(self.weights1)) - self.weights1
                     # self.weights1 += lr * err * reward
-                    err = elig1 * (np.average(elig1) / np.average(self.weights1)) - self.weights1
+                    err = elig1 / np.average(elig1) * np.average(self.weights1) - self.weights1
                     self.weights1 = np.clip(self.weights1 + lr * err * reward, 0.05, 5)
                     
                     # err = (elig2 / np.average(self.weights2)) - self.weights2
                     # self.weights2 += lr * err * reward
-                    err = elig2 * (np.average(elig2) / np.average(self.weights2)) - self.weights2
+                    err = elig2 / np.average(elig2) * np.average(self.weights2) - self.weights2
                     self.weights2 = np.clip(self.weights2 + lr * err * reward, 0.05, 5)
                     
                     # err = (elig3 / np.average(self.weights3)) - self.weights3
                     # self.weights3 += lr * err * reward
-                    err = elig3 * (np.average(elig3) / np.average(self.weights3)) - self.weights3
-                    self.weights3 = np.clip(self.weights3 + lr * err * reward, 0.05, 5)
+                    err = elig3 / np.average(elig3) * np.average(self.weights3) - self.weights3
+                    grad = lr * err * reward
+                    self.weights3 = np.clip(self.weights3 + grad, 0.05, 5)
                     
-                    eligs.append(np.average(elig1))
-                    rewards.append(reward > 0.5)
-                    # print (elig1 * reward)
+                    # print (np.max(err), np.min(err))
                     
                 if not SPIKE: 
                     action = self.choose_action(state, self.epsilon)
                     next_state, reward, done, _ = self.env.step(action)
                     next_state = self.preprocess_state(next_state)
-                    
                     reward = get_reward(state, next_state)
-                    
                     self.remember(state, action, reward, next_state, done)
                     state = next_state
-                    
+                   
+            # print ("end") 
+            
             # print (np.average(np.asarray(rewards)))
             # print (np.average(np.asarray(eligs)))            
-            print (actions)
+
+            # print(actions)
+            # print(rewards)
+            print ( np.average(np.asarray(rewards)), np.count_nonzero(np.asarray(actions)), len(actions) )
             
             scores.append(i)
             mean_score = np.mean(scores)
