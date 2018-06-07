@@ -11,14 +11,13 @@ from keras.optimizers import Adam
 
 SPIKE = 1
 NUM_SCORES = 100
-lr = 0.001
 
 def update_elig(elig, grad):
   elig = np.copy(elig)
   grad = np.copy(grad)
   
   if True:
-      elig = elig * 0.25
+      elig = elig * 0.9
       elig = elig + grad
   elif False:
       elig = np.power(elig, 1.25)
@@ -30,7 +29,10 @@ def update_elig(elig, grad):
 def sigmoid(x):
   return 1 / (1 + np.exp(-x)) - 0.5
 
-def get_reward(state, next_state):
+def get_reward(state, next_state, done):
+    if done:
+       return -1
+
     state = state.flatten()
     next_state = next_state.flatten()
     reward = 0
@@ -60,7 +62,7 @@ def get_reward(state, next_state):
     reward = np.clip(reward, -1, 1)
     '''
     
-    reward = 0.075 - np.absolute(ang2)
+    reward = 0.15 - np.absolute(ang2)
     
     return reward
   
@@ -166,6 +168,7 @@ class DQNCartPoleSolver():
 
     def run(self):
         scores = deque(maxlen=NUM_SCORES)
+        lr = 0.01
 
         for e in range(self.n_episodes):
             state = self.preprocess_state(self.env.reset())
@@ -184,6 +187,13 @@ class DQNCartPoleSolver():
             rewards = []
             eligs = []
             actions = []
+            
+            '''
+            if lr > 0.001:
+                lr = lr * 0.999
+            else:
+                lr = 0.001
+            '''
             
             while not done:
                 i += 1
@@ -211,7 +221,7 @@ class DQNCartPoleSolver():
                     next_state, reward, done, _ = self.env.step(action)
                     # print (next_state)
                     next_state = self.preprocess_state(next_state)
-                    reward = get_reward(state, next_state)
+                    reward = get_reward(state, next_state, done)
                     state = next_state
                     
                     actions.append(action)
@@ -254,11 +264,54 @@ class DQNCartPoleSolver():
 
             # print(actions)
             # print(rewards)
-            print ( np.average(np.asarray(rewards)), np.count_nonzero(np.asarray(actions)), len(actions) )
+            
+            # making sure we were getting good elig, good reward very important.
+            
+            # def most val print statement:
+            # print ( np.average(np.asarray(rewards)), np.count_nonzero(np.asarray(actions)), len(actions), lr)
+            
+            self.epsilon *= 0.99
             
             scores.append(i)
             mean_score = np.mean(scores)
-            self.epsilon *= 0.99
+            
+            if (mean_score > 150):
+                print('[Episode {}] - Mean survival time over last 100 episodes was {} ticks.'.format(e, mean_score))
+                
+                assert(np.min(self.weights1) >= 0)
+                assert(np.min(self.weights2) >= 0)
+                assert(np.min(self.weights3) >= 0)
+                
+                sum1 = np.sum(np.absolute(self.weights1))
+                diff1 = np.sum(np.absolute(self.weights1 - prev1))
+                avg1 = np.sum(np.absolute(self.weights1 - prev1)) / np.sum(prev1)
+                std1 = np.std(self.weights1)
+                
+                sum2 = np.sum(np.absolute(self.weights2))
+                diff2 = np.sum(np.absolute(self.weights2 - prev2))
+                avg2 = np.sum(np.absolute(self.weights2 - prev2)) / np.sum(prev2)
+                std2 = np.std(self.weights2)
+                
+                sum3 = np.sum(np.absolute(self.weights3))
+                diff3 = np.sum(np.absolute(self.weights3 - prev3))
+                avg3 = np.sum(np.absolute(self.weights3 - prev3)) / np.sum(prev3)
+                std3 = np.std(self.weights3)
+                
+                print ('{:05.3f}'.format(sum1), '{:05.3f}'.format(diff1), '{:05.3f}'.format(avg1), '{:05.3f}'.format(std1))
+                print ('{:05.3f}'.format(sum2), '{:05.3f}'.format(diff2), '{:05.3f}'.format(avg2), '{:05.3f}'.format(std2))
+                print ('{:05.3f}'.format(sum3), '{:05.3f}'.format(diff3), '{:05.3f}'.format(avg3), '{:05.3f}'.format(std3))
+                
+                prev1 = self.weights1
+                prev2 = self.weights2
+                prev3 = self.weights3
+                
+                break 
+            elif (mean_score > 100):
+                lr = 0.0005
+            elif (mean_score > 25):
+                lr = 0.001
+            if (mean_score < 25):
+                lr = 0.01
             
             if SPIKE:
                 '''
@@ -294,10 +347,10 @@ class DQNCartPoleSolver():
             if not SPIKE: 
                 self.replay(self.batch_size) 
             
-            if e % NUM_SCORES == 0:
+            if (((e+1) % self.n_episodes == 0) and e > 0):
                 print('[Episode {}] - Mean survival time over last 100 episodes was {} ticks.'.format(e, mean_score))
-                
-            if e % 500 == 0:
+             
+            if (((e+1) % self.n_episodes == 0) and e > 0):
                 if SPIKE:
                     assert(np.min(self.weights1) >= 0)
                     assert(np.min(self.weights2) >= 0)

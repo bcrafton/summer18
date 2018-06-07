@@ -1,0 +1,7 @@
+
+for run in {1..1000}
+do
+  python hebb_err.py >> results
+done
+
+
