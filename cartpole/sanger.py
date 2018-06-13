@@ -202,21 +202,21 @@ class DQNCartPoleSolver():
                     y1 = np.dot(state, self.weights1)
                     y1 = y1 / np.max(y1)
                     wy1 = np.dot(self.weights1, np.transpose(y1))
-                    d1 = np.transpose(wy1) / np.average(wy1) * np.average(state) - state
+                    d1 = state - np.transpose(wy1) / np.average(wy1) * np.average(state)
                     elig_grad1 = np.dot(np.transpose(y1), d1)
                     elig1 = update_elig(elig1, np.transpose(elig_grad1))
 
                     y2 = np.dot(y1, self.weights2)
                     y2 = y2 / np.max(y2)
                     wy2 = np.dot(self.weights2, np.transpose(y2))
-                    d2 = np.transpose(wy2) / np.average(wy2) * np.average(y1) - y1
+                    d2 = y1 - np.transpose(wy2) / np.average(wy2) * np.average(y1)
                     elig_grad2 = np.dot(np.transpose(y2), d2)
                     elig2 = update_elig(elig2, np.transpose(elig_grad2))
                     
                     y3 = np.dot(y2, self.weights3)
                     y3 = y3 / np.max(y3)
                     wy3 = np.dot(self.weights3, np.transpose(y3))
-                    d3 = np.transpose(wy3) / np.average(wy3) * np.average(y2) - y2
+                    d3 = y2 - np.transpose(wy3) / np.average(wy3) * np.average(y2)
                     elig_grad3 = np.dot(np.transpose(y3), d3)
                     elig3 = update_elig(elig3, np.transpose(elig_grad3))
 
@@ -242,19 +242,19 @@ class DQNCartPoleSolver():
                     # self.weights1 += lr * err * reward
                     # err = elig1 / np.average(elig1) * np.average(self.weights1) - self.weights1
                     grad = lr * elig1 * reward
-                    self.weights1 = np.clip(self.weights1 - grad, 0.05, 5)
+                    self.weights1 = np.clip(self.weights1 + grad, 0.05, 5)
                     
                     # err = (elig2 / np.average(self.weights2)) - self.weights2
                     # self.weights2 += lr * err * reward
                     # err = elig2 / np.average(elig2) * np.average(self.weights2) - self.weights2
                     grad = lr * elig2 * reward
-                    self.weights2 = np.clip(self.weights2 - grad, 0.05, 5)
+                    self.weights2 = np.clip(self.weights2 + grad, 0.05, 5)
                     
                     # err = (elig3 / np.average(self.weights3)) - self.weights3
                     # self.weights3 += lr * err * reward
                     # err = elig3 / np.average(elig3) * np.average(self.weights3) - self.weights3
                     grad = lr * elig3 * reward
-                    self.weights3 = np.clip(self.weights3 - grad, 0.05, 5)
+                    self.weights3 = np.clip(self.weights3 + grad, 0.05, 5)
                     
                     # print (np.max(err), np.min(err))
                     
