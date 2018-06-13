@@ -1,20 +1,20 @@
 
 C = 1e-9;
-RS1 = 5e4;
-RS2 = 5e4;
+%RS1 = 5e4;
+%RS2 = 5e4;
 R1 = 1e5; % 100k
 R2 = 1e5; % 100k
 Vdc = -0.9;
 Vdc2 = 0.9;
 RL = 10e9;
 
-syms V(t) V2(t) I;
+syms V(t) V2(t) I RS1 RS2;
 condV = V(0) == 0;
 condV2 = V2(0) == 0;
 
 ode1 = C * diff(V) == I - (1/RS1) * (V - Vdc) - (1/R2) * (V - V2);
 ode2 = C * diff(V2) == (1/R2) * (V - V2) - (1/RS2) * (V2 - Vdc2) - (1/RL) * V2;
-[solV(t, I), solV2(t, I)] = dsolve([ode1; ode2], [condV; condV2]);
+[solV(t, I, RS1, RS2), solV2(t, I, RS1, RS2)] = dsolve([ode1; ode2], [condV; condV2]);
 
 t_in = linspace(0, 1, 1000);
 I_in = linspace(1e-6, 1e-5, 1000);
@@ -30,8 +30,8 @@ state_RS1 = 0;
 state_RS2 = 0;
 
 for i = 1:1000
-    y1(i) = solV(t_in(i), I_in(i));
-    y2(i) = solV2(t_in(i), I_in(i));
+    y1(i) = solV(t_in(i), I_in(i), RS1_in, RS2_in);
+    y2(i) = solV2(t_in(i), I_in(i), RS1_in, RS2_in);
     [RS1_in, d1, state_RS1] = memristor(RS1_in, y1(i) - Vdc, state_RS1);
     [RS2_in, d2, state_RS2] = memristor(RS2_in, y2(i) - Vdc2, state_RS2);
 end
