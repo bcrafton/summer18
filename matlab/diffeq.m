@@ -16,12 +16,14 @@ ode2 = C2 * diff(V2) == (1/R2) * (V - V2) - (1/RS2) * (V2 - Vdc2) - (1/RL) * V2;
 [solV(t, I, RS1, RS2), solV2(t, I, RS1, RS2)] = dsolve([ode1; ode2], [condV; condV2]);
 
 t_in = linspace(0, 0.01, 1000);
-I_in = [linspace(0, 0, 500), linspace(1e-6, 1e-6, 500)];
+I_in = [linspace(0, 0, 500), linspace(0, 1e-6, 100), linspace(1e-6, 1e-6, 500)];
 
 y1 = zeros(1000, 1);
 y2 = zeros(1000, 1);
 r1 = zeros(1000, 1);
 r2 = zeros(1000, 1);
+vr1 = zeros(1000, 1);
+vr2 = zeros(1000, 1);
 
 RS1_in = 1e6;
 RS2_in = 1e6;
@@ -33,40 +35,48 @@ for i = 1:1000
     y2(i) = solV2(t_in(i), I_in(i), RS1_in, RS2_in);
     r1(i) = RS1_in;
     r2(i) = RS2_in;
+    vr1(i) = y1(i) - Vdc;
+    vr2(i) = Vdc2 - y2(i);
     [RS1_in, state_RS1] = memristor(y1(i) - Vdc, state_RS1);
     [RS2_in, state_RS2] = memristor(Vdc2 - y2(i), state_RS2);
 end
 
 % plot(t_in, r1, t_in, r2);
-plot(t_in, y1, 'b', t_in, y2, 'r');
+% plot(t_in, y1, 'b', t_in, y2, 'r');
+% plot(t_in, y2, 'r');
+plot(t_in, vr1, 'b', t_in, vr2, 'r');
 
 function [r, state] = memristor(v, state)
 
-    m1 = (1e6 - 8e5) / (1.0 - 0.0);
-    m2 = (8e5 - 5e4) / (1.2 - 1.0);
-    m3 = (5e4 - 1e5) / (0.5 - 1.2);
-    m4 = (1e5 - 1e6) / (0.0 - 0.5);
+    m1 = (1e6 - 8e5) / (0.95 - 0.0);
+    m2 = (8e5 - 5e4) / (1.0 - 0.95);
+    m3 = (5e4 - 5e5) / (0.55 - 1.0);
+    m4 = (5e5 - 1e6) / (0.5 - 0.55);
 
     if (state == 0 && v <= 1.0)
-        r = m1 * v + 8e5;
-        state = 0;
-        r = min(r, 8e5);
-        r = max(r, 1e6);
-    elseif (state == 0 && v > 1.0)
-        r = m2 * v + 5e4;
-        state = 1;
-        r = min(r, 5e4);
+        r = 1e6 - m1 * v;
         r = max(r, 8e5);
-    elseif (state == 1 && v >= 0.5)
-        r = 1e5 - m3 * (1.2 - v);
-        r = min(r, 5e4);
-        r = max(r, 1e5);
-        state = 1;
-    elseif (state == 1 && v < 0.5)
-        r = 1e6 - m4 * (0.5 - v);
-        r = min(r, 1e5);
-        r = max(r, 1e6);
+        r = min(r, 1e6);
         state = 0;
+    elseif (state == 0 && v > 0.95)
+        r = 8e5 - m2 * (v - 0.95);
+        r = max(r, 5e4);
+        r = min(r, 8e5);
+        if (v > 1.0)
+            state = 1;
+        end
+    elseif (state == 1 && v >= 0.55)
+        r = 5e4 + m3 * (1.0 - v);
+        r = max(r, 5e4);
+        r = min(r, 5e5);
+        state = 1;
+    elseif (state == 1 && v < 0.55)
+        r = 5e5 + m4 * (0.55 - v);
+        r = max(r, 5e5);
+        r = min(r, 1e6);
+        if (v < 0.5)
+            state = 0;
+        end
     else
         disp("should never get here");
     end

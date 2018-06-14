@@ -52,10 +52,8 @@ vs = []
 for i in range(100):
     r, state = mott(v, state)
     
-    '''
     vs.append(v)
     rs.append(r)
-    '''
     
     v += 0.01
     v = np.clip(v, 0, 1.5)
