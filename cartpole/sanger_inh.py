@@ -1,4 +1,3 @@
-# Inspired by https://keon.io/deep-q-learning/
 
 import random
 import gym
@@ -31,7 +30,7 @@ def sigmoid(x):
 
 def get_reward(state, next_state, done):
     if done:
-       return -1
+       return -2
 
     state = state.flatten()
     next_state = next_state.flatten()
@@ -52,22 +51,13 @@ def get_reward(state, next_state, done):
       diff_ang = ang1 - ang2
     else:
       diff_ang = ang2 - ang1
-      
-    '''
-    from_zero = np.absolute(ang2)
-    if (from_zero < 10):
-      reward += 1 - (from_zero / 10)
-    
-    reward += 100 * (diff_ang)
-    reward = np.clip(reward, -1, 1)
-    '''
     
     reward = 0.15 - np.absolute(ang2)
     
     return reward
   
 class DQNCartPoleSolver():
-    def __init__(self, n_episodes=5000, n_win_ticks=195, max_env_steps=None, gamma=1.0, epsilon=0.5, epsilon_min=0.01, epsilon_log_decay=0.995, alpha=0.01, alpha_decay=0.01, batch_size=64, monitor=False, quiet=False):
+    def __init__(self, n_episodes=10000, n_win_ticks=195, max_env_steps=None, gamma=1.0, epsilon=0.5, epsilon_min=0.01, epsilon_log_decay=0.995, alpha=0.01, alpha_decay=0.01, batch_size=64, monitor=False, quiet=False):
         self.memory = deque(maxlen=100000)
         self.env = gym.make('CartPole-v0')
         if monitor: self.env = gym.wrappers.Monitor(self.env, '../data/cartpole-1', force=True)
@@ -86,6 +76,11 @@ class DQNCartPoleSolver():
         self.weights1 = np.absolute(np.random.normal(0.5, 0.01, size=(8, 24)))
         self.weights2 = np.absolute(np.random.normal(0.5, 0.01, size=(24, 48)))
         self.weights3 = np.absolute(np.random.normal(0.5, 0.01, size=(48, 2)))
+        
+        self.inh_mask24 = np.random.choice([0, 1], size=(1, 24), p=[.75, .25])
+        self.exc_mask24 = (self.inh_mask24 == 0) * 1.0
+        self.inh_mask48 = np.random.choice([0, 1], size=(1, 48), p=[.75, .25])
+        self.exc_mask48 = (self.inh_mask48 == 0) * 1.0
 
         col_norm = np.average(self.weights1, axis = 0)
         col_norm = 0.5 / col_norm
@@ -188,13 +183,6 @@ class DQNCartPoleSolver():
             eligs = []
             actions = []
             
-            '''
-            if lr > 0.001:
-                lr = lr * 0.999
-            else:
-                lr = 0.001
-            '''
-            
             while not done:
                 i += 1
                 
@@ -206,15 +194,18 @@ class DQNCartPoleSolver():
                     elig_grad1 = np.dot(np.transpose(y1), d1)
                     elig1 = update_elig(elig1, np.transpose(elig_grad1))
 
-                    # print(y1)
-                    y2 = np.dot(y1, self.weights2)
+                    in2 = (-1 * self.inh_mask24 * y1) + (self.exc_mask24 * y1)
+                    y2 = np.dot(in2, self.weights2)
+                    y2 = np.clip(y2, 0, y2)
                     y2 = y2 / np.max(y2)
                     wy2 = np.dot(self.weights2, np.transpose(y2))
                     d2 = y1 - np.transpose(wy2) / np.average(wy2) * np.average(y1)
                     elig_grad2 = np.dot(np.transpose(y2), d2)
                     elig2 = update_elig(elig2, np.transpose(elig_grad2))
                     
-                    y3 = np.dot(y2, self.weights3)
+                    in3 = (-1 * self.inh_mask48 * y2) + (self.exc_mask48 * y2)
+                    y3 = np.dot(in3, self.weights3)
+                    y3 = np.clip(y3, 0, y3)
                     y3 = y3 / np.max(y3)
                     wy3 = np.dot(self.weights3, np.transpose(y3))
                     d3 = y2 - np.transpose(wy3) / np.average(wy3) * np.average(y2)
@@ -235,29 +226,21 @@ class DQNCartPoleSolver():
                     actions.append(action)
                     rewards.append(reward)
                     
-                    # fluct1 = np.absolute(np.random.normal(0.1, 0.04, size=(8, 24)))
-                    # fluct2 = np.absolute(np.random.normal(0.1, 0.04, size=(24, 48)))
-                    # fluct3 = np.absolute(np.random.normal(0.1, 0.04, size=(48, 2)))
-                    
-                    # err = (elig1 / np.average(self.weights1)) - self.weights1
-                    # self.weights1 += lr * err * reward
-                    # err = elig1 / np.average(elig1) * np.average(self.weights1) - self.weights1
                     grad = lr * elig1 * reward
                     self.weights1 = np.clip(self.weights1 + grad, 0.05, 5)
                     
-                    # err = (elig2 / np.average(self.weights2)) - self.weights2
-                    # self.weights2 += lr * err * reward
-                    # err = elig2 / np.average(elig2) * np.average(self.weights2) - self.weights2
                     grad = lr * elig2 * reward
+                    grad_inh = -1 * np.transpose(self.inh_mask24) * grad
+                    grad_exc = np.transpose(self.exc_mask24) * grad
+                    grad = grad_inh + grad_exc
+                    # print(np.max(grad_inh), np.min(grad_inh), reward)
                     self.weights2 = np.clip(self.weights2 + grad, 0.05, 5)
                     
-                    # err = (elig3 / np.average(self.weights3)) - self.weights3
-                    # self.weights3 += lr * err * reward
-                    # err = elig3 / np.average(elig3) * np.average(self.weights3) - self.weights3
                     grad = lr * elig3 * reward
+                    grad_inh = -1 * np.transpose(self.inh_mask48) * grad
+                    grad_exc = np.transpose(self.exc_mask48) * grad
+                    grad = grad_inh + grad_exc
                     self.weights3 = np.clip(self.weights3 + grad, 0.05, 5)
-                    
-                    # print (np.max(err), np.min(err))
                     
                 if not SPIKE: 
                     action = self.choose_action(state, self.epsilon)
@@ -267,19 +250,6 @@ class DQNCartPoleSolver():
                     self.remember(state, action, reward, next_state, done)
                     state = next_state
                    
-            # print ("end") 
-            
-            # print (np.average(np.asarray(rewards)))
-            # print (np.average(np.asarray(eligs)))            
-
-            # print(actions)
-            # print(rewards)
-            
-            # making sure we were getting good elig, good reward very important.
-            
-            # def most val print statement:
-            # print ( np.average(np.asarray(rewards)), np.count_nonzero(np.asarray(actions)), len(actions), lr)
-            
             if SPIKE:
               if self.epsilon > self.epsilon_min:
                   self.epsilon *= 0.999
@@ -287,39 +257,6 @@ class DQNCartPoleSolver():
             scores.append(i)
             mean_score = np.mean(scores)
             
-            '''
-            if (mean_score > 150):
-                print (e, mean_score, self.epsilon)
-                
-                assert(np.min(self.weights1) >= 0)
-                assert(np.min(self.weights2) >= 0)
-                assert(np.min(self.weights3) >= 0)
-                
-                sum1 = np.sum(np.absolute(self.weights1))
-                diff1 = np.sum(np.absolute(self.weights1 - prev1))
-                avg1 = np.sum(np.absolute(self.weights1 - prev1)) / np.sum(prev1)
-                std1 = np.std(self.weights1)
-                
-                sum2 = np.sum(np.absolute(self.weights2))
-                diff2 = np.sum(np.absolute(self.weights2 - prev2))
-                avg2 = np.sum(np.absolute(self.weights2 - prev2)) / np.sum(prev2)
-                std2 = np.std(self.weights2)
-                
-                sum3 = np.sum(np.absolute(self.weights3))
-                diff3 = np.sum(np.absolute(self.weights3 - prev3))
-                avg3 = np.sum(np.absolute(self.weights3 - prev3)) / np.sum(prev3)
-                std3 = np.std(self.weights3)
-                
-                print ('{:05.3f}'.format(sum1), '{:05.3f}'.format(diff1), '{:05.3f}'.format(avg1), '{:05.3f}'.format(std1))
-                print ('{:05.3f}'.format(sum2), '{:05.3f}'.format(diff2), '{:05.3f}'.format(avg2), '{:05.3f}'.format(std2))
-                print ('{:05.3f}'.format(sum3), '{:05.3f}'.format(diff3), '{:05.3f}'.format(avg3), '{:05.3f}'.format(std3))
-                
-                prev1 = self.weights1
-                prev2 = self.weights2
-                prev3 = self.weights3
-                
-                break
-            '''
             if (mean_score > 190):
                 np.save("weights1", self.weights1)
                 np.save("weights2", self.weights2)
@@ -334,20 +271,6 @@ class DQNCartPoleSolver():
                 lr = 0.01
             
             if SPIKE:
-                '''
-                elig1 = elig1 / np.max(elig1)
-                elig1 = np.power(elig1, 2)
-                
-                elig2 = elig2 / np.max(elig2)
-                elig2 = np.power(elig2, 2)
-                
-                elig3 = elig3 / np.max(elig3)
-                elig3 = np.power(elig3, 2)
-            
-                self.weights1 = (self.weights1 + lr * reward * elig1) / (1 + lr * elig1)
-                self.weights2 = (self.weights2 + lr * reward * elig2) / (1 + lr * elig2)
-                self.weights3 = (self.weights3 + lr * reward * elig3) / (1 + lr * elig3)
-                '''
                 
                 col_norm = np.average(self.weights1, axis = 0)
                 col_norm = 0.5 / col_norm
@@ -381,19 +304,21 @@ class DQNCartPoleSolver():
                     avg1 = np.sum(np.absolute(self.weights1 - prev1)) / np.sum(prev1)
                     std1 = np.std(self.weights1)
                     
-                    sum2 = np.sum(np.absolute(self.weights2))
+                    sum2_inh = np.sum(np.absolute( np.transpose(self.inh_mask24) * self.weights2 ))
+                    sum2_exc = np.sum(np.absolute( np.transpose(self.exc_mask24) * self.weights2 ))
                     diff2 = np.sum(np.absolute(self.weights2 - prev2))
                     avg2 = np.sum(np.absolute(self.weights2 - prev2)) / np.sum(prev2)
                     std2 = np.std(self.weights2)
                     
-                    sum3 = np.sum(np.absolute(self.weights3))
+                    sum3_inh = np.sum(np.absolute( np.transpose(self.inh_mask48) * self.weights3 ))
+                    sum3_exc = np.sum(np.absolute( np.transpose(self.exc_mask48) * self.weights3 ))
                     diff3 = np.sum(np.absolute(self.weights3 - prev3))
                     avg3 = np.sum(np.absolute(self.weights3 - prev3)) / np.sum(prev3)
                     std3 = np.std(self.weights3)
                     
                     print ('{:05.3f}'.format(sum1), '{:05.3f}'.format(diff1), '{:05.3f}'.format(avg1), '{:05.3f}'.format(std1))
-                    print ('{:05.3f}'.format(sum2), '{:05.3f}'.format(diff2), '{:05.3f}'.format(avg2), '{:05.3f}'.format(std2))
-                    print ('{:05.3f}'.format(sum3), '{:05.3f}'.format(diff3), '{:05.3f}'.format(avg3), '{:05.3f}'.format(std3))
+                    print ('{:05.3f}'.format(sum2_exc), '{:05.3f}'.format(sum2_inh), '{:05.3f}'.format(diff2), '{:05.3f}'.format(avg2), '{:05.3f}'.format(std2))
+                    print ('{:05.3f}'.format(sum3_exc), '{:05.3f}'.format(sum3_inh), '{:05.3f}'.format(diff3), '{:05.3f}'.format(avg3), '{:05.3f}'.format(std3))
                     
                     prev1 = self.weights1
                     prev2 = self.weights2
