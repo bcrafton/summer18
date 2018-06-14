@@ -5,7 +5,7 @@ R1 = 1e5; % 100k
 R2 = 1e5; % 100k
 Vdc = -0.9;
 Vdc2 = 0.9;
-RL = 10e9;
+RL = 1e9;
 
 syms V(t) V2(t) I RS1 RS2;
 condV = V(0) == 0;
@@ -15,7 +15,7 @@ ode1 = C1 * diff(V) == I - (1/RS1) * (V - Vdc) - (1/R2) * (V - V2);
 ode2 = C2 * diff(V2) == (1/R2) * (V - V2) - (1/RS2) * (V2 - Vdc2) - (1/RL) * V2;
 [solV(t, I, RS1, RS2), solV2(t, I, RS1, RS2)] = dsolve([ode1; ode2], [condV; condV2]);
 
-t_in = linspace(0, 0.1, 1000);
+t_in = linspace(0, 0.01, 1000);
 I_in = [linspace(0, 0, 500), linspace(1e-6, 1e-6, 500)];
 
 y1 = zeros(1000, 1);
@@ -23,8 +23,8 @@ y2 = zeros(1000, 1);
 r1 = zeros(1000, 1);
 r2 = zeros(1000, 1);
 
-RS1_in = 5e4;
-RS2_in = 5e4;
+RS1_in = 2e4;
+RS2_in = 2e4;
 state_RS1 = 0;
 state_RS2 = 0;
 
@@ -43,16 +43,16 @@ plot(t_in, y1, 'b', t_in, y2, 'r');
 function [r, state] = memristor(v, state)
 
     if (state == 0 && v <= 1.0)
-        r = 5e4;
+        r = 1e6;
         state = 0;
     elseif (state == 0 && v > 1.0)
-        r = 1e6;
+        r = 2e4;
         state = 1;
     elseif (state == 1 && v >= 0.5)
-        r = 1e6;
+        r = 2e4;
         state = 1;
     elseif (state == 1 && v < 0.5)
-        r = 5e4;
+        r = 1e6;
         state = 0;
     else
         disp("should never get here");
