@@ -23,8 +23,8 @@ y2 = zeros(1000, 1);
 r1 = zeros(1000, 1);
 r2 = zeros(1000, 1);
 
-RS1_in = 2e4;
-RS2_in = 2e4;
+RS1_in = 1e6;
+RS2_in = 1e6;
 state_RS1 = 0;
 state_RS2 = 0;
 
@@ -42,17 +42,30 @@ plot(t_in, y1, 'b', t_in, y2, 'r');
 
 function [r, state] = memristor(v, state)
 
+    m1 = (1e6 - 8e5) / (1.0 - 0.0);
+    m2 = (8e5 - 5e4) / (1.2 - 1.0);
+    m3 = (5e4 - 1e5) / (0.5 - 1.2);
+    m4 = (1e5 - 1e6) / (0.0 - 0.5);
+
     if (state == 0 && v <= 1.0)
-        r = 1e6;
+        r = m1 * v + 8e5;
         state = 0;
+        r = min(r, 8e5);
+        r = max(r, 1e6);
     elseif (state == 0 && v > 1.0)
-        r = 2e4;
+        r = m2 * v + 5e4;
         state = 1;
+        r = min(r, 5e4);
+        r = max(r, 8e5);
     elseif (state == 1 && v >= 0.5)
-        r = 2e4;
+        r = 1e5 - m3 * (1.2 - v);
+        r = min(r, 5e4);
+        r = max(r, 1e5);
         state = 1;
     elseif (state == 1 && v < 0.5)
-        r = 1e6;
+        r = 1e6 - m4 * (0.5 - v);
+        r = min(r, 1e5);
+        r = max(r, 1e6);
         state = 0;
     else
         disp("should never get here");
