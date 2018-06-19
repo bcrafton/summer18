@@ -35,7 +35,7 @@ def mott(v, state):
 
 class Neuristors:
     
-    def __init__(self, N, M):
+    def __init__(self, N):
     
         self.C1 = 3e-9
         self.C2 = 2e-9
@@ -45,13 +45,13 @@ class Neuristors:
         self.VDC2 = 0.9
         self.RL = 1e9
 
-        self.RS1 = np.ones(shape=(N, M)) * 10e6
-        self.RS1_STATE = np.zeros(shape=(N, M))
-        self.RS2 = np.ones(shape=(N, M)) * 10e6
-        self.RS2_STATE = np.zeros(shape=(N, M))
+        self.RS1 = np.ones(shape=N) * 10e6
+        self.RS1_STATE = np.zeros(shape=N)
+        self.RS2 = np.ones(shape=N) * 10e6
+        self.RS2_STATE = np.zeros(shape=N)
 
-        self.V1 = np.zeros(shape=(N, M))
-        self.V2 = np.zeros(shape=(N, M))
+        self.V1 = np.zeros(shape=N)
+        self.V2 = np.zeros(shape=N)
         
     def step(self, I, dt):
         
@@ -75,7 +75,7 @@ steps = 1500
 T = 1.5e-2
 dt = T / steps
 
-N = Neuristors(10, 10)
+N = Neuristors(10)
 
 Ts = np.linspace(0, T, steps)
 Is = np.concatenate(( np.linspace(0, 0, 500), np.linspace(1e-6, 1e-6, 500), np.linspace(0, 0, 500) ))
@@ -84,7 +84,7 @@ Vs = np.zeros(shape=(1500))
 for t in range(steps):
     I = Is[t] 
     V = N.step(I, dt)
-    Vs[t] = V[0, 0]
+    Vs[t] = V[0]
     
 plt.subplot(2,2,1)
 plt.plot(Ts, Vs)
