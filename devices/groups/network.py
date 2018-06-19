@@ -1,6 +1,7 @@
 
 import numpy as np
 import pylab as plt
+import random
 
 ##################################
 
@@ -23,10 +24,10 @@ def mott(v, state):
     case3 = on_state * on
     case4 = on_state * on_off
 
-    r[np.where(case1 == 1)] = 10e6
+    r[np.where(case1 == 1)] = 5e6
     r[np.where(case2 == 1)] = 5e4
     r[np.where(case3 == 1)] = 5e4
-    r[np.where(case4 == 1)] = 10e6
+    r[np.where(case4 == 1)] = 5e6
 
     state[np.where(case1 == 1)] = 0
     state[np.where(case2 == 1)] = 1
@@ -80,9 +81,10 @@ class Memristors:
         self.D = 10e-9
         self.W0 = 5e-9
         self.RON = 5e4
-        self.ROFF = 1e6
+        self.ROFF = 5e6
         self.P = 5            
-        self.W = np.ones(shape=(N, M)) * self.W0
+        # self.W = np.ones(shape=(N, M)) * self.W0
+        self.W = np.random.uniform(low=2e-9, high=8e-9, size=(N, M))
         
     def step(self, V, dt):
         R = self.RON * (self.W / self.D) + self.ROFF * (1 - (self.W / self.D))
@@ -92,36 +94,47 @@ class Memristors:
         self.W += dwdt * dt
         
         return I
+        
+        
+##################################
+
+INPUTS = 5
+OUTPUTS = 5
+N = Neuristors(INPUTS)
+NM = Memristors(INPUTS, OUTPUTS)
+M = Neuristors(OUTPUTS)
 
 ##################################
 
-steps = 1500
-T = 1.5e-2
+steps = 100000
+T = 1.0
 dt = T / steps
 
 Ts = np.linspace(0, T, steps)
-Is = np.concatenate(( np.linspace(0, 0, 500), np.linspace(1e-6, 1e-6, 500), np.linspace(0, 0, 500) ))
-Vs = np.zeros(shape=(1500))
+Vs = np.zeros(shape=(steps, OUTPUTS))
 
-N = Neuristors(10)
-NM = Memristors(10, 10)
-M = Neuristors(10)
+# Is = np.concatenate(( np.linspace(0, 0, 500), np.linspace(1e-6, 1e-6, 500), np.linspace(0, 0, 500) ))
+Is = np.zeros(shape=(steps, INPUTS))
+spikes = np.random.choice([0, 1e-6], size=(INPUTS), p=[.995, .005])
+for ii in range(steps):
+    if ii % 500 == 0:
+        spikes = np.random.choice([0, 1e-6], size=(INPUTS), p=[.995, .005])
+    Is[ii] = spikes
+
+##################################
 
 for t in range(steps):
     I = Is[t] 
     VoutN = N.step(I, dt)
     
-    VinNM = VoutN * np.ones(shape=(10, 10))
+    VinNM = VoutN * np.ones(shape=(INPUTS, OUTPUTS))
     IoutNM = NM.step(VinNM, dt)
 
-    IinM = np.sum(IoutNM, axis=0)
+    # pretty sure this is axis=1
+    IinM = np.sum(IoutNM, axis=1)
     VoutM = M.step(IinM, dt)
     
-    print IinM
-    
-    Vs[t] = VoutM[0]
-    
-    print VoutM
+    Vs[t] = VoutM
     
 plt.subplot(2,2,1)
 plt.plot(Ts, Vs)
