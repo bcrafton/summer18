@@ -98,8 +98,8 @@ class Memristors:
         
 ##################################
 
-INPUTS = 5
-OUTPUTS = 5
+INPUTS = 10
+OUTPUTS = 10
 N = Neuristors(INPUTS)
 NM = Memristors(INPUTS, OUTPUTS)
 M = Neuristors(OUTPUTS)
@@ -135,13 +135,22 @@ for t in range(steps):
     VoutM = M.step(IinM, dt)
     
     Vs[t] = VoutM
-    
+
+'''    
 plt.subplot(2,2,1)
 plt.plot(Ts, Vs)
 
 plt.subplot(2,2,2)
 plt.plot(Ts, Is)
 
+plt.show()
+'''
+
+spikes = np.where(Vs > 0.35)
+print (np.shape(spikes))
+
+# plt.plot(spikes[0], spikes[1], 'ro')
+plt.plot(spikes[0], spikes[1], '.')
 plt.show()
 
 ##################################
