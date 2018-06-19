@@ -1,37 +1,20 @@
+
+# THEANO_FLAGS=device=cuda0 python th_memristor.py
+# python th_memristor.py
+
 import theano
 import theano.tensor as TT
 import numpy as np
 import pylab as plt
+import time
 
-'''
-DT =   TT.fscalar("DT")
-U =    TT.fscalar("U")
-D =    TT.fscalar("D")
-RON =  TT.fscalar("RON")
-ROFF = TT.fscalar("ROFF")
-P =    TT.fscalar("P")
-F =    TT.fscalar("F")
-dwdt = TT.fscalar("dwdt")
-'''
-
-W =   TT.fscalar("W")
+W =   TT.fmatrix("W")
 V =   TT.fvector("V")
 
-# I =   TT.fscalar("Is")
-# R =   TT.fscalar("Rs")
+W0 = np.ones(shape=(100, 100)) * 5e-9
+W0 = W0.astype('f')
 
-'''
-U = 1e-16
-D = 10e-9
-W0 = 5e-9
-RON = 5e4
-ROFF = 1e6
-P = 5
-'''
-
-W0 = 5e-9
-
-steps = 1500
+steps = 10000
 T = 2 * np.pi
 dt = T / steps 
 
@@ -51,22 +34,18 @@ def gradient (V, W):
 
     return W
 
-result, updates = theano.scan(fn=gradient,
-                              outputs_info = [W],
-                              sequences = V,
-                              n_steps=steps)
-
-
-func = theano.function(inputs=[V, W], 
-                       outputs=result, 
-                       updates=updates)
+result, updates = theano.scan(fn=gradient, outputs_info=[W], sequences=V, n_steps=steps)
+func = theano.function(inputs=[V, W], outputs=result, updates=updates)
                        
 VIN = np.sin(np.linspace(0, T, steps)).astype('f')
+
+start = time.time()
 WS = func(VIN, W0)
+end = time.time()
+print end - start
 
-plt.plot(VIN, WS)
+plt.plot(VIN, WS[:, 0, 0])
 plt.show()
-
 
 
 
