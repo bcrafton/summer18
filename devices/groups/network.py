@@ -136,20 +136,16 @@ for t in range(steps):
     
     Vs[t] = VoutM
 
-'''    
-plt.subplot(2,2,1)
-plt.plot(Ts, Vs)
 
-plt.subplot(2,2,2)
+plt.subplot(2,2,1)
 plt.plot(Ts, Is)
 
-plt.show()
-'''
+plt.subplot(2,2,2)
+plt.plot(Ts, Vs)
 
 spikes = np.where(Vs > 0.35)
-print (np.shape(spikes))
-
-# plt.plot(spikes[0], spikes[1], 'ro')
+# print (np.shape(spikes))
+plt.subplot(2,2,3)
 plt.plot(spikes[0], spikes[1], '.')
 plt.show()
 
