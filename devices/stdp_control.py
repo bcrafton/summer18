@@ -15,7 +15,7 @@ def PFET_ISD(VDD, VS, VG, VD):
     
     K = 0.4
     UT = 0.025
-    I0 = 1e-7
+    I0 = 1e-12
 
     if (VSG <= ABS_VTH):
         if (VSD >= 4 * UT):
@@ -41,7 +41,7 @@ def PFET_ISD(VDD, VS, VG, VD):
         
     return ISD
     
-T = 1e-6
+T = 2e-3
 steps = 1000
 dt = T / steps
 
@@ -57,7 +57,7 @@ VPROG = 0.0
 # sweep over the pre synaptic input voltage.
 # VPRE_IN = np.linspace(0, 1.0, steps)
 # VPRE_IN = np.concatenate(( np.linspace(1, 1, 250), np.linspace(0.320, 0.320, 250), np.linspace(1, 1, 500) ))
-VPRE_IN = np.concatenate(( np.linspace(1, 1, 250), np.linspace(0.32, 0.32, 250), np.linspace(1, 1, 500) ))
+VPRE_IN = np.concatenate(( np.linspace(1, 1, 250), np.linspace(0.32, 0.32, 250), np.linspace(1, 1, 1500) ))
 
 Ts = []
 VPROG_OUT = []
