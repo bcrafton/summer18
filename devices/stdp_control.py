@@ -7,15 +7,28 @@ def PFET_IDS(VS, VG, VD):
     VGS = VG - VS
     VDS = VD - VS
 
-    VTH = 0.6
-    K = 20.0
+    I0 = 1e-10
+    UT = 0.025
+    VTH = 0.5
+    K = 0.6
 
     if (-VGS >= -VTH):
-        IDS = 0
+        if (VDS < -0.100):
+            IDS = I0 * np.exp(K * (VDD - VG - VTH) / UT)
+        else:
+            # Hasler has (1 - np.exp(-VDD / UT)) because saturation
+            # but we have it a little differently because we not in saturation here.
+            IDS = I0 * np.exp(K * (VDD - VG - VTH) / UT) * (1 - np.exp(-VDS / UT))
+            
     elif (0 < -VDS) and (-VDS < -VGS + VTH):
         IDS = -K * ((VGS - VTH) * VDS - VDS ** 2 / 2)
-    else:
+        
+    elif (0 < -VDS) and (-VDS > -VGS + VTH):
         IDS = (-K/2) * (VGS - VTH) ** 2
+        
+    else:
+        print ("this should not happen")
+        assert (False)
         
     return IDS
     
