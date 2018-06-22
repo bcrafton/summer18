@@ -15,7 +15,7 @@ def PFET_ISD(VDD, VS, VG, VD):
     
     K = 0.4
     UT = 0.025
-    I0 = 1e-12
+    I0 = 2e-12
 
     if (VSG <= ABS_VTH):
         if (VSD >= 4 * UT):
