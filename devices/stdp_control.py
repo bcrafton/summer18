@@ -2,37 +2,46 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-def PFET_IDS(VS, VG, VD):
+def PFET_ISD(VDD, VS, VG, VD):
 
-    VGS = VG - VS
     VDS = VD - VS
+    VGS = VG - VS
+    
+    VSD = VS - VD
+    VSG = VS - VG
 
-    I0 = 1e-10
+    VTH = -0.365
+    ABS_VTH = np.absolute(VTH)
+    
+    K = 0.4
     UT = 0.025
-    VTH = 0.5
-    K = 0.6
+    I0 = 1e-7
 
-    if (-VGS >= -VTH):
-        if (VDS < -0.100):
-            IDS = I0 * np.exp(K * (VDD - VG - VTH) / UT)
+    if (VSG <= ABS_VTH):
+        if (VSD >= 4 * UT):
+            # print ("sub-sat")
+            ISD = I0 * np.exp(K * (VDD - VG - VTH) / UT)
         else:
+            # print ("sub")
             # Hasler has (1 - np.exp(-VDD / UT)) because saturation
             # but we have it a little differently because we not in saturation here.
-            IDS = I0 * np.exp(K * (VDD - VG - VTH) / UT) * (1 - np.exp(-VDS / UT))
-            
-    elif (0 < -VDS) and (-VDS < -VGS + VTH):
-        IDS = -K * ((VGS - VTH) * VDS - VDS ** 2 / 2)
+            ISD = I0 * np.exp(K * (VDD - VG - VTH) / UT) # * (1 - np.exp(-VDS / UT))
         
-    elif (0 < -VDS) and (-VDS > -VGS + VTH):
-        IDS = (-K/2) * (VGS - VTH) ** 2
+    elif (VSG > ABS_VTH) and (VSD <= VSG - ABS_VTH):
+        # print ("linear")
+        ISD = K * (VSG - ABS_VTH) * VSD - VSD ** 2 / 2 
+        
+    elif (VSG > ABS_VTH) and (VSD > VSG - ABS_VTH):
+        # print ("sat")
+        ISD = 0.5 * K * (VSG - ABS_VTH) ** 2
         
     else:
-        print ("this should not happen")
-        assert (False)
+        print "this should never happen"
+        assert(False)
         
-    return IDS
+    return ISD
     
-T = 1
+T = 1e-6
 steps = 1000
 dt = T / steps
 
@@ -43,22 +52,28 @@ VT = 0.975
 C = 500e-15
 
 # initial prog voltage
-VPROG = 1.0
+VPROG = 0.0
 
 # sweep over the pre synaptic input voltage.
-VPRE_IN = np.linspace(0, 2.4, steps)
+# VPRE_IN = np.linspace(0, 1.0, steps)
+# VPRE_IN = np.concatenate(( np.linspace(1, 1, 250), np.linspace(0.320, 0.320, 250), np.linspace(1, 1, 500) ))
+VPRE_IN = np.concatenate(( np.linspace(1, 1, 250), np.linspace(0.32, 0.32, 250), np.linspace(1, 1, 500) ))
 
+Ts = []
 VPROG_OUT = []
 
 for step in range(steps):
     t = step * dt
+    Ts.append(t)
     
     VPRE = VPRE_IN[step]
-    DVDT = (1 / C) * (PFET_IDS(VDD, VT, VPROG) - PFET_IDS(VPROG, VPRE, VRESET))
+    DVDT = (1 / C) * (PFET_ISD(VDD, VDD, VT, VPROG) - PFET_ISD(VDD, VPROG, VPRE, VRESET))
     DV = DVDT * dt
     
-    VPROG += DV
+    print (DV, PFET_ISD(VDD, VDD, VT, VPROG), PFET_ISD(VDD, VPROG, VPRE, VRESET))
+    
+    VPROG = np.clip(VPROG + DV, 0, 1.0)
     VPROG_OUT.append(VPROG)
     
-plt.plot(VPRE_IN, VPROG_OUT)
+plt.plot(Ts, VPROG_OUT)
 plt.show()
