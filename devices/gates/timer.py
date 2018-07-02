@@ -65,6 +65,7 @@ VPREX_OUT = []
 VPOSTX_OUT = []
 INC_OUT = []
 DEC_OUT = []
+IM_OUT = []
 
 VTH = 0.5
 
@@ -104,6 +105,18 @@ for step in range(steps):
     
     # INC or VPRE'
     READ = or_gate(VDD, VTH, INC, VPREN)
+    
+    VP = 0.0
+    VM = 0.0
+    if (READ == 1.0):
+        VP = 0.5
+        VM = 0.0
+    elif (DEC == 1.0):
+        VP = 0.0
+        VM = 0.5
+        
+    IM = (VP - VM) / 100
+    IM_OUT.append(IM)
 
 plt.subplot(2,2,1)
 plt.plot(Ts, VPREX_OUT, Ts, VPOSTX_OUT)
@@ -111,7 +124,8 @@ plt.plot(Ts, VPREX_OUT, Ts, VPOSTX_OUT)
 plt.subplot(2,2,2)
 plt.plot(Ts, INC_OUT, Ts, DEC_OUT)
 
-# plt.subplot(2,2,3)
+plt.subplot(2,2,3)
+plt.plot(Ts, IM_OUT)
 
 # plt.subplot(2,2,4)
 
