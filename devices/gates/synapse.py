@@ -2,23 +2,29 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from gates import *
+import time
 
-def square_wave(steps, on_value, off_value, width, period):
+def square_wave(steps, on_value, off_value, delay, width, period):
     assert(steps % period == 0)
-    assert(width < period)
+    assert((width + delay) < period)
     square = []
     periods = steps / period
     for ii in range(periods):
-        off = np.ones(period - width) * off_value
+        if (delay > 0):
+            off = np.ones(delay) * off_value
+            square.extend(off)
+
         on = np.ones(width) * on_value
-        square.extend(off)
         square.extend(on)
+
+        off = np.ones(period - delay - width) * off_value
+        square.extend(off)
         
     return square
 
 class Memristor:
     def __init__(self):
-        self.U = 1e-16
+        self.U = 1e-15
         self.D = 10e-9
         self.W0 = 5e-9
         self.RON = 5e4
@@ -109,31 +115,56 @@ class Synapse:
     
         
 # sim params
-T = 10
+T = 20
 dt = 2e-5
 steps = int(T / dt) + 1
 Ts = np.linspace(0, T, steps)
 
-VPRE_IN = square_wave(steps, 0.32, 1.0, 20, 1000)
-VPOST_IN = square_wave(steps, 0.32, 1.0, 20, 1000)
+VPRE_IN1 = square_wave(steps, 0.32, 1.0, 100, 20, 1000)
+VPRE_IN2 = square_wave(steps, 0.32, 1.0, 375, 20, 1000)
+VPRE_IN3 = square_wave(steps, 0.32, 1.0, 500, 20, 1000)
+VPRE_IN4 = square_wave(steps, 0.32, 1.0, 700, 20, 1000)
 
-syn = Synapse()
+VPOST_IN = square_wave(steps, 0.32, 1.0, 400, 20, 1000)
+
+syn1 = Synapse()
+syn2 = Synapse()
+syn3 = Synapse()
+syn4 = Synapse()
+
+# start timer
+start = time.time()
+
 for step in range(steps):
-    vpre = VPRE_IN[step] 
+    vpre1 = VPRE_IN1[step] 
+    vpre2 = VPRE_IN2[step] 
+    vpre3 = VPRE_IN3[step] 
+    vpre4 = VPRE_IN4[step] 
+
     vpost = VPOST_IN[step]
-    syn.step(vpre, vpost, step * dt, dt)
+
+    syn1.step(vpre1, vpost, step * dt, dt)
+    syn2.step(vpre2, vpost, step * dt, dt)
+    syn3.step(vpre3, vpost, step * dt, dt)
+    syn4.step(vpre4, vpost, step * dt, dt)
+
+# end timer
+end = time.time()
+print ("total time taken:" + str(end - start))
+
+plot_syn = syn2
 
 plt.subplot(2,2,1)
-plt.plot(Ts, syn.VPREX_OUT, Ts, syn.VPOSTX_OUT)
+# plt.plot(Ts, plot_syn.VPREX_OUT, Ts, plot_syn.VPOSTX_OUT)
 
 plt.subplot(2,2,2)
-plt.plot(Ts, syn.INC_OUT, Ts, syn.DEC_OUT)
+# plt.plot(Ts, plot_syn.INC_OUT, Ts, plot_syn.DEC_OUT)
 
 plt.subplot(2,2,3)
-plt.plot(Ts, syn.IM_OUT)
+plt.plot(Ts, plot_syn.IM_OUT)
 
 plt.subplot(2,2,4)
-plt.plot(Ts, VPRE_IN, Ts, VPOST_IN)
+plt.plot(Ts, VPRE_IN1, Ts, VPOST_IN)
 
 plt.show()
 
