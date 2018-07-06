@@ -30,8 +30,8 @@ imem_func = interpolate.LinearNDInterpolator(x, y, fill_value=0.0)
 
 ####################################
 
-dt = 1e-8
-T = 1e-3
+dt = 1e-6
+T = 1e-2
 steps = int(T / dt);
 Ts = np.linspace(0, T, steps)
 
@@ -84,9 +84,16 @@ for i in range(steps):
     ico2s[i] = ico2
     icmems[i] = icmem
 
-# plt.plot(Ts, ico2s, Ts, icmems)
+plt.subplot(2,2,1)
+plt.plot(Ts, ico2s, Ts, icmems)
+
+plt.subplot(2,2,2)
 plt.plot(Ts, vmems, Ts, vo2s)
-# plt.plot(Ts, iins)
+
+# plt.subplot(2,2,3)
+
+# plt.subplot(2,2,4)
+
 plt.show()
 
 
