@@ -2,6 +2,7 @@ import numpy as np
 from scipy import interpolate
 import matplotlib.pyplot as plt
 
+'''
 def NFET_IDS(I0, K, KN, VTH, L, VDS, VGS):
 
     UT = 0.026
@@ -23,6 +24,26 @@ def NFET_IDS(I0, K, KN, VTH, L, VDS, VGS):
         assert(False)
         
     return IDS
+'''
+
+def NFET_IDS(i0, k, kn, vth, l, vds, vgs):
+
+    ut = 0.026;
+
+    sub_sat = (vgs < vth) and (vds >= 4*ut)
+    sub_off = (vgs < vth) and (vds < 4*ut)
+    sat = (vgs > vth) and (vds >= vgs - vth)
+
+    if (sub_sat):
+        ids = (i0 * np.exp(k * vgs / ut))
+    elif(sub_off):
+        ids = (i0 * np.exp(k * vgs / ut)) * (1 - np.exp(-vds / ut))
+    elif (sat):
+        ids = 0.5 * (kn * (vgs - vth) ** 2) * (1 + l * vds)
+    else:
+        ids = (kn * (vgs - vth) * vds - ((vds ** 2)/2)) * (1 + l * vds)
+
+    return ids
 
 
 ### reset
@@ -54,11 +75,15 @@ slew_vo2 = np.genfromtxt('slew_vo2.csv',delimiter=',')
 slew_co2 = np.genfromtxt('slew_co2.csv',delimiter=',')
 slew_co2[np.where(slew_co2 < 0)] = 0 
 
-# co2_func = interpolate.bisplrep(slew_vo1, slew_vo2, slew_co2, kx=5, ky=5)
-# co2_func = interpolate.interp2d(slew_vo1, slew_vo2, slew_co2, kind='linear')
+# co2_func = interpolate.bisplrep(slew_vo1, slew_vo2, slew_co2, kx=3, ky=3)
+# co2_func = interpolate.interp2d(slew_vo1, slew_vo2, slew_co2, kind='cubic')
 x = np.transpose([slew_vo1, slew_vo2])
 y = slew_co2
 co2_func = interpolate.LinearNDInterpolator(x, y, fill_value=0.0)
+# co2_func = interpolate.NearestNDInterpolator(x, y)
+
+# print(np.average(y), np.std(y))
+# plt.plot(slew_vo1, slew_co2)
 
 ### fb
 fb_vmem = np.genfromtxt('fb_vmem.csv',delimiter=',')
@@ -101,6 +126,7 @@ m20s = np.zeros(steps)
 
 C1 = 500e-15
 C2 = 100e-15
+
 
 '''
 vmem = np.linspace(0, 1, 1000)
@@ -148,6 +174,25 @@ vo2 = np.linspace(0, 1, 1000)
 m12 = m12_func(vmem, vo2)
 '''
 
+'''
+vo1 = np.linspace(1, 1, 1000)
+vo2 = np.linspace(0, 1, 1000)
+co2 = co2_func(vo1, vo2)
+plt.plot(vo2, co2)
+plt.show()
+'''
+
+
+x1 = np.linspace(1, 1, 100)
+x2 = np.linspace(0, 1, 100)
+y = np.zeros(100)
+for i in range(100):
+    y[i] =  co2_func(x1[i], x2[i])
+    # y[i] = interpolate.bisplev(x1[i], x2[i], co2_func)  
+plt.plot(x2, y)
+plt.show()
+
+
 ########################
 
 for i in range(steps):
@@ -169,9 +214,9 @@ for i in range(steps):
     # m7s[i] = np.polyval(m7_func, vmem)
     m7s[i] = m7_func(vmem)
     
-    #m12s[i] = interpolate.bisplev(vmem, vo2, m12_func)
-    #m12s[i] = NFET_IDS(5e-12, 0.4, 2e-6, 0.325, 0.03, vmem, vo2)
-    m12s[i] = m12_func(vmem, vo2)
+    # m12s[i] = interpolate.bisplev(vmem, vo2, m12_func)
+    m12s[i] = NFET_IDS(5e-12, 0.4, 2e-6, 0.325, 0.03, vmem, vo2)
+    # m12s[i] = m12_func(vmem, vo2)
     
     m20s[i] = np.polyval(m20_func, vmem)
     #m20s[i] = m20_func(vmem)
@@ -195,7 +240,7 @@ for i in range(steps):
     iins[i] = iin
     icmems[i] = icmem
 
-plt.plot(Ts, vmems)
-plt.show()
+#plt.plot(Ts, m12s)
+#plt.show()
 
 
