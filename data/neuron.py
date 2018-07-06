@@ -142,9 +142,11 @@ plt.plot(vo2, m12)
 plt.show()
 '''
 
+'''
 vmem = np.linspace(1, 1, 1000)
 vo2 = np.linspace(0, 1, 1000)
 m12 = m12_func(vmem, vo2)
+'''
 
 ########################
 
@@ -193,7 +195,7 @@ for i in range(steps):
     iins[i] = iin
     icmems[i] = icmem
 
-plt.plot(Ts, m7s)
+plt.plot(Ts, vmems)
 plt.show()
 
 

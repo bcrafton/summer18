@@ -8,6 +8,7 @@ leak = loadsig('leak.tr0');
 inv_fb = loadsig('inv_fb.tr0');
 reset = loadsig('reset.tr0');
 inv_slew = loadsig('inv_slew.tr0');
+indiveri = loadsig('indiveri.tr0');
 
 %%%%%%%%%%%%%%%%%%%%%%
 % leak
@@ -45,6 +46,26 @@ csvwrite('slew_vo1.csv', v_vo1);
 csvwrite('slew_vo2.csv', v_vo2);
 csvwrite('slew_co2.csv', i_vso2);
 %%%%%%%%%%%%%%%%%%%%%%
+% indiveri
 
+lssig(indiveri)
 
+% outputs, dependent
+v_vspk = evalsig(indiveri, 'v_vspk');
+i_vso2 = evalsig(indiveri, 'i_vso2');
+i_vsmem = evalsig(indiveri, 'i_vsmem');
 
+csvwrite('indiveri_vspk.csv', v_vspk);
+csvwrite('indiveri_io2.csv', i_vso2);
+csvwrite('indiveri_imem.csv', i_vsmem);
+
+% inputs, independent
+i_is1 = evalsig(indiveri, 'i_is1');
+v_vmem = evalsig(indiveri, 'v_vmem');
+v_vo2 = evalsig(indiveri, 'v_vo2');
+
+csvwrite('indiveri_is1.csv', i_is1);
+csvwrite('indiveri_vmem.csv', v_vmem);
+csvwrite('indiveri_vo2.csv', v_vo2);
+
+%%%%%%%%%%%%%%%%%%%%%%
