@@ -30,42 +30,54 @@ rst_vmem = np.genfromtxt('rst_vmem.csv',delimiter=',')
 rst_vo2 = np.genfromtxt('rst_vo2.csv',delimiter=',')
 rst_m12 = np.genfromtxt('rst_m12.csv',delimiter=',')
 rst_m12[np.where(rst_m12 < 0)] = 0 
-m12_func = interpolate.bisplrep(rst_vmem, rst_vo2, rst_m12, kx=5, ky=5)
 
-'''
-m12 = interpolate.bisplev(vmem, vo2, m12_func)
-m12[np.where(m12 < 0)] = 0 
-'''
+# m12_func = interpolate.bisplrep(rst_vmem, rst_vo2, rst_m12, kx=5, ky=5)
+# m12_func = interpolate.interp2d(rst_vmem, rst_vo2, rst_m12, kind='linear')
+x = np.transpose([rst_vmem, rst_vo2])
+y = rst_m12
+m12_func = interpolate.LinearNDInterpolator(x, y, fill_value=0.0)
 
 ### leak
 leak_vmem = np.genfromtxt('leak_vmem.csv',delimiter=',')
 leak_m20 = np.genfromtxt('leak_m20.csv',delimiter=',')
 leak_m20[np.where(leak_m20 < 0)] = 0 
-m20_func = np.polyfit(leak_vmem, leak_m20, deg=5)
 
-'''
-vmem = np.linspace(0, 1, 100)
-m20 = np.polyval(m20_func, vmem)
-plt.plot(vmem, m20)
-plt.show()
-'''
+m20_func = np.polyfit(leak_vmem, leak_m20, deg=5)
+# m20_func = interpolate.interp1d(leak_vmem, leak_m20, kind='cubic')
+# x = leak_vmem
+# y = leak_m20
+# m20_func = interpolate.LinearNDInterpolator(leak_vmem, leak_m20)
 
 ### inv slew
-
-slew_vmem = np.genfromtxt('slew_vmem.csv',delimiter=',')
+slew_vo1 = np.genfromtxt('slew_vo1.csv',delimiter=',')
 slew_vo2 = np.genfromtxt('slew_vo2.csv',delimiter=',')
 slew_co2 = np.genfromtxt('slew_co2.csv',delimiter=',')
 slew_co2[np.where(slew_co2 < 0)] = 0 
-co2_func = interpolate.bisplrep(slew_vmem, slew_vo2, slew_co2, kx=5, ky=5)
+
+# co2_func = interpolate.bisplrep(slew_vo1, slew_vo2, slew_co2, kx=5, ky=5)
+# co2_func = interpolate.interp2d(slew_vo1, slew_vo2, slew_co2, kind='linear')
+x = np.transpose([slew_vo1, slew_vo2])
+y = slew_co2
+co2_func = interpolate.LinearNDInterpolator(x, y, fill_value=0.0)
 
 ### fb
-
 fb_vmem = np.genfromtxt('fb_vmem.csv',delimiter=',')
 fb_m7 = np.genfromtxt('fb_m7.csv',delimiter=',')
 fb_vo1 = np.genfromtxt('fb_vo1.csv',delimiter=',')
 
-m7_func = np.polyfit(fb_vmem, fb_m7, deg=5)
-vo1_func = np.polyfit(fb_vmem, fb_vo1, deg=5)
+# m7_func = np.polyfit(fb_vmem, fb_m7, deg=5)
+# vo1_func = np.polyfit(fb_vmem, fb_vo1, deg=5)
+m7_func = interpolate.interp1d(fb_vmem, fb_m7, kind='cubic')
+vo1_func = interpolate.interp1d(fb_vmem, fb_vo1, kind='cubic')
+
+# x = fb_vmem
+# y = fb_m7
+# m7_func = interpolate.LinearNDInterpolator(fb_vmem, fb_m7)
+
+# x = fb_vmem
+# y = fb_vo1
+# vo1_func = interpolate.LinearNDInterpolator(x, y)
+
 
 ####################################
 
@@ -90,24 +102,83 @@ m20s = np.zeros(steps)
 C1 = 500e-15
 C2 = 100e-15
 
+'''
+vmem = np.linspace(0, 1, 1000)
+m20 = np.zeros(1000)
+for i in range(1000):
+    m20[i] = np.polyval(m20_func, vmem[i])
+plt.plot(vmem, m20)
+plt.show()
+'''
+
+########################
+'''
+vmem = np.linspace(0, 1, 1000)
+m7 = m7_func(vmem)
+
+# m7 = np.zeros(1000)
+#for i in range(1000):
+#    m7[i] = np.polyval(m7_func, vmem[i])
+
+plt.plot(vmem, m7)
+plt.show()
+'''
+########################
+
+'''
+vmem = np.linspace(0, 1, 1000)
+vo1 = vo1_func(vmem)
+plt.plot(vmem, vo1)
+plt.show()
+'''
+
+'''
+vmem = np.linspace(1, 1, 1000)
+vo2 = np.linspace(0, 1, 1000)
+m12 = m12_func(vmem, vo2)
+for i in range(1000):
+    m12[i] = NFET_IDS(5e-12, 0.4, 2e-6, 0.325, 0.03, vmem[i], vo2[i])
+plt.plot(vo2, m12)
+plt.show()
+'''
+
+vmem = np.linspace(1, 1, 1000)
+vo2 = np.linspace(0, 1, 1000)
+m12 = m12_func(vmem, vo2)
+
+########################
+
 for i in range(steps):
     
     t = Ts[i]
-    # print (t)
-    
+    '''
+    if (i % 100 == 0):
+        print (t)
+    '''
     if (t > 1e-4):
         iin = 1e-9
     else:
         iin = 0
+        
+        
+    # print "m12" + str(m12_func(vmem, vo2))
+    # print "co2" + str(co2_func(vo1, vo2))
     
-    m7s[i] = np.polyval(m7_func, vmem)
-    # m12s[i] = interpolate.bisplev(vmem, vo2, m12_func)
-    m12s[i] = NFET_IDS(5e-12, 0.4, 2e-6, 0.325, 0.03, vmem, vo2)
+    # m7s[i] = np.polyval(m7_func, vmem)
+    m7s[i] = m7_func(vmem)
+    
+    #m12s[i] = interpolate.bisplev(vmem, vo2, m12_func)
+    #m12s[i] = NFET_IDS(5e-12, 0.4, 2e-6, 0.325, 0.03, vmem, vo2)
+    m12s[i] = m12_func(vmem, vo2)
+    
     m20s[i] = np.polyval(m20_func, vmem)
+    #m20s[i] = m20_func(vmem)
     
-    vo1 = np.polyval(vo1_func, vmem)
+    # vo1 = np.polyval(vo1_func, vmem)
+    vo1 = vo1_func(vmem)
     
-    dvdt = (1 / C2) * interpolate.bisplev(vo1, vo2, co2_func)
+    # dvdt = (1 / C2) * interpolate.bisplev(vo1, vo2, co2_func)    
+    dvdt = (1 / C2) * co2_func(vo1, vo2)
     vo2 = vo2 + dvdt * dt
     vo2 = min(max(vo2, 0.0), 1.0)
         
@@ -122,7 +193,7 @@ for i in range(steps):
     iins[i] = iin
     icmems[i] = icmem
 
-plt.plot(Ts, vo1s)
+plt.plot(Ts, m7s)
 plt.show()
 
 
