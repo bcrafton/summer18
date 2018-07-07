@@ -32,26 +32,6 @@ def load_data():
 
   f.close()
 
-def get_matrix_from_file(fileName):
-    offset = len(ending) + 4
-    if fileName[-4-offset] == 'X':
-        n_src = n_input                
-    else:
-        if fileName[-3-offset]=='e':
-            n_src = n_e
-        else:
-            n_src = n_i
-    if fileName[-1-offset]=='e':
-        n_tgt = n_e
-    else:
-        n_tgt = n_i
-    readout = np.load(fileName)
-    print readout.shape, fileName
-    value_arr = np.zeros((n_src, n_tgt))
-    if not readout.shape == (0,):
-        value_arr[np.int32(readout[:,0]), np.int32(readout[:,1])] = readout[:,2]
-    return value_arr
-
 def normalize_weights():
     for connName in connections:
         if connName[1] == 'e' and connName[3] == 'e':
@@ -199,15 +179,15 @@ neuron_groups['Ai'] = neuron_groups['i'].subgroup(n_i)
 
 neuron_groups['Ae'].v = v_rest_e - 40. * b.mV
 neuron_groups['Ai'].v = v_rest_i - 40. * b.mV
-neuron_groups['e'].theta = np.load('../saved_weights/theta_A.npy')
+neuron_groups['e'].theta = np.load('theta_A.npy')
 
 connName = 'AeAi'
-weightMatrix = np.load('../random/AeAi.npy')
+weightMatrix = np.load('AeAi.npy')
 connections[connName] = b.Connection(neuron_groups['Ae'], neuron_groups['Ai'], structure= conn_structure, state = 'g'+'e')
 connections[connName].connect(neuron_groups['Ae'], neuron_groups['Ai'], weightMatrix)
 
 connName = 'AiAe'
-weightMatrix = np.load('../random/AiAe.npy')
+weightMatrix = np.load('AiAe.npy')
 connections[connName] = b.Connection(neuron_groups['Ai'], neuron_groups['Ae'], structure= conn_structure, state = 'g'+'i')
 connections[connName].connect(neuron_groups['Ai'], neuron_groups['Ae'], weightMatrix)
 
@@ -223,7 +203,7 @@ input_groups['Xe'] = b.PoissonGroup(n_input, 0)
 rate_monitors['Xe'] = b.PopulationRateMonitor(input_groups['Xe'], bin = (single_example_time + resting_time) / b.second)
 
 connName = 'XeAe'
-weightMatrix = np.load('../saved_weights/XeAe.npy')
+weightMatrix = np.load('XeAe.npy')
 connections[connName] = b.Connection(input_groups['Xe'], neuron_groups['Ae'], structure=conn_structure, state = 'g' + 'e', delay=True, max_delay=delay['ee_input'][1])
 connections[connName].connect(input_groups['Xe'], neuron_groups['Ae'], weightMatrix, delay=delay['ee_input'])
 

@@ -33,7 +33,10 @@ def get_matrix_from_file(fileName):
         value_arr[np.int32(readout[:,0]), np.int32(readout[:,1])] = readout[:,2]
     return value_arr
 
+XeAe = get_matrix_from_file('./original/XeAe.npy')
 
-XeAe = get_matrix_from_file('XeAe.npy')
+np.save('XeAe.npy', XeAe)
+print np.shape(XeAe)
 
-np.save('./load/XeAe', XeAe)
+XeAe = np.load('XeAe.npy')
+print np.shape(XeAe)
