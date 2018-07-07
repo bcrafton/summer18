@@ -79,7 +79,7 @@ dt = 1e-4
 steps = int(T / dt)
 Ts = np.linspace(0, T, steps)
 
-NUM_EX = 100
+NUM_EX = 1000
 
 load_data()
 
@@ -96,7 +96,8 @@ I = np.zeros(shape=(N, 1))
 Iie = np.zeros(shape=(N, 1))
 Iei = np.zeros(shape=(N, 1))
 
-spks = 0
+spk_count = np.zeros(shape=(NUM_EX, N))
+labels = np.zeros(NUM_EX)
 
 for ex in range(NUM_EX):
     print ex
@@ -109,7 +110,9 @@ for ex in range(NUM_EX):
         
         I = np.dot(spk, w)
         spkd = lif_exc.step(dt, I.flatten(), Iie.flatten())
-        spks += np.count_nonzero(spkd)
+        
+        spk_count[ex] += spkd
+        labels[ex] = training_labels[ex]
         
         Iei = np.dot(np.transpose(spkd), wei)
         spkd = lif_inh.step(dt, Iei.flatten())
@@ -121,7 +124,13 @@ for ex in range(NUM_EX):
     lif_inh.reset()
      
 #############
-print spks
+# print np.sum(spk_count)
+# print np.shape(spk_count)
+# print np.shape(labels)
+
+np.save('spks', spk_count)
+np.save('labels', labels)
+
 # plt.plot(Ts, lif.Vs)
 # plt.show()
 #############
