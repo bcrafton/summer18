@@ -7,7 +7,6 @@ import cPickle as pickle
 import gzip
 
 #############
-'''
 def load_data():
   global training_set, training_labels, testing_set, testing_labels
   f = gzip.open('mnist.pkl.gz', 'rb')
@@ -23,10 +22,7 @@ def load_data():
 
   for i in range( len(testing_set) ):
     testing_set[i] = testing_set[i].reshape(28*28)
-'''
-
 #############
-
 class LIF_group:
     def __init__(self, N):
     
@@ -39,18 +35,17 @@ class LIF_group:
         self.gi_tau = 2e-3
         self.tau = 1e-1
         
-        self.ge = np.zeros(N)
-        self.gi = np.zeros(N)
-        self.v = np.zeros(N)
-        self.w = np.random.normal(GMEAN, GSTD, size=(N))
+        self.ge = np.zeros(shape=(N))
+        self.gi = np.zeros(shape=(N))
+        self.v = np.zeros(shape=(N))
         
         self.Vs = []
         
-    def step(self, spk, dt):
+    def step(self, Iin, dt):
         nspkd = self.v < self.vthr
         self.v = self.v * nspkd + self.vrest
         
-        gedt = -(self.ge / self.ge_tau * dt) + spk * self.w
+        gedt = -(self.ge / self.ge_tau * dt) + Iin
         self.ge = self.ge + gedt
         
         IsynE = self.ge 
@@ -59,31 +54,32 @@ class LIF_group:
         dv = dvdt * dt
         self.v += dv
 
-        self.Vs.append(self.v)
-
+        self.Vs.append( self.v )
 #############
 # load_data()
 #############
-
-N = 5
+N = 400
 
 T = 0.35
 dt = 1e-4
 steps = int(T / dt)
 Ts = np.linspace(0, T, steps)
 
-lif = LIF_group(N)
+load_data()
+w = np.load('XeAe.npy')
 
+lif = LIF_group(N)
 #############
 for s in range(steps):
     t = Ts[s]
     
-    rate = 5
+    rates = training_set[0] * 32.0
     
-    # they all coming through same neuron.
-    spk = np.random.rand() < rate * dt
+    spk = np.random.rand(1, 28*28) < rates * dt
+    Iin = np.dot(spk, w)
+    Iin = Iin.flatten()
     
-    lif.step(spk, dt)
+    lif.step(Iin, dt)
 #############
 plt.plot(Ts, lif.Vs)
 plt.show()

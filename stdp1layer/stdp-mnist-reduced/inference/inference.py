@@ -144,17 +144,7 @@ neuron_eqs_i = '''
         dge/dt = -ge/(1.0*ms)                                   : 1
         dgi/dt = -gi/(2.0*ms)                                  : 1
         '''
-
-eqs_stdp_ee = '''
-                post2before                            : 1.0
-                dpre/dt   =   -pre/(tc_pre_ee)         : 1.0
-                dpost1/dt  = -post1/(tc_post_1_ee)     : 1.0
-                dpost2/dt  = -post2/(tc_post_2_ee)     : 1.0
-            '''
-
-eqs_stdp_pre_ee = 'pre = 1.; w -= nu_ee_pre * post1'
-eqs_stdp_post_ee = 'post2before = post2; w += nu_ee_post * pre * post2before; post1 = 1.; post2 = 1.'
-    
+        
 b.ion()
 fig_num = 1
 neuron_groups = {}
@@ -206,6 +196,9 @@ connName = 'XeAe'
 weightMatrix = np.load('XeAe.npy')
 connections[connName] = b.Connection(input_groups['Xe'], neuron_groups['Ae'], structure=conn_structure, state = 'g' + 'e', delay=True, max_delay=delay['ee_input'][1])
 connections[connName].connect(input_groups['Xe'], neuron_groups['Ae'], weightMatrix, delay=delay['ee_input'])
+
+# x = b.StateMonitor(neuron_groups['Ae'], 'ge')
+# x = b.StateMonitor(connections['XeAe'], 'ge')
 
 #------------------------------------------------------------------------------ 
 # run the simulation and set inputs
