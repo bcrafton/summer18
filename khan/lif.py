@@ -1,3 +1,4 @@
+
 import numpy as np
 import matplotlib.pyplot as plt
 import random
@@ -39,9 +40,9 @@ Ts = np.linspace(0, T, steps)
 #rates = training_set[0]
 #rates = rates / np.max(rates)
 
-ge = 0
-gi = 0
-v = 0
+ge = np.float64(0.0)
+gi = np.float64(0.0)
+v = 0.0
 
 Vs = []
 
@@ -51,7 +52,7 @@ for s in range(steps):
     t = Ts[s]
     
     rate = 5
-    w = 1
+    w = 100
     ge_tau = 1e-3
     neuron_tau = 1e-1
     vrest = 0
@@ -59,19 +60,20 @@ for s in range(steps):
     
     fired = np.random.rand() < rate * dt
     
-    gedt = ge - ge / ge_tau * dt
-    ge = np.min(ge, 0)
-    ge += fired * w
-    
+    gedt = -(ge / ge_tau * dt) + fired * w
+    ge = np.max(ge + gedt, 0)
+
     IsynE = ge 
     
-    dvdt = (vrest - v + IsynE) / neuron_tau
+    dvdt = (vrest - v + IsynE) / neuron_tau        
     dv = dvdt * dt
     v += dv
     v = vrest if (v > thresh) else v
     
-    Vs.append(v)
+    print (v)
     
+    Vs.append(v)
+
 #############
     
 plt.plot(Ts, Vs)
