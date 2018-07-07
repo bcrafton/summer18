@@ -221,6 +221,8 @@ while j < num_examples:
     current_spike_count = np.asarray(spike_counters['Ae'].count[:]) - previous_spike_count
     previous_spike_count = np.copy(spike_counters['Ae'].count[:])
 
+    print (np.sum(previous_spike_count))
+
     if np.sum(current_spike_count) < 5:
         input_intensity += 1
 

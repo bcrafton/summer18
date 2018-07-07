@@ -24,7 +24,9 @@ def load_data():
     testing_set[i] = testing_set[i].reshape(28*28)
 #############
 class LIF_group:
-    def __init__(self, N):
+    def __init__(self, N, tau):
+    
+        self.N = N
     
         GMEAN = 100.0
         GSTD = 10.0
@@ -33,7 +35,7 @@ class LIF_group:
         self.vthr = 0.85
         self.ge_tau = 1e-3
         self.gi_tau = 2e-3
-        self.tau = 1e-1
+        self.tau = tau
         
         self.ge = np.zeros(shape=(N))
         self.gi = np.zeros(shape=(N))
@@ -41,10 +43,7 @@ class LIF_group:
         
         self.Vs = []
         
-    def step(self, Iine, Iini, dt):
-        nspkd = self.v < self.vthr
-        self.v = self.v * nspkd + self.vrest
-        
+    def step(self, dt, Iine, Iini=0):
         gedt = -(self.ge / self.ge_tau * dt) + Iine
         self.ge = self.ge + gedt
         
@@ -57,8 +56,12 @@ class LIF_group:
         dvdt = (self.vrest - self.v + IsynE - IsynI) / self.tau        
         dv = dvdt * dt
         self.v += dv
-
-        # self.Vs.append( self.v )
+        
+        spkd = self.v > self.vthr
+        nspkd = self.v < self.vthr
+        self.v = self.v * nspkd + self.vrest
+        
+        return spkd
         
     def reset(self):
         self.ge = np.zeros(shape=(N))
@@ -79,10 +82,21 @@ Ts = np.linspace(0, T, steps)
 NUM_EX = 100
 
 load_data()
-w = np.load('XeAe.npy')
 
-lif = LIF_group(N)
+w = np.load('XeAe.npy')
+wei = np.load('AeAi.npy')
+wie = np.load('AiAe.npy') 
+
+lif_exc = LIF_group(N, 1e-1)
+lif_inh = LIF_group(N, 1e-2)
+
 #############
+
+I = np.zeros(shape=(N, 1))
+Iie = np.zeros(shape=(N, 1))
+Iei = np.zeros(shape=(N, 1))
+
+spks = 0
 
 for ex in range(NUM_EX):
     print ex
@@ -91,18 +105,23 @@ for ex in range(NUM_EX):
         t = Ts[s]
         
         rates = training_set[ex] * 32.0
-        
         spk = np.random.rand(1, 28*28) < rates * dt
-        Iine = np.dot(spk, w)
-        Iine = Iine.flatten()
         
-        Iini = np.zeros(400)
+        I = np.dot(spk, w)
+        spkd = lif_exc.step(dt, I.flatten(), Iie.flatten())
+        spks += np.count_nonzero(spkd)
         
-        lif.step(Iine, Iini, dt)
+        Iei = np.dot(np.transpose(spkd), wei)
+        spkd = lif_inh.step(dt, Iei.flatten())
+        
+        Iie = np.dot(np.transpose(spkd), wie)
+        
     #############
-    lif.reset()
+    lif_exc.reset()
+    lif_inh.reset()
      
 #############
+print spks
 # plt.plot(Ts, lif.Vs)
 # plt.show()
 #############
