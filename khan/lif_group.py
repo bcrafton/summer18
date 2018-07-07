@@ -41,16 +41,20 @@ class LIF_group:
         
         self.Vs = []
         
-    def step(self, Iin, dt):
+    def step(self, Iine, Iini, dt):
         nspkd = self.v < self.vthr
         self.v = self.v * nspkd + self.vrest
         
-        gedt = -(self.ge / self.ge_tau * dt) + Iin
+        gedt = -(self.ge / self.ge_tau * dt) + Iine
         self.ge = self.ge + gedt
         
-        IsynE = self.ge 
+        gidt = -(self.gi / self.gi_tau * dt) + Iini
+        self.gi = self.gi + gidt
         
-        dvdt = (self.vrest - self.v + IsynE) / self.tau        
+        IsynE = self.ge 
+        IsynI = self.gi
+        
+        dvdt = (self.vrest - self.v + IsynE - IsynI) / self.tau        
         dv = dvdt * dt
         self.v += dv
 
@@ -89,10 +93,12 @@ for ex in range(NUM_EX):
         rates = training_set[ex] * 32.0
         
         spk = np.random.rand(1, 28*28) < rates * dt
-        Iin = np.dot(spk, w)
-        Iin = Iin.flatten()
+        Iine = np.dot(spk, w)
+        Iine = Iine.flatten()
         
-        lif.step(Iin, dt)
+        Iini = np.zeros(400)
+        
+        lif.step(Iine, Iini, dt)
     #############
     lif.reset()
      
