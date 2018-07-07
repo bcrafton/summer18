@@ -54,7 +54,14 @@ class LIF_group:
         dv = dvdt * dt
         self.v += dv
 
-        self.Vs.append( self.v )
+        # self.Vs.append( self.v )
+        
+    def reset(self):
+        self.ge = np.zeros(shape=(N))
+        self.gi = np.zeros(shape=(N))
+        self.v = np.zeros(shape=(N))
+        self.Vs = []
+        
 #############
 # load_data()
 #############
@@ -65,24 +72,33 @@ dt = 1e-4
 steps = int(T / dt)
 Ts = np.linspace(0, T, steps)
 
+NUM_EX = 100
+
 load_data()
 w = np.load('XeAe.npy')
 
 lif = LIF_group(N)
 #############
-for s in range(steps):
-    t = Ts[s]
-    
-    rates = training_set[0] * 32.0
-    
-    spk = np.random.rand(1, 28*28) < rates * dt
-    Iin = np.dot(spk, w)
-    Iin = Iin.flatten()
-    
-    lif.step(Iin, dt)
+
+for ex in range(NUM_EX):
+    print ex
+    #############
+    for s in range(steps):
+        t = Ts[s]
+        
+        rates = training_set[ex] * 32.0
+        
+        spk = np.random.rand(1, 28*28) < rates * dt
+        Iin = np.dot(spk, w)
+        Iin = Iin.flatten()
+        
+        lif.step(Iin, dt)
+    #############
+    lif.reset()
+     
 #############
-plt.plot(Ts, lif.Vs)
-plt.show()
+# plt.plot(Ts, lif.Vs)
+# plt.show()
 #############
 
 
