@@ -46,11 +46,6 @@ def get_new_assignments(result_monitor, input_numbers):
 
     return assignments
 
-start_time_training = 0
-end_time_training = 1000
-
-start_time_testing = 0
-end_time_testing = 1000
 
 n_e = 400
 n_input = 784
@@ -63,24 +58,26 @@ training_input_numbers = np.load('labels.npy')
 testing_result_monitor = np.load('spks.npy')
 testing_input_numbers = np.load('labels.npy')
 
+num_examples = len(training_result_monitor)
+
 print 'get assignments'
-test_results = np.zeros((10, 1000))
-test_results_max = np.zeros((10, 1000))
-test_results_top = np.zeros((10, 1000))
-test_results_fixed = np.zeros((10, 1000))
-assignments = get_new_assignments(training_result_monitor[0:1000], training_input_numbers[0:1000])
+test_results = np.zeros((10, num_examples))
+test_results_max = np.zeros((10, num_examples))
+test_results_top = np.zeros((10, num_examples))
+test_results_fixed = np.zeros((10, num_examples))
+assignments = get_new_assignments(training_result_monitor[0:num_examples], training_input_numbers[0:num_examples])
 print assignments
 print testing_input_numbers
 
-end_time = 1000
+end_time = num_examples
 start_time = 0
 
-test_results = np.zeros((10, 1000))
+test_results = np.zeros((10, num_examples))
 
-for i in xrange(1000):
+for i in xrange(num_examples):
     test_results[:, i] = get_recognized_number_ranking(assignments, testing_result_monitor[i, :])
 
-difference = test_results[0, :] - testing_input_numbers[0:1000]
+difference = test_results[0, :] - testing_input_numbers[0:num_examples]
 correct = len(np.where(difference == 0)[0])
 incorrect = np.where(difference != 0)[0]
 

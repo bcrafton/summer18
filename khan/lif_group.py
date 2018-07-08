@@ -24,12 +24,14 @@ def load_data():
     testing_set[i] = testing_set[i].reshape(28*28)
 #############
 class LIF_group:
-    def __init__(self, N, tau, vthr, vrest, vreset):
+    def __init__(self, N, tau, vthr, vrest, vreset, refrac_per, i_offset):
     
         self.N = N
         self.vthr = vthr
         self.vrest = vrest
         self.vreset = vreset
+        self.refrac_per = refrac_per
+        self.i_offset = i_offset
     
         GMEAN = 100.0
         GSTD = 10.0
@@ -40,7 +42,7 @@ class LIF_group:
         
         self.ge = np.zeros(shape=(N))
         self.gi = np.zeros(shape=(N))
-        self.v = np.ones(shape=(N)) * self.vrest
+        self.v = np.ones(shape=(N)) * self.vreset
         self.last_spk = np.ones(shape=(N)) * -1
         
         self.Vs = []
@@ -53,9 +55,9 @@ class LIF_group:
         self.gi = self.gi + gidt
         
         IsynE = self.ge * -self.v
-        IsynI = self.gi * (-0.100 - self.v)
+        IsynI = self.gi * (self.i_offset - self.v)
         
-        nrefrac = (t - self.last_spk - 0.005) > 0
+        nrefrac = (t - self.last_spk - self.refrac_per) > 0
         
         dvdt = ((self.vrest - self.v) + (IsynE + IsynI)) / self.tau        
         dv = dvdt * dt
@@ -68,7 +70,7 @@ class LIF_group:
         self.last_spk += spkd * t
         
         self.v = self.v * nspkd 
-        self.v += spkd * self.vrest
+        self.v += spkd * self.vreset
         
         self.ge = self.ge * nspkd
         self.gi = self.gi * nspkd
@@ -80,7 +82,7 @@ class LIF_group:
     def reset(self):
         self.ge = np.zeros(shape=(N))
         self.gi = np.zeros(shape=(N))
-        self.v = np.ones(shape=(N)) * self.vrest
+        self.v = np.ones(shape=(N)) * self.vreset
         self.last_spk = np.ones(shape=(N)) * -1
         # self.Vs = []
         
@@ -92,7 +94,7 @@ dt = 1e-4
 steps = int(T / dt)
 Ts = np.linspace(0, T, steps)
 
-NUM_EX = 100
+NUM_EX = 1000
 
 load_data()
 
@@ -101,8 +103,8 @@ wei = np.load('AeAi.npy')
 wie = np.load('AiAe.npy') 
 theta = np.load('theta_A.npy')
 
-lif_exc = LIF_group(N, 1e-1, theta - 20e-3 - 52e-3, -65e-3, -65e-3)
-lif_inh = LIF_group(N, 1e-2, -40e-3, -60e-3, -45e-3)
+lif_exc = LIF_group(N, 1e-1, theta - 20e-3 - 52e-3, -65e-3, -65e-3, 5e-3, -100e-3)
+lif_inh = LIF_group(N, 1e-2, -40e-3, -60e-3, -45e-3, 2e-3, -85e-3)
 
 #############
 
