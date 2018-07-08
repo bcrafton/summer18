@@ -110,7 +110,7 @@ for i in range(args.examples):
   #############
   y = np.dot(x, w)
   
-  y = y - np.percentile(y, 97)
+  y = y - np.percentile(y, 96)
   y[y < 0] = 0
   
   y = y / np.max(y)
@@ -136,7 +136,7 @@ for i in range(args.examples):
   #############
   y = np.dot(x, w)
   
-  y = y - np.percentile(y, 97)
+  y = y - np.percentile(y, 96)
   y[y < 0] = 0
 
   y = y / np.max(y)
