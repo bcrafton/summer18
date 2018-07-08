@@ -66,10 +66,11 @@ load_data()
 
 #####################################
 
-w = np.absolute(np.random.normal(1.0, 0.25, size=(layer1, layer2)))
+# w = np.absolute(np.random.normal(1.0, 0.25, size=(layer1, layer2)))
+w = np.load('XeAe.npy')
 
 #####################################
-
+'''
 if args.train:
   prev = np.copy(w)
   for itr in range(args.iters):
@@ -97,7 +98,7 @@ if args.train:
       if (i % 999 == 0):
           # print (np.sum(np.absolute(w - prev)), np.sum(w), np.sum(np.absolute(w - prev)) / np.sum(w))
           prev = np.copy(w)
-
+'''
 #####################################
 max_rates = np.zeros(layer2)
 assignments = np.zeros(layer2)
@@ -106,9 +107,16 @@ for i in range(args.examples):
   x = np.array(training_set[i]).reshape(1, layer1)
   x = x / np.average(x)
 
+  #############
   y = np.dot(x, w)
+  
+  y = y ** 2
+  y = y - np.average(y)
+  y[y < 0] = 0
+  
   y = y / np.max(y)
   y = np.array(y).flatten()
+  #############
   
   for j in range(layer2):
     if max_rates[j] < y[j]:
@@ -126,8 +134,15 @@ for i in range(args.examples):
   x = np.array(training_set[i]).reshape(1, layer1)
   x = x / np.average(x)
 
+  #############
   y = np.dot(x, w)
+  
+  y = y ** 2
+  y = y - np.average(y)
+  y[y < 0] = 0
+
   y = y / np.max(y)
+  #############
 
   max_spikes = 0
   for j in range(10):
