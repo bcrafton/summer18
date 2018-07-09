@@ -6,7 +6,6 @@ import random
 from scipy.integrate import solve_ivp
 
 MAKE_INTERPOLATOR = False
-SAVE_INTERPOLATOR = False
 
 try:
     import cPickle as pickle
@@ -44,7 +43,6 @@ if MAKE_INTERPOLATOR:
 else:
     with open('io2_func.pkl', 'rb') as f:
         io2_func = pickle.load(f)
-        
     with open('imem_func.pkl', 'rb') as f:
         imem_func = pickle.load(f)
 
@@ -81,26 +79,31 @@ print ("total time taken:" + str(t2 - t1))
 print "starting sim"
 start = time.time()
 
-y0 = [0, 0]
+y0 = [0, 0, 0]
 
 def deriv(t, y):
     vmem = y[0]
     vo2 = y[1]
+    iin = y[2]
     
-    # print (vmem, vo2)
-    print (t)
+    # print (t, vmem, vo2)
     
-    dvmem_dt = (1 / C1) * imem_func(vmem, vo2, 1e-9)
-    dvo1_dt = (1 / C2) * io2_func(vmem, vo2, 1e-9)
+    dvmem_dt = (1 / C1) * imem_func(vmem, vo2, iin)
+    dvo1_dt = (1 / C2) * io2_func(vmem, vo2, iin)
     
-    return [dvmem_dt, dvo1_dt]
+    return [dvmem_dt, dvo1_dt, 0.0]
 
 # can experiment with rtol, atol
 # rtol=1e-3
 # https://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.solve_ivp.html#scipy.integrate.solve_ivp
 
 # there is also min_step
-sol = solve_ivp(deriv, (0, 1e-2), y0, method='RK45')
+sol = solve_ivp(deriv, (0, 1e-4), y0, method='RK45')
+vmem = sol.y[0, -1]
+vo2 = sol.y[1, -1]
+y0 = [vmem, vo2, 1e-10]
+print y0
+sol = solve_ivp(deriv, (1e-4, 1), y0, method='RK45')
 
 Ts = sol.t
 vmems = sol.y[0, :]
@@ -142,15 +145,13 @@ for i in range(steps):
 '''
 
 end = time.time()
-print ("total time taken:" + str(end - start))
-
+print ("total time taken: " + str(end - start))
 
 #######################
 
-if MAKE_INTERPOLATOR or SAVE_INTERPOLATOR:
+if MAKE_INTERPOLATOR:
     with open('io2_func.pkl', 'wb') as f:
         pickle.dump(io2_func, f)
-        
     with open('imem_func.pkl', 'wb') as f:
         pickle.dump(imem_func, f)
     

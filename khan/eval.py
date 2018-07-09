@@ -8,6 +8,12 @@ import os.path
 import scipy 
 import cPickle as pickle
 from struct import unpack
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--spks', type=str)
+parser.add_argument('--labels', type=str)
+args = parser.parse_args()
 
 #------------------------------------------------------------------------------ 
 # functions
@@ -52,11 +58,11 @@ n_input = 784
 ending = ''
 
 print 'load results'
-training_result_monitor = np.load('spks.npy')
-training_input_numbers = np.load('labels.npy')
+training_result_monitor = np.load(args.spks)
+training_input_numbers = np.load(args.labels)
 
-testing_result_monitor = np.load('spks.npy')
-testing_input_numbers = np.load('labels.npy')
+testing_result_monitor = np.load(args.spks)
+testing_input_numbers = np.load(args.labels)
 
 num_examples = len(training_result_monitor)
 

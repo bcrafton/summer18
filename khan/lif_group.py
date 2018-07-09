@@ -5,6 +5,12 @@ import random
 import math
 import cPickle as pickle
 import gzip
+import time
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--examples', type=int, default=1000)
+args = parser.parse_args()
 
 #############
 def load_data():
@@ -94,14 +100,14 @@ dt = 1e-4
 steps = int(T / dt)
 Ts = np.linspace(0, T, steps)
 
-NUM_EX = 1000
+NUM_EX = args.examples
 
 load_data()
 
-w = np.load('XeAe.npy')
-wei = np.load('AeAi.npy')
-wie = np.load('AiAe.npy') 
-theta = np.load('theta_A.npy')
+w = np.load('./weights/XeAe.npy')
+wei = np.load('./weights/AeAi.npy')
+wie = np.load('./weights/AiAe.npy') 
+theta = np.load('./weights/theta_A.npy')
 
 lif_exc = LIF_group(N, 1e-1, theta - 20e-3 - 52e-3, -65e-3, -65e-3, 5e-3, -100e-3)
 lif_inh = LIF_group(N, 1e-2, -40e-3, -60e-3, -45e-3, 2e-3, -85e-3)
@@ -115,6 +121,9 @@ Iei = np.zeros(shape=(N, 1))
 spk_count = np.zeros(shape=(NUM_EX, N))
 labels = np.zeros(NUM_EX)
 
+print "starting sim"
+start = time.time()
+
 for ex in range(NUM_EX):
     
     spks = 0
@@ -124,7 +133,7 @@ for ex in range(NUM_EX):
     #############
     while spks < 5:
         #############
-        print ex, np.sum(spk_count), input_factor
+        # print ex, np.sum(spk_count), input_factor
         spk_count[ex] = 0
         for s in range(steps):
             t = Ts[s]
@@ -151,14 +160,15 @@ for ex in range(NUM_EX):
             input_factor *= 2
     #############
 
-     
+end = time.time()
+print ("total time taken: " + str(end - start))
 #############
 # print np.sum(spk_count)
 # print np.shape(spk_count)
 # print np.shape(labels)
 
-np.save('spks', spk_count)
-np.save('labels', labels)
+np.save('./results/spks_'   + str(NUM_EX), spk_count)
+np.save('./results/labels_' + str(NUM_EX), labels)
 
 # print np.shape(lif_exc.Vs)
 # plt.plot(np.linspace(0, 10*T, 10*steps), np.transpose(lif_exc.Vs)[0])
