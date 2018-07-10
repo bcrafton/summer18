@@ -2,6 +2,7 @@ import numpy as np
 from scipy import interpolate
 import matplotlib.pyplot as plt
 import time
+from scipy.integrate import solve_ivp
 
 try:
     import cPickle as pickle
@@ -82,6 +83,28 @@ C2 = 100e-15
 print "starting sim"
 start = time.time()
 
+y0 = [0, 0, 0]
+
+def deriv(t, y):
+    vmem = y[0]
+    vo2 = y[1]
+    iin = y[2]
+
+    # shud not be doing this ... just collect more points.
+    vmem = min(max(vmem, 0.0), 1.0)    
+    vo2 = min(max(vo2, 0.0), 1.0)
+    
+    vo1 = vo1_fit(vmem)
+        
+    imem = (iin - m20_fit(vmem) + m7_fit(vmem) - m12_fit(vmem, vo2))
+    dvmem_dt = (1 / C1) * imem
+    
+    io2 = io2_fit(vo1, vo2)
+    dvo2_dt = (1 / C2) * io2
+    
+    return [dvmem_dt, dvo2_dt, 0.0]
+
+'''
 for i in range(steps):
     
     t = Ts[i]
@@ -93,7 +116,8 @@ for i in range(steps):
         
     vo1 = vo1_fit(vmem)
     
-    dvdt = (1 / C2) * io2_fit(vo1, vo2)
+    io2 = io2_fit(vo1, vo2)
+    dvdt = (1 / C2) * io2
     vo2 = vo2 + dvdt * dt
     vo2 = min(max(vo2, 0.0), 1.0)
         
@@ -104,7 +128,18 @@ for i in range(steps):
     
     vmems[i] = vmem
     vo2s[i] = vo2
-    
+'''
+
+sol = solve_ivp(deriv, (0, 1e-4), y0, method='RK45')
+vmem = sol.y[0, -1]
+vo2 = sol.y[1, -1]
+y0 = [vmem, vo2, 1e-10]
+sol = solve_ivp(deriv, (1e-4, 1e-1), y0, method='RK45')
+
+Ts = sol.t
+vmems = sol.y[0, :]
+vo2s = sol.y[1, :]
+
 end = time.time()
 print ("total time taken: " + str(end - start))
 
@@ -126,10 +161,10 @@ with open('imem_fit.pkl', 'rb') as f:
 '''
 #######################
 
-plt.subplot(2,2,1)
-plt.plot(Ts, ico2s, Ts, icmems)
+# plt.subplot(2,2,1)
+# plt.plot(Ts, ico2s, Ts, icmems)
 
-plt.subplot(2,2,2)
+# plt.subplot(2,2,2)
 plt.plot(Ts, vmems, Ts, vo2s)
 
 # plt.subplot(2,2,3)

@@ -89,9 +89,9 @@ def deriv(t, y):
     # print (t, vmem, vo2)
     
     dvmem_dt = (1 / C1) * imem_func(vmem, vo2, iin)
-    dvo1_dt = (1 / C2) * io2_func(vmem, vo2, iin)
+    dvo2_dt = (1 / C2) * io2_func(vmem, vo2, iin)
     
-    return [dvmem_dt, dvo1_dt, 0.0]
+    return [dvmem_dt, dvo2_dt, 0.0]
 
 # can experiment with rtol, atol
 # rtol=1e-3
