@@ -44,7 +44,7 @@ i_vso2 = evalsig(inv_slew, 'i_vso2');
 
 csvwrite('slew_vo1.csv', v_vo1);
 csvwrite('slew_vo2.csv', v_vo2);
-csvwrite('slew_co2.csv', i_vso2);
+csvwrite('slew_io2.csv', i_vso2);
 %%%%%%%%%%%%%%%%%%%%%%
 % indiveri
 
