@@ -3,6 +3,7 @@ from scipy import interpolate
 import matplotlib.pyplot as plt
 import time
 from scipy.integrate import solve_ivp
+import math
 
 try:
     import cPickle as pickle
@@ -34,17 +35,17 @@ print "building leak interpolator"
 
 x = leak_vmem
 y = leak_m20
-m20_fit = interpolate.interp1d(x, y, kind='cubic')
+m20_fit = interpolate.interp1d(x, y, kind='cubic', fill_value=0.0)
 
 print "building fb interpolator"
 
 x = fb_vmem
 y = fb_vo1
-vo1_fit = interpolate.interp1d(x, y, kind='cubic')
+vo1_fit = interpolate.interp1d(x, y, kind='cubic', fill_value=0.0)
 
 x = fb_vmem
 y = fb_m7
-m7_fit = interpolate.interp1d(x, y, kind='cubic')
+m7_fit = interpolate.interp1d(x, y, kind='cubic', fill_value=0.0)
 
 print "building slew interpolator"
 
@@ -67,8 +68,8 @@ T = 1.0
 steps = int(T / dt)
 Ts = np.linspace(0, T, steps)
 
-vmem = 0
-vo2 = 0
+vmem = 0.0
+vo2 = 0.0
 
 vmems = np.zeros(steps)
 vo2s = np.zeros(steps)
@@ -79,6 +80,8 @@ icmems = np.zeros(steps)
 
 C1 = 500e-15
 C2 = 100e-15
+X1 = 2e12
+X2 = 1e13
 
 ########################
 
@@ -87,57 +90,36 @@ start = time.time()
 
 y0 = [0.0, 0.0, 0.0]
 
+# math.isnan
+
 def deriv(t, y):
     vmem = y[0]
     vo2 = y[1]
     iin = y[2]
 
     # shud not be doing this ... just collect more points.
-    vmem = min(max(vmem, 0.0), 1.0)    
-    vo2 = min(max(vo2, 0.0), 1.0)
+    # then we have interpolation issues.
+    vmem = min(max(vmem, 0.0), 1.1)    
+    vo2 = min(max(vo2, 0.0), 1.1)
     
     vo1 = vo1_fit(vmem)
         
     imem = (iin - m20_fit(vmem) + m7_fit(vmem) - m12_fit(vmem, vo2))
-    dvmem_dt = (1 / C1) * imem
+    dvmem_dt = X1 * imem
     
     io2 = io2_fit(vo1, vo2)
-    dvo2_dt = (1 / C2) * io2
+    dvo2_dt = X2 * io2
     
     return [dvmem_dt, dvo2_dt, 0.0]
 
-'''
-for i in range(steps):
-    
-    t = Ts[i]
+sol = solve_ivp(deriv, (0.0, 1e-4), y0, method='RK45')
 
-    if (t > 1e-4):
-        iin = 1e-10  
-    else:
-        iin = 0
-        
-    vo1 = vo1_fit(vmem)
-    
-    io2 = io2_fit(vo1, vo2)
-    dvdt = (1 / C2) * io2
-    vo2 = vo2 + dvdt * dt
-    vo2 = min(max(vo2, 0.0), 1.0)
-        
-    icmem = (iin - m20_fit(vmem) + m7_fit(vmem) - m12_fit(vmem, vo2))
-    dvdt = (1 / C1) * icmem
-    vmem = vmem + dvdt * dt
-    vmem = min(max(vmem, 0.0), 1.0)
-    
-    vmems[i] = vmem
-    vo2s[i] = vo2
-'''
-
-sol = solve_ivp(deriv, (0, 1e-4), y0, method='RK45')
 vmem = sol.y[0, -1]
 vo2 = sol.y[1, -1]
 y0 = [vmem, vo2, 1e-10]
 print y0
-sol = solve_ivp(deriv, (1e-4, 1), y0, method='RK45')
+
+sol = solve_ivp(deriv, (1e-4, 1e-1), y0, method='RK45')
 
 Ts = sol.t
 vmems = sol.y[0, :]
