@@ -75,7 +75,7 @@ def poly55(X, p00, p10, p01, p20, p11, p02, p30, p21, p12, p03, p40, p31, p22, p
 #print np.shape(slew_io2)
 
 popt, pcov = curve_fit(poly55, np.transpose([slew_vo1, slew_vo2]), slew_io2)
-plt.plot(slew_vo1, poly55(np.transpose([slew_vo1, slew_vo2]), *popt))
+plt.plot(slew_vo1, poly55(np.transpose([slew_vo1, slew_vo2]), *popt), slew_vo1, slew_io2)
 plt.show()
     
     
