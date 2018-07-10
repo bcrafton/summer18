@@ -87,7 +87,7 @@ for i in range(steps):
     t = Ts[i]
 
     if (t > 1e-4):
-        iin = 1e-9  
+        iin = 1e-10  
     else:
         iin = 0
         
