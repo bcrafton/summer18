@@ -51,12 +51,14 @@ print "building slew interpolator"
 x = np.transpose([slew_vo1, slew_vo2])
 y = slew_io2
 io2_fit = interpolate.LinearNDInterpolator(x, y, fill_value=0.0)
+# io2_fit = interpolate.NearestNDInterpolator(x, y)
 
 print "building reset interpolator"
 
 x = np.transpose([rst_vmem, rst_vo2])
 y = rst_m12
 m12_fit = interpolate.LinearNDInterpolator(x, y, fill_value=0.0)
+# m12_fit = interpolate.NearestNDInterpolator(x, y)
 
 ####################################
 
@@ -83,7 +85,7 @@ C2 = 100e-15
 print "starting sim"
 start = time.time()
 
-y0 = [0, 0, 0]
+y0 = [0.0, 0.0, 0.0]
 
 def deriv(t, y):
     vmem = y[0]
@@ -134,7 +136,8 @@ sol = solve_ivp(deriv, (0, 1e-4), y0, method='RK45')
 vmem = sol.y[0, -1]
 vo2 = sol.y[1, -1]
 y0 = [vmem, vo2, 1e-10]
-sol = solve_ivp(deriv, (1e-4, 1e-1), y0, method='RK45')
+print y0
+sol = solve_ivp(deriv, (1e-4, 1), y0, method='RK45')
 
 Ts = sol.t
 vmems = sol.y[0, :]
