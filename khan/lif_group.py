@@ -12,6 +12,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--examples', type=int, default=1000)
 args = parser.parse_args()
 
+random.seed(0)
+
 #############
 def load_data():
   global training_set, training_labels, testing_set, testing_labels
@@ -170,9 +172,14 @@ print ("total time taken: " + str(end - start))
 np.save('./results/spks_'   + str(NUM_EX), spk_count)
 np.save('./results/labels_' + str(NUM_EX), labels)
 
-# print np.shape(lif_exc.Vs)
-# plt.plot(np.linspace(0, 10*T, 10*steps), np.transpose(lif_exc.Vs)[0])
-# plt.show()
+print np.sum(spk_count, axis=0)
+print np.argmax(np.sum(spk_count, axis=0))
+idx = np.argmax(np.sum(spk_count, axis=0))
+print lif_exc.vthr[idx]
+
+Ts = np.linspace(0, 10*T, 10*steps)
+plt.plot(Ts, np.transpose(lif_exc.Vs)[idx], Ts, [lif_exc.vthr[idx]] * 10 * steps)
+plt.show()
 #############
 
 
