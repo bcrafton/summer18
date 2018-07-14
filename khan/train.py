@@ -111,46 +111,65 @@ class Synapse_group:
         
         # synapse level variables
         self.w = w
-        self.post2before = np.zeros(shape=(self.N, self.M))
-        self.pre = np.zeros(shape=(self.N, self.M))
-        self.post1 = np.zeros(shape=(self.N, self.M))
-        self.post2 = np.zeros(shape=(self.N, self.M))
         
-    def step(self, t, dt, pre_spk, post_spk): # we are skiping event driven parts for now        
-        dpre_dt = -self.pre / self.tc_pre_ee
-        dpost1_dt = -self.post1 / self.tc_post_1_ee
-        dpost2_dt = -self.post2 / self.tc_post_2_ee
+        # pre level variables
+        self.pre = np.zeros(self.N)
+        self.last_pre = np.zeros(self.N)
         
-        self.pre += dpre_dt
-        self.post1 += dpost1_dt
-        self.post2 += dpost2_dt
-
-
-        # reason this works is because we pass in (784, 1) ... not 784
-        self.pre = np.clip(self.pre + pre_spk, 0, 1)
+        # post level variables
+        self.post1 = np.zeros(self.M)
+        self.post2 = np.zeros(self.M)
+        self.last_post = np.zeros(self.M)
         
-        # we pass in (400,)
-        # this actually works:
-        # x = np.zeros(shape=(10, 5))
-        # y = np.array([0, 0, 1, 0, 0])
-        # x + y
-        
-        self.post1 = np.clip(self.post1 + post_spk, 0, 1)
-        self.post2 = np.clip(self.post2 + post_spk, 0, 1)
-        
+    def step(self, t, dt, pre_spk, post_spk): # we are skiping event driven parts for now
+    
         I = np.dot(np.transpose(pre_spk), self.w)
-        
-        # pre update
-        self.w = np.clip(self.w + self.nu_ee_pre * self.post1, 0, self.wmax_ee)
-        
-        # post update
-        self.w = np.clip(self.w + self.nu_ee_post * self.pre * self.post2, 0, self.wmax_ee)
-        
+    
+        got_pre = np.any(pre_spk)
+        got_post = np.any(post_spk)
+    
+        # print np.shape(self.pre)
+        # print np.shape(pre_spk)
+        assert(np.shape(self.pre) == (784,))
+    
+        if (got_pre or got_post):
+            dpre_dt = -self.pre / self.tc_pre_ee * (t - self.last_pre)
+            dpost1_dt = -self.post1 / self.tc_post_1_ee * (t - self.last_post)
+            dpost2_dt = -self.post2 / self.tc_post_2_ee * (t - self.last_post)
+            
+            self.pre += dpre_dt
+            self.post1 += dpost1_dt
+            self.post2 += dpost2_dt
+
+            # reason this works is because we pass in (784, 1) ... not 784
+            self.pre = np.clip(self.pre + pre_spk, 0, 1)
+            
+            # we pass in (400,)
+            # this actually works:
+            # x = np.zeros(shape=(10, 5))
+            # y = np.array([0, 0, 1, 0, 0])
+            # x + y
+            
+            self.post1 = np.clip(self.post1 + post_spk, 0, 1)
+            self.post2 = np.clip(self.post2 + post_spk, 0, 1)
+            
+            npre_spk = pre_spk == 0
+            self.last_pre = self.last_pre * npre_spk
+            self.last_pre += pre_spk * t
+            
+            npost_spk = post_spk == 0
+            self.last_post = self.last_post * npost_spk
+            self.last_post += post_spk * t
+            
+        if (got_pre and np.any(self.post1 > 0)):
+            self.w = np.clip(self.w + self.nu_ee_pre * self.post1, 0, self.wmax_ee)
+        if (got_post):
+            self.w = np.clip(self.w + self.nu_ee_post * np.copy(self.pre).reshape(784, 1) * np.copy(self.post2).reshape(1, 400), 0, self.wmax_ee)
+
         return I
         
     def reset(self):
         # we do not reset the weights.
-        self.post2before = np.zeros(shape=(self.N, self.M))
         self.pre = np.zeros(shape=(self.N, self.M))
         self.post1 = np.zeros(shape=(self.N, self.M))
         self.post2 = np.zeros(shape=(self.N, self.M))
@@ -167,13 +186,14 @@ NUM_EX = args.examples
 
 load_data()
 
-w = np.load('./weights/XeAe.npy')
+# w = np.load('./weights/XeAe.npy')
+w = np.load('./random/XeAe.npy')
+wei = np.load('./random/AeAi.npy')
+wie = np.load('./random/AiAe.npy') 
+# theta = np.load('./weights/theta_A.npy')
+theta = np.ones(N) * 20e-3
+
 Syn = Synapse_group(784, 400, w, True, 20e-3, 20e-3, 40e-3, 1e-4, 1e-2, 1.0)
-
-wei = np.load('./weights/AeAi.npy')
-wie = np.load('./weights/AiAe.npy') 
-theta = np.load('./weights/theta_A.npy')
-
 lif_exc = LIF_group(N, 1e-1, theta - 20e-3 - 52e-3, -65e-3, -65e-3, 5e-3, -100e-3)
 lif_inh = LIF_group(N, 1e-2, -40e-3, -60e-3, -45e-3, 2e-3, -85e-3)
 
@@ -207,7 +227,6 @@ for ex in range(NUM_EX):
             
             rates = training_set[ex] * 32.0 * input_factor
             spk = np.random.rand(784) < rates * dt
-            spk = spk.reshape(784, 1)
             
             # I = np.dot(spk, w)
             I = Syn.step(t, dt, spk, spkd)
