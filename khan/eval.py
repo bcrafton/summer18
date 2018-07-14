@@ -11,8 +11,10 @@ from struct import unpack
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--spks', type=str)
-parser.add_argument('--labels', type=str)
+parser.add_argument('--train_spks', type=str)
+parser.add_argument('--train_labels', type=str)
+parser.add_argument('--test_spks', type=str)
+parser.add_argument('--test_labels', type=str)
 args = parser.parse_args()
 
 #------------------------------------------------------------------------------ 
@@ -57,40 +59,33 @@ n_e = 400
 n_input = 784
 ending = ''
 
-print 'load results'
-training_result_monitor = np.load(args.spks)
-training_input_numbers = np.load(args.labels)
+for num in (100, 1000, 9990):
+    # print 'load results'
+    training_result_monitor = np.load(args.train_spks)[0:num, :]
+    training_input_numbers = np.load(args.train_labels)[0:num]
+    testing_result_monitor = np.load(args.test_spks)[0:num, :]
+    testing_input_numbers = np.load(args.test_labels)[0:num]
+    
+    num_examples = len(training_result_monitor)
 
-testing_result_monitor = np.load(args.spks)
-testing_input_numbers = np.load(args.labels)
+    # print 'get assignments'
+    assignments = get_new_assignments(training_result_monitor[0:num_examples], training_input_numbers[0:num_examples])
+    # print assignments
 
-num_examples = len(training_result_monitor)
+    test_results = np.zeros((10, num_examples))
+    for i in xrange(num_examples):
+        test_results[:, i] = get_recognized_number_ranking(assignments, testing_result_monitor[i, :])
 
-print 'get assignments'
-test_results = np.zeros((10, num_examples))
-test_results_max = np.zeros((10, num_examples))
-test_results_top = np.zeros((10, num_examples))
-test_results_fixed = np.zeros((10, num_examples))
-assignments = get_new_assignments(training_result_monitor[0:num_examples], training_input_numbers[0:num_examples])
-print assignments
-print testing_input_numbers
+    difference = test_results[0, :] - testing_input_numbers[0:num_examples]
+    correct = len(np.where(difference == 0)[0])
+    incorrect = np.where(difference != 0)[0]
 
-end_time = num_examples
-start_time = 0
+    accuracy = correct/float(num_examples) * 100
+    total_spks = np.sum(testing_result_monitor)
 
-test_results = np.zeros((10, num_examples))
-
-for i in xrange(num_examples):
-    test_results[:, i] = get_recognized_number_ranking(assignments, testing_result_monitor[i, :])
-
-difference = test_results[0, :] - testing_input_numbers[0:num_examples]
-correct = len(np.where(difference == 0)[0])
-incorrect = np.where(difference != 0)[0]
-
-accuracy = correct/float(end_time-start_time) * 100
-
-print accuracy
-
+    print "accuracy: " + str(accuracy)
+    print "total spks: " + str(total_spks)
+    print "spikes per: " + str(total_spks / num_examples)
 
 
 

@@ -95,6 +95,67 @@ class LIF_group:
         # self.Vs = []
         
 #############
+class Synapse_group:
+    def __init__(self, N, M, w, stdp, tc_pre_ee, tc_post_1_ee, tc_post_2_ee, nu_ee_pre, nu_ee_post, wmax_ee):
+    
+        # group level variables
+        self.N = N
+        self.M = M
+        self.stdp = stdp
+        self.tc_pre_ee = tc_pre_ee
+        self.tc_post_1_ee = tc_post_1_ee
+        self.tc_post_2_ee = tc_post_2_ee
+        self.nu_ee_pre = nu_ee_pre
+        self.nu_ee_post = nu_ee_post
+        self.wmax_ee = wmax_ee
+        
+        # synapse level variables
+        self.w = w
+        self.post2before = np.zeros(shape=(self.N, self.M))
+        self.pre = np.zeros(shape=(self.N, self.M))
+        self.post1 = np.zeros(shape=(self.N, self.M))
+        self.post2 = np.zeros(shape=(self.N, self.M))
+        
+    def step(self, t, dt, pre_spk, post_spk): # we are skiping event driven parts for now        
+        dpre_dt = -self.pre / self.tc_pre_ee
+        dpost1_dt = -self.post1 / self.tc_post_1_ee
+        dpost2_dt = -self.post2 / self.tc_post_2_ee
+        
+        self.pre += dpre_dt
+        self.post1 += dpost1_dt
+        self.post2 += dpost2_dt
+
+
+        # reason this works is because we pass in (784, 1) ... not 784
+        self.pre = np.clip(self.pre + pre_spk, 0, 1)
+        
+        # we pass in (400,)
+        # this actually works:
+        # x = np.zeros(shape=(10, 5))
+        # y = np.array([0, 0, 1, 0, 0])
+        # x + y
+        
+        self.post1 = np.clip(self.post1 + post_spk, 0, 1)
+        self.post2 = np.clip(self.post2 + post_spk, 0, 1)
+        
+        I = np.dot(np.transpose(pre_spk), self.w)
+        
+        # pre update
+        self.w = np.clip(self.w + self.nu_ee_pre * self.post1, 0, self.wmax_ee)
+        
+        # post update
+        self.w = np.clip(self.w + self.nu_ee_post * self.pre * self.post2, 0, self.wmax_ee)
+        
+        return I
+        
+    def reset(self):
+        # we do not reset the weights.
+        self.post2before = np.zeros(shape=(self.N, self.M))
+        self.pre = np.zeros(shape=(self.N, self.M))
+        self.post1 = np.zeros(shape=(self.N, self.M))
+        self.post2 = np.zeros(shape=(self.N, self.M))
+        
+#############
 N = 400
 
 T = 0.35
@@ -107,6 +168,8 @@ NUM_EX = args.examples
 load_data()
 
 w = np.load('./weights/XeAe.npy')
+Syn = Synapse_group(784, 400, w, True, 20e-3, 20e-3, 40e-3, 1e-4, 1e-2, 1.0)
+
 wei = np.load('./weights/AeAi.npy')
 wie = np.load('./weights/AiAe.npy') 
 theta = np.load('./weights/theta_A.npy')
@@ -132,18 +195,22 @@ for ex in range(NUM_EX):
     prev_spks = spks
     input_factor = 2
     
+    spkd = np.zeros(N)
+    
     #############
     while spks < 5:
         #############
-        # print ex, np.sum(spk_count), input_factor
+        print ex, np.sum(spk_count), input_factor
         spk_count[ex] = 0
         for s in range(steps):
             t = Ts[s]
             
             rates = training_set[ex] * 32.0 * input_factor
-            spk = np.random.rand(1, 28*28) < rates * dt
+            spk = np.random.rand(784) < rates * dt
+            spk = spk.reshape(784, 1)
             
-            I = np.dot(spk, w)
+            # I = np.dot(spk, w)
+            I = Syn.step(t, dt, spk, spkd)
             spkd = lif_exc.step(t, dt, I.flatten(), Iie.flatten())
             
             spk_count[ex] += spkd
@@ -157,6 +224,7 @@ for ex in range(NUM_EX):
         lif_exc.reset()
         lif_inh.reset()
         prev = spks
+        spkd = np.zeros(N)
         spks = np.sum(spk_count[ex]) - prev
         if spks < 5:
             input_factor *= 2

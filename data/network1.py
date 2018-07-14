@@ -5,6 +5,7 @@ import time
 from gates import *
 from scipy.integrate import solve_ivp
 from scipy.integrate import odeint
+from scipy.integrate import ode
 from scipy.optimize import approx_fprime
 import math
 import sys
@@ -270,7 +271,9 @@ LAYER2 = 48
 
 Syn = SynapseGroup(LAYER1, LAYER2)
 
-def deriv(y, t, iin):
+def deriv(t, y):
+
+    global iin
 
     vmem_pre = y[0*LAYER1:1*LAYER1]
     vo2_pre =  y[1*LAYER1:2*LAYER1]
@@ -330,9 +333,11 @@ def deriv(y, t, iin):
     
     return np.concatenate( (dvmem_pre_dt, dvo2_pre_dt, dvmem_post_dt, dvo2_post_dt) )
 
-def deriv2(y, t, iin):
+def deriv2(t, y):
 
-    assert(False)
+    # assert(False)
+
+    global iin
 
     vmem_pre = y[0*LAYER1:1*LAYER1]
     vo2_pre =  y[1*LAYER1:2*LAYER1]
@@ -363,11 +368,9 @@ def deriv2(y, t, iin):
         
         ### compute 2nd derivative.
         
-        d2vmem_pre_dt[i] = dvmem_pre_dt * (m7_vmem_fit(vmem_pre[i]) - m20_vmem_fit(vmem_pre[i]) - m12_vmem_fit(vmem_pre[i])) + (dvo2_pre_dt * m12_vo2_fit(vo2_pre[i]))
-        
-        # this part is incorrect! we are doing 'dvmem_post_dt * io2_vo1_fit(vo1)' instead of using dvo1 because we dont have it
-        # dvo1 is the inverse of dvmem so this does not work at all
-        d2vo2_pre_dt[i] = dvmem_pre_dt * io2_vo1_fit(vo1) + dvo2_pre_dt * io2_vo2_fit(vo2)
+        d2vmem_pre_dt[i] = dvmem_pre_dt * (m7_vmem_fit(vmem_pre[i]) - m20_vmem_fit(vmem_pre[i]) - m12_vmem_fit(vmem_pre[i], vo2_pre[i])) + dvo2_pre_dt * m12_vo2_fit(vmem_pre[i], vo2_pre[i])
+        # this part is incorrect! we are doing 'dvmem_pre_dt * io2_vo1_fit(vo1)' instead of using dvo1 because we dont have it
+        d2vo2_pre_dt[i] = dvmem_pre_dt * io2_vo1_fit(vo1, vo2_pre[i]) + dvo2_pre_dt * io2_vo2_fit(vo1, vo2_pre[i])
     
     Isyn, dwdt = Syn.step(vspk_pre, vspk_post, t)
     Isyn = np.sum(Isyn, axis=0)
@@ -380,23 +383,22 @@ def deriv2(y, t, iin):
         vo1 = vo1_fit(vmem_post[i])
             
         imem = (Isyn[i] - m20_fit(vmem_post[i]) + m7_fit(vmem_post[i]) - m12_fit(vmem_post[i], vo2_post[i]))
-        dvmem_post_dt[i] = X1 * imem
+        dvmem_post_dt = X1 * imem
         
         io2 = io2_fit(vo1, vo2_post[i])
-        dvo2_post_dt[i] = X2 * io2
+        dvo2_post_dt = X2 * io2
         
         ### compute 2nd derivative.
         
-        d2vmem_post_dt[i] = dvmem_post_dt * (m7_vmem_fit(vmem_post[i]) - m20_vmem_fit(vmem_post[i]) - m12_vmem_fit(vmem_post[i])) + (dvo2_post_dt * m12_vo2_fit(vo2_post[i]))
-        
+        d2vmem_post_dt[i] = dvmem_post_dt * (m7_vmem_fit(vmem_post[i]) - m20_vmem_fit(vmem_post[i]) - m12_vmem_fit(vmem_post[i], vo2_post[i])) + dvo2_post_dt * m12_vo2_fit(vmem_post[i], vo2_post[i])
         # this part is incorrect! we are doing 'dvmem_post_dt * io2_vo1_fit(vo1)' instead of using dvo1 because we dont have it
-        # dvo1 is the inverse of dvmem so this does not work at all
-        d2vo2_post_dt[i] = dvmem_post_dt * io2_vo1_fit(vo1) + dvo2_post_dt * io2_vo2_fit(vo2)
+        d2vo2_post_dt[i] = dvmem_post_dt * io2_vo1_fit(vo1, vo2_post[i]) + dvo2_post_dt * io2_vo2_fit(vo1, vo2_post[i])
     
     return np.concatenate( (d2vmem_pre_dt, d2vo2_pre_dt, d2vmem_post_dt, d2vo2_post_dt) )
 
 ########################
 
+iin = 0
 
 dt = 1e-6
 T = 1e-4
@@ -404,12 +406,13 @@ steps = int(T / dt)
 Ts = np.linspace(0, T, steps)
 
 y0 = [0.0] * (2*LAYER1 + 2*LAYER2)
-# sol = solve_ivp(deriv, (0.0, 1e-4), y0, method='RK45')
-sol, info = odeint(deriv, y0, Ts, args=(0,), Dfun=deriv2, full_output=1)
-
-print info
+sol = solve_ivp(deriv, (0.0, 1e-4), y0, method='RK45')
+# sol, info = odeint(deriv, y0, Ts, args=(0,), Dfun=deriv2, tfirst=True, full_output=1)
+# print info
 
 ########################
+
+iin = 1e-10
 
 dt = 1e-6
 T = 1e-1
@@ -420,16 +423,26 @@ start = time.time()
 print "starting sim"
 
 OFFSET = 2*LAYER1
+vmem_pre  = sol.y[0*LAYER1 : 1*LAYER1, -1]
+vo2_pre   = sol.y[1*LAYER1 : 2*LAYER1, -1]
+vmem_post = sol.y[OFFSET+0*LAYER2 : OFFSET+1*LAYER2, -1]
+vo2_post  = sol.y[OFFSET+1*LAYER2 : OFFSET+2*LAYER2, -1]
+'''
 vmem_pre  = sol[-1, 0*LAYER1 : 1*LAYER1]
 vo2_pre   = sol[-1, 1*LAYER1 : 2*LAYER1]
 vmem_post = sol[-1, OFFSET+0*LAYER2 : OFFSET+1*LAYER2]
 vo2_post  = sol[-1, OFFSET+1*LAYER2 : OFFSET+2*LAYER2]
+'''
 
-y0 = np.concatenate( (vmem_pre, vo2_pre, vmem_post, vo2_post) )
-# sol = solve_ivp(deriv, (1e-4, 1e-1), y0, method='RK45')
-sol, info = odeint(deriv, y0, Ts, args=(1e-10,), Dfun=deriv2, full_output=1)
+# y0 = np.concatenate( (vmem_pre, vo2_pre, vmem_post, vo2_post) )
+sol = solve_ivp(deriv, (1e-4, 1e-1), y0, method='BDF', jac=deriv2)
+# sol, info = odeint(deriv, y0, Ts, args=(1e-10,), Dfun=deriv2, full_output=1)
+# print info['mused']
 
-print info['mused']
+eq = ode(deriv, deriv2).set_integrator('vode', method='bdf')
+eq.set_initial_value(y0, 0.0).set_f_params(1e-10).set_jac_params(1e-10)
+while eq.successful() and eq.t < 1e-1:
+    print(eq.t+dt, eq.integrate(eq.t+dt))
 
 end = time.time()
 print ("total time taken: " + str(end - start))

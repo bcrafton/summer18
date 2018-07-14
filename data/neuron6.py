@@ -117,7 +117,7 @@ sol = solve_ivp(deriv, (0.0, 1e-4), y0, method='RK45')
 vmem = sol.y[0, -1]
 vo2 = sol.y[1, -1]
 y0 = [vmem, vo2, 1e-10]
-print y0
+# print y0
 
 sol = solve_ivp(deriv, (1e-4, 1e-1), y0, method='RK45')
 
@@ -150,7 +150,7 @@ with open('imem_fit.pkl', 'rb') as f:
 # plt.plot(Ts, ico2s, Ts, icmems)
 
 # plt.subplot(2,2,2)
-plt.plot(Ts, vmems, Ts, vo2s)
+plt.plot(Ts, vmems)
 
 # plt.subplot(2,2,3)
 
