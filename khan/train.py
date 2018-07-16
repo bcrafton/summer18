@@ -122,7 +122,7 @@ class Synapse_group:
         self.post2 = np.zeros(self.M)
         self.last_post = np.ones(self.M) * -1
         
-    def step(self, t, dt, pre_spk, post_spk): # we are skiping event driven parts for now
+    def step(self, t, dt, pre_spk, post_spk):
     
         I = np.dot(np.transpose(pre_spk), self.w)
     
@@ -130,14 +130,17 @@ class Synapse_group:
         got_post = np.any(post_spk)
 
         if (got_pre or got_post):
-            dpre_dt = -self.pre / self.tc_pre_ee * (t - self.last_pre)
-            dpost1_dt = -self.post1 / self.tc_post_1_ee * (t - self.last_post)
-            dpost2_dt = -self.post2 / self.tc_post_2_ee * (t - self.last_post)
+            dpre = -self.pre / self.tc_pre_ee * (t - self.last_pre)
+            dpost1 = -self.post1 / self.tc_post_1_ee * (t - self.last_post)
+            dpost2 = -self.post2 / self.tc_post_2_ee * (t - self.last_post)
             
-            self.pre += dpre_dt
-            self.post1 += dpost1_dt
-            self.post2 += dpost2_dt
+            self.pre = np.clip(self.pre + dpre, 0, 1.0)
+            self.post1 = np.clip(self.post1 + dpost1, 0, 1.0)
+            self.post2 = np.clip(self.post2 + dpost2, 0, 1.0)
 
+            # does this go here? ... we dont know how brian2 evals model vs pre/post
+            post2before = np.copy(self.post2)
+             
             self.pre = np.clip(self.pre + pre_spk, 0, 1.0)
             self.post1 = np.clip(self.post1 + post_spk, 0, 1.0)
             self.post2 = np.clip(self.post2 + post_spk, 0, 1.0)
@@ -154,7 +157,7 @@ class Synapse_group:
             self.w = np.clip(self.w + self.nu_ee_pre * self.post1, 0, self.wmax_ee)
 
         if (got_post):
-            self.w = np.clip(self.w + self.nu_ee_post * np.copy(self.pre).reshape(self.N, 1) * np.copy(self.post2).reshape(1, self.M), 0, self.wmax_ee)
+            self.w = np.clip(self.w + self.nu_ee_post * np.dot(np.copy(self.pre).reshape(self.N, 1), post2before.reshape(1, self.M)), 0, self.wmax_ee)
 
         return I
         
@@ -222,6 +225,9 @@ for ex in range(NUM_EX):
         #############
         print ex, np.sum(spk_count), input_factor
         print np.sum(spk_count, axis=0)
+        print np.std(Syn.w)
+        print np.average(lif_exc.theta)
+        print "----------"
         
         spk_count[ex] = 0
         for s in range(steps):
@@ -248,13 +254,13 @@ for ex in range(NUM_EX):
         spkd = np.zeros(N)
         spks = np.sum(spk_count[ex]) - prev
         if spks < 5:
-            input_factor *= 2
+            input_factor += 1
     #############
 
 end = time.time()
 print ("total time taken: " + str(end - start))
 
-np.save('XeAe_trained1', Syn.w)
+np.save('XeAe_trained', Syn.w)
 np.save('theta', lif_exc.theta)
 #############
 
