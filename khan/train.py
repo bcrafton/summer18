@@ -32,9 +32,10 @@ def load_data():
     testing_set[i] = testing_set[i].reshape(28*28)
 #############
 class LIF_group:
-    def __init__(self, N, tau, theta, vthr, vrest, vreset, refrac_per, i_offset, tc_theta, theta_plus_e):
+    def __init__(self, N, adapt, tau, theta, vthr, vrest, vreset, refrac_per, i_offset, tc_theta, theta_plus_e):
     
         self.N = N
+        self.adapt = adapt
         self.theta = theta
         self.vthr = vthr
         self.vrest = vrest
@@ -81,9 +82,10 @@ class LIF_group:
         self.ge = self.ge * nspkd
         self.gi = self.gi * nspkd
         
-        dtheta_dt = -self.theta / self.tc_theta * dt
-        self.theta = self.theta + dtheta_dt
-        self.theta = self.theta + spkd * self.theta_plus_e
+        if self.adapt:
+            dtheta_dt = -self.theta / self.tc_theta * dt
+            self.theta = self.theta + dtheta_dt
+            self.theta = self.theta + spkd * self.theta_plus_e
 
         return spkd
         
@@ -126,11 +128,7 @@ class Synapse_group:
     
         got_pre = np.any(pre_spk)
         got_post = np.any(post_spk)
-    
-        # print np.shape(self.pre)
-        # print np.shape(pre_spk)
-        assert(np.shape(self.pre) == (784,))
-    
+
         if (got_pre or got_post):
             dpre_dt = -self.pre / self.tc_pre_ee * (t - self.last_pre)
             dpost1_dt = -self.post1 / self.tc_post_1_ee * (t - self.last_post)
@@ -140,15 +138,7 @@ class Synapse_group:
             self.post1 += dpost1_dt
             self.post2 += dpost2_dt
 
-            # reason this works is because we pass in (784, 1) ... not 784
             self.pre = np.clip(self.pre + pre_spk, 0, 1.0)
-            
-            # we pass in (400,)
-            # this actually works:
-            # x = np.zeros(shape=(10, 5))
-            # y = np.array([0, 0, 1, 0, 0])
-            # x + y
-            
             self.post1 = np.clip(self.post1 + post_spk, 0, 1.0)
             self.post2 = np.clip(self.post2 + post_spk, 0, 1.0)
             
@@ -162,8 +152,9 @@ class Synapse_group:
             
         if (got_pre and np.any(self.post1 > 0)):
             self.w = np.clip(self.w + self.nu_ee_pre * self.post1, 0, self.wmax_ee)
+
         if (got_post):
-            self.w = np.clip(self.w + self.nu_ee_post * np.copy(self.pre).reshape(784, 1) * np.copy(self.post2).reshape(1, 400), 0, self.wmax_ee)
+            self.w = np.clip(self.w + self.nu_ee_post * np.copy(self.pre).reshape(self.N, 1) * np.copy(self.post2).reshape(1, self.M), 0, self.wmax_ee)
 
         return I
         
@@ -176,6 +167,12 @@ class Synapse_group:
         self.post1 = np.zeros(self.M)
         self.post2 = np.zeros(self.M)
         self.last_post = np.ones(self.M) * -1
+        
+        # normalize w
+        col_sum = np.sum(self.w, axis=0)
+        col_factor = 78.0 / col_sum
+        for i in range(self.M):
+            self.w[:, i] *= col_factor[i]
         
 #############
 N = 400
@@ -197,8 +194,8 @@ wie = np.load('./random/AiAe.npy')
 theta = np.ones(N) * 20e-3
 
 Syn = Synapse_group(784, 400, w, True, 20e-3, 20e-3, 40e-3, 1e-4, 1e-2, 1.0)
-lif_exc = LIF_group(N, 1e-1, theta, -20e-3 - 52e-3, -65e-3, -65e-3, 5e-3, -100e-3, 1e7*1e-3, 0.05e-3)
-lif_inh = LIF_group(N, 1e-2, 0, -40e-3, -60e-3, -45e-3, 2e-3, -85e-3, 1e7*1e-3, 0.05e-3)
+lif_exc = LIF_group(N, True, 1e-1, theta, -20e-3 - 52e-3, -65e-3, -65e-3, 5e-3, -100e-3, 1e7*1e-3, 0.05e-3)
+lif_inh = LIF_group(N, False, 1e-2, 0, -40e-3, -60e-3, -45e-3, 2e-3, -85e-3, 1e7*1e-3, 0.05e-3)
 
 #############
 
@@ -224,6 +221,8 @@ for ex in range(NUM_EX):
     while spks < 5:
         #############
         print ex, np.sum(spk_count), input_factor
+        print np.sum(spk_count, axis=0)
+        
         spk_count[ex] = 0
         for s in range(steps):
             t = Ts[s]
@@ -231,7 +230,6 @@ for ex in range(NUM_EX):
             rates = training_set[ex] * 32.0 * input_factor
             spk = np.random.rand(784) < rates * dt
             
-            # I = np.dot(spk, w)
             I = Syn.step(t, dt, spk, spkd)
             spkd = lif_exc.step(t, dt, I.flatten(), Iie.flatten())
             
@@ -245,6 +243,7 @@ for ex in range(NUM_EX):
         #############
         lif_exc.reset()
         lif_inh.reset()
+        Syn.reset()
         prev = spks
         spkd = np.zeros(N)
         spks = np.sum(spk_count[ex]) - prev
@@ -256,6 +255,7 @@ end = time.time()
 print ("total time taken: " + str(end - start))
 
 np.save('XeAe_trained1', Syn.w)
+np.save('theta', lif_exc.theta)
 #############
 
 

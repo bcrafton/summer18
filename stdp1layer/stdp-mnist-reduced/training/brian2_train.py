@@ -63,7 +63,7 @@ load_data()
 #------------------------------------------------------------------------------
 
 np.random.seed(0)
-num_examples = 1000
+num_examples = 10000
 update_interval = num_examples
 
 ending = ''

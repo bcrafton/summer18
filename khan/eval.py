@@ -6,7 +6,6 @@ import matplotlib.cm as cmap
 import time
 import os.path
 import scipy 
-import cPickle as pickle
 from struct import unpack
 import argparse
 
@@ -59,33 +58,32 @@ n_e = 400
 n_input = 784
 ending = ''
 
-for num in (100, 1000, 9990):
-    # print 'load results'
-    training_result_monitor = np.load(args.train_spks)[0:num, :]
-    training_input_numbers = np.load(args.train_labels)[0:num]
-    testing_result_monitor = np.load(args.test_spks)[0:num, :]
-    testing_input_numbers = np.load(args.test_labels)[0:num]
-    
-    num_examples = len(training_result_monitor)
 
-    # print 'get assignments'
-    assignments = get_new_assignments(training_result_monitor[0:num_examples], training_input_numbers[0:num_examples])
-    # print assignments
 
-    test_results = np.zeros((10, num_examples))
-    for i in xrange(num_examples):
-        test_results[:, i] = get_recognized_number_ranking(assignments, testing_result_monitor[i, :])
+training_result_monitor = np.load(args.train_spks)[:, :]
+training_input_numbers = np.load(args.train_labels)[:]
+testing_result_monitor = np.load(args.test_spks)[:, :]
+testing_input_numbers = np.load(args.test_labels)[:]
 
-    difference = test_results[0, :] - testing_input_numbers[0:num_examples]
-    correct = len(np.where(difference == 0)[0])
-    incorrect = np.where(difference != 0)[0]
+num_examples = len(training_result_monitor)
 
-    accuracy = correct/float(num_examples) * 100
-    total_spks = np.sum(testing_result_monitor)
+assignments = get_new_assignments(training_result_monitor[:], training_input_numbers[:])
+# print assignments
 
-    print "accuracy: " + str(accuracy)
-    print "total spks: " + str(total_spks)
-    print "spikes per: " + str(total_spks / num_examples)
+test_results = np.zeros((10, num_examples))
+for i in xrange(num_examples):
+    test_results[:, i] = get_recognized_number_ranking(assignments, testing_result_monitor[i, :])
+
+difference = test_results[0, :] - testing_input_numbers[0:num_examples]
+correct = len(np.where(difference == 0)[0])
+incorrect = np.where(difference != 0)[0]
+
+accuracy = correct/float(num_examples) * 100
+total_spks = np.sum(testing_result_monitor)
+
+print "accuracy: " + str(accuracy)
+print "total spks: " + str(total_spks)
+print "spikes per: " + str(total_spks / num_examples)
 
 
 
