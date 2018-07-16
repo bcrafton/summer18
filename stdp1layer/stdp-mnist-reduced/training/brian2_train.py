@@ -252,8 +252,11 @@ while j < num_examples:
     input_groups['Xe'].rates = 0*Hz
     net.run(resting_time)
 
-    print( np.sum(connections['XeAe'].w - prev_weights) )
+    # print( np.sum(connections['XeAe'].w - prev_weights) )
     prev_weights = connections['XeAe'].w
+    
+    print ( j, np.sum(np.asarray(spike_counters['Ae'].count[:])) )
+    print ( np.asarray(spike_counters['Ae'].count[:]) )
 
 #------------------------------------------------------------------------------ 
 # save results
