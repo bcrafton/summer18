@@ -83,8 +83,8 @@ class LIF_group:
         self.gi = self.gi * nspkd
         
         if self.adapt:
-            dtheta_dt = -self.theta / self.tc_theta * dt
-            self.theta = self.theta + dtheta_dt
+            dtheta_dt = -self.theta / self.tc_theta
+            self.theta = self.theta + dtheta_dt * dt
             self.theta = self.theta + spkd * self.theta_plus_e
 
         return spkd
