@@ -10,9 +10,10 @@ import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--examples', type=int, default=1000)
+parser.add_argument('--train', type=int, default=False)
 args = parser.parse_args()
 
-random.seed(0)
+np.random.seed(0)
 
 #############
 def load_data():
@@ -55,16 +56,16 @@ class LIF_group:
         self.last_spk = np.ones(shape=(N)) * -1
         
     def step(self, t, dt, Iine, Iini=0):
+        nrefrac = (t - self.last_spk - self.refrac_per) > 0
+    
         gedt = -(self.ge / self.ge_tau * dt) + Iine
-        self.ge = self.ge + gedt
+        self.ge += gedt * nrefrac
         
         gidt = -(self.gi / self.gi_tau * dt) + Iini
-        self.gi = self.gi + gidt
+        self.gi += gidt * nrefrac
         
         IsynE = self.ge * -self.v
         IsynI = self.gi * (self.i_offset - self.v)
-        
-        nrefrac = (t - self.last_spk - self.refrac_per) > 0
         
         dvdt = ((self.vrest - self.v) + (IsynE + IsynI)) / self.tau        
         dv = dvdt * dt
@@ -114,72 +115,60 @@ class Synapse_group:
         self.w = w
         
         # need random delays ... so this dont work ...
-        self.delayI = []
+        init_delay = 1 / 1e-4 * 5e-3
+        self.Is = [np.zeros(self.M)] * int(init_delay) 
         
         # pre level variables
-        # self.pre = np.zeros(self.N)
         self.last_pre = np.ones(self.N) * -1
         
         # post level variables
-        # self.post1 = np.zeros(self.M)
-        # self.post2 = np.zeros(self.M)
         self.last_post = np.ones(self.M) * -1
         
     def step(self, t, dt, pre_spk, post_spk):
     
         I = np.dot(np.transpose(pre_spk), self.w)
+        self.Is.append(I)
     
         got_pre = np.any(pre_spk)
         got_post = np.any(post_spk)
 
-        if (got_pre or got_post):
-            '''
-            dpre = -self.pre / self.tc_pre_ee * (t - self.last_pre)
-            dpost1 = -self.post1 / self.tc_post_1_ee * (t - self.last_post)
-            dpost2 = -self.post2 / self.tc_post_2_ee * (t - self.last_post)
+        if self.stdp:
+            if (got_pre):
+                npre_spk = pre_spk == 0
+                self.last_pre = self.last_pre * npre_spk
+                self.last_pre += pre_spk * t
             
-            self.pre = self.pre + dpre
-            self.post1 = self.post1 + dpost1
-            self.post2 = self.post2 + dpost2
-            '''
-        if (got_pre):
-            npre_spk = pre_spk == 0
-            self.last_pre = self.last_pre * npre_spk
-            self.last_pre += pre_spk * t
-        
-            # self.pre = np.clip(self.pre + pre_spk, 0, 1.0)
-            post1 = np.exp(-(t - self.last_post) / self.tc_post_1_ee)
-            self.w = np.clip(self.w - self.nu_ee_pre * post1, 0, self.wmax_ee)
+                post1 = np.exp(-(t - self.last_post) / self.tc_post_1_ee)
+                self.w = np.clip(self.w - self.nu_ee_pre * post1, 0, self.wmax_ee)
 
-        if (got_post):
-            # post2before = np.copy(self.post2)
-            pre = np.exp(-(t - self.last_pre) / self.tc_pre_ee)
-            post2 = np.exp(-(t - self.last_post) / self.tc_post_2_ee)
-            self.w = np.clip(self.w + self.nu_ee_post * np.dot(pre.reshape(self.N, 1), post2.reshape(1, self.M)), 0, self.wmax_ee)
-            # self.post1 = np.clip(self.post1 + post_spk, 0, 1.0)
-            # self.post2 = np.clip(self.post2 + post_spk, 0, 1.0)
+            if (got_post):
+                pre = np.exp(-(t - self.last_pre) / self.tc_pre_ee)
+                post2 = np.exp(-(t - self.last_post) / self.tc_post_2_ee)
+                self.w = np.clip(self.w + self.nu_ee_post * np.dot(pre.reshape(self.N, 1), post2.reshape(1, self.M)), 0, self.wmax_ee)
 
-            npost_spk = post_spk == 0
-            self.last_post = self.last_post * npost_spk
-            self.last_post += post_spk * t
+                npost_spk = post_spk == 0
+                self.last_post = self.last_post * npost_spk
+                self.last_post += post_spk * t
 
         return I
         
     def reset(self):
         # pre level variables
-        # self.pre = np.zeros(self.N)
         self.last_pre = np.ones(self.N) * -1
         
         # post level variables
-        # self.post1 = np.zeros(self.M)
-        # self.post2 = np.zeros(self.M)
         self.last_post = np.ones(self.M) * -1
         
-        # normalize w
-        col_sum = np.sum(np.copy(self.w), axis=0)
-        col_factor = 78.0 / col_sum
-        for i in range(self.M):
-            self.w[:, i] *= col_factor[i]
+        # reset current delay. Ideally this would still feed into the neuron during resting period ...
+        init_delay = 1 / 1e-4 * 5e-3
+        self.Is = [np.zeros(self.M)] * int(init_delay) 
+        
+        if self.stdp:
+            # normalize w
+            col_sum = np.sum(np.copy(self.w), axis=0)
+            col_factor = 78.0 / col_sum
+            for i in range(self.M):
+                self.w[:, i] *= col_factor[i]
         
 #############
 N = 400
@@ -193,16 +182,19 @@ NUM_EX = args.examples
 
 load_data()
 
-# w = np.load('./weights/XeAe.npy')
-w = np.load('./random/XeAe.npy')
+if args.train:
+    w = np.load('./random/XeAe.npy')
+    theta = np.ones(N) * 20e-3
+else:
+    w = np.load('./weights/XeAe.npy')
+    theta = np.load('./weights/theta_A.npy')
+    
 wei = np.load('./random/AeAi.npy')
 wie = np.load('./random/AiAe.npy')
-# theta = np.load('./weights/theta_A.npy')
-theta = np.ones(N) * 20e-3
 
-Syn = Synapse_group(N=784, M=400, w=w, stdp=True, tc_pre_ee=20e-3, tc_post_1_ee=20e-3, tc_post_2_ee=40e-3, nu_ee_pre=1e-4, nu_ee_post=1e-2, wmax_ee=1.0)
+Syn = Synapse_group(N=784, M=400, w=w, stdp=args.train, tc_pre_ee=20e-3, tc_post_1_ee=20e-3, tc_post_2_ee=40e-3, nu_ee_pre=1e-4, nu_ee_post=1e-2, wmax_ee=1.0)
 
-lif_exc = LIF_group(N=N, adapt=True, tau=1e-1, theta=theta, vthr=-20e-3 - 52e-3, vrest=-65e-3, vreset=-65e-3, refrac_per=5e-3, i_offset=-100e-3, tc_theta=1e7*1e-3, theta_plus_e=0.05e-3)
+lif_exc = LIF_group(N=N, adapt=args.train, tau=1e-1, theta=theta, vthr=-20e-3 - 52e-3, vrest=-65e-3, vreset=-65e-3, refrac_per=5e-3, i_offset=-100e-3, tc_theta=1e7*1e-3, theta_plus_e=0.05e-3)
 
 lif_inh = LIF_group(N=N, adapt=False, tau=1e-2, theta=0, vthr=-40e-3, vrest=-60e-3, vreset=-45e-3, refrac_per=2e-3, i_offset=-85e-3, tc_theta=1e7*1e-3, theta_plus_e=0.05e-3)
 
@@ -231,8 +223,10 @@ for ex in range(NUM_EX):
         #############
         print ex, np.sum(spk_count), input_factor
         print np.sum(spk_count, axis=0)
-        print np.std(Syn.w)
-        print np.average(lif_exc.theta)
+        print np.std(Syn.w), np.max(Syn.w), np.min(Syn.w)
+        # print np.average(lif_exc.theta)
+        tot = np.sum(spk_count, axis=0)
+        print (np.argsort(tot)[-10:])
         print "----------"
         
         spk_count[ex] = 0
