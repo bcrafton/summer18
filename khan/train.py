@@ -113,13 +113,16 @@ class Synapse_group:
         # synapse level variables
         self.w = w
         
+        # need random delays ... so this dont work ...
+        self.delayI = []
+        
         # pre level variables
-        self.pre = np.zeros(self.N)
+        # self.pre = np.zeros(self.N)
         self.last_pre = np.ones(self.N) * -1
         
         # post level variables
-        self.post1 = np.zeros(self.M)
-        self.post2 = np.zeros(self.M)
+        # self.post1 = np.zeros(self.M)
+        # self.post2 = np.zeros(self.M)
         self.last_post = np.ones(self.M) * -1
         
     def step(self, t, dt, pre_spk, post_spk):
@@ -130,49 +133,50 @@ class Synapse_group:
         got_post = np.any(post_spk)
 
         if (got_pre or got_post):
+            '''
             dpre = -self.pre / self.tc_pre_ee * (t - self.last_pre)
             dpost1 = -self.post1 / self.tc_post_1_ee * (t - self.last_post)
             dpost2 = -self.post2 / self.tc_post_2_ee * (t - self.last_post)
             
-            self.pre = np.clip(self.pre + dpre, 0, 1.0)
-            self.post1 = np.clip(self.post1 + dpost1, 0, 1.0)
-            self.post2 = np.clip(self.post2 + dpost2, 0, 1.0)
-
-            # does this go here? ... we dont know how brian2 evals model vs pre/post
-            post2before = np.copy(self.post2)
-             
-            self.pre = np.clip(self.pre + pre_spk, 0, 1.0)
-            self.post1 = np.clip(self.post1 + post_spk, 0, 1.0)
-            self.post2 = np.clip(self.post2 + post_spk, 0, 1.0)
-            
+            self.pre = self.pre + dpre
+            self.post1 = self.post1 + dpost1
+            self.post2 = self.post2 + dpost2
+            '''
+        if (got_pre):
             npre_spk = pre_spk == 0
             self.last_pre = self.last_pre * npre_spk
             self.last_pre += pre_spk * t
-            
+        
+            # self.pre = np.clip(self.pre + pre_spk, 0, 1.0)
+            post1 = np.exp(-(t - self.last_post) / self.tc_post_1_ee)
+            self.w = np.clip(self.w - self.nu_ee_pre * post1, 0, self.wmax_ee)
+
+        if (got_post):
+            # post2before = np.copy(self.post2)
+            pre = np.exp(-(t - self.last_pre) / self.tc_pre_ee)
+            post2 = np.exp(-(t - self.last_post) / self.tc_post_2_ee)
+            self.w = np.clip(self.w + self.nu_ee_post * np.dot(pre.reshape(self.N, 1), post2.reshape(1, self.M)), 0, self.wmax_ee)
+            # self.post1 = np.clip(self.post1 + post_spk, 0, 1.0)
+            # self.post2 = np.clip(self.post2 + post_spk, 0, 1.0)
+
             npost_spk = post_spk == 0
             self.last_post = self.last_post * npost_spk
             self.last_post += post_spk * t
-            
-        if (got_pre and np.any(self.post1 > 0)):
-            self.w = np.clip(self.w + self.nu_ee_pre * self.post1, 0, self.wmax_ee)
-
-        if (got_post):
-            self.w = np.clip(self.w + self.nu_ee_post * np.dot(np.copy(self.pre).reshape(self.N, 1), post2before.reshape(1, self.M)), 0, self.wmax_ee)
 
         return I
         
     def reset(self):
         # pre level variables
-        self.pre = np.zeros(self.N)
+        # self.pre = np.zeros(self.N)
         self.last_pre = np.ones(self.N) * -1
         
         # post level variables
-        self.post1 = np.zeros(self.M)
-        self.post2 = np.zeros(self.M)
+        # self.post1 = np.zeros(self.M)
+        # self.post2 = np.zeros(self.M)
         self.last_post = np.ones(self.M) * -1
         
         # normalize w
-        col_sum = np.sum(self.w, axis=0)
+        col_sum = np.sum(np.copy(self.w), axis=0)
         col_factor = 78.0 / col_sum
         for i in range(self.M):
             self.w[:, i] *= col_factor[i]
@@ -192,13 +196,15 @@ load_data()
 # w = np.load('./weights/XeAe.npy')
 w = np.load('./random/XeAe.npy')
 wei = np.load('./random/AeAi.npy')
-wie = np.load('./random/AiAe.npy') 
+wie = np.load('./random/AiAe.npy')
 # theta = np.load('./weights/theta_A.npy')
 theta = np.ones(N) * 20e-3
 
-Syn = Synapse_group(784, 400, w, True, 20e-3, 20e-3, 40e-3, 1e-4, 1e-2, 1.0)
-lif_exc = LIF_group(N, True, 1e-1, theta, -20e-3 - 52e-3, -65e-3, -65e-3, 5e-3, -100e-3, 1e7*1e-3, 0.05e-3)
-lif_inh = LIF_group(N, False, 1e-2, 0, -40e-3, -60e-3, -45e-3, 2e-3, -85e-3, 1e7*1e-3, 0.05e-3)
+Syn = Synapse_group(N=784, M=400, w=w, stdp=True, tc_pre_ee=20e-3, tc_post_1_ee=20e-3, tc_post_2_ee=40e-3, nu_ee_pre=1e-4, nu_ee_post=1e-2, wmax_ee=1.0)
+
+lif_exc = LIF_group(N=N, adapt=True, tau=1e-1, theta=theta, vthr=-20e-3 - 52e-3, vrest=-65e-3, vreset=-65e-3, refrac_per=5e-3, i_offset=-100e-3, tc_theta=1e7*1e-3, theta_plus_e=0.05e-3)
+
+lif_inh = LIF_group(N=N, adapt=False, tau=1e-2, theta=0, vthr=-40e-3, vrest=-60e-3, vreset=-45e-3, refrac_per=2e-3, i_offset=-85e-3, tc_theta=1e7*1e-3, theta_plus_e=0.05e-3)
 
 #############
 

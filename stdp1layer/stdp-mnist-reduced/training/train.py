@@ -73,7 +73,7 @@ b.set_global_preferences(
 
 
 np.random.seed(0)
-num_examples = 1000
+num_examples = 10000
 
 ending = ''
 n_input = 784
@@ -217,7 +217,7 @@ while j < num_examples:
     rates = training_set[j] * 32. *  input_intensity
 
     input_groups['Xe'].rate = rates
-    b.run(single_example_time, report='text')
+    b.run(single_example_time)
 
     current_spike_count = np.asarray(spike_counters['Ae'].count[:]) - previous_spike_count
     previous_spike_count = np.copy(spike_counters['Ae'].count[:])
@@ -230,6 +230,14 @@ while j < num_examples:
 
     input_groups['Xe'].rate = 0
     b.run(resting_time)
+    
+    print ( j, np.sum(np.asarray(spike_counters['Ae'].count[:])), input_intensity )
+    print ( np.asarray(spike_counters['Ae'].count[:]) )
+    w = connections[connName][:]
+    w = np.copy(w)
+    print ( np.std(w) )
+    # print ( np.average(neuron_groups['e'].theta) )
+    print ( "----------" )
 
 #------------------------------------------------------------------------------ 
 # save results

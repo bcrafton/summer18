@@ -39,6 +39,9 @@ def save_theta(ending = ''):
     np.save('theta_A', neuron_groups['Ae'].theta)
 
 def normalize_weights():
+
+    w_cpy = np.copy(connections['XeAe'].w).reshape(784, 400)
+
     for connName in connections:
         if connName[1] == 'e' and connName[3] == 'e':
             len_source = len(connections[connName].source)
@@ -51,6 +54,15 @@ def normalize_weights():
             for j in xrange(n_e):#
                 temp_conn[:,j] *= colFactors[j]
             connections[connName].w = temp_conn[connections[connName].i, connections[connName].j]
+
+    # w_cpy = np.copy(connections['XeAe'].w).reshape(784, 400)
+    col_sum = np.sum(w_cpy, axis=0)
+    col_factor = 78.0 / col_sum
+    for i in range(400):
+        w_cpy[:, i] *= col_factor[i]
+    # connections['XeAe'].w = w_cpy.reshape(784 * 400)
+    print (np.sum(np.absolute(connections['XeAe'].w - w_cpy.reshape(784 * 400))))
+    print (np.array_equal(connections['XeAe'].w, w_cpy.reshape(784 * 400)))
 
 #------------------------------------------------------------------------------ 
 # load MNIST
@@ -238,7 +250,8 @@ while j < num_examples:
     rates = training_set[j] * 32. *  input_intensity
 
     input_groups['Xe'].rates = rates * Hz
-    net.run(single_example_time, report='text')
+    # net.run(single_example_time, report='text')
+    net.run(single_example_time)
 
     current_spike_count = np.asarray(spike_counters['Ae'].count[:]) - previous_spike_count
     previous_spike_count = np.copy(spike_counters['Ae'].count[:])
@@ -255,8 +268,11 @@ while j < num_examples:
     # print( np.sum(connections['XeAe'].w - prev_weights) )
     prev_weights = connections['XeAe'].w
     
-    print ( j, np.sum(np.asarray(spike_counters['Ae'].count[:])) )
+    print ( j, np.sum(np.asarray(spike_counters['Ae'].count[:])), input_intensity )
     print ( np.asarray(spike_counters['Ae'].count[:]) )
+    print np.std(connections['XeAe'].w)
+    print np.average(neuron_groups['e'].theta)
+    print "----------"
 
 #------------------------------------------------------------------------------ 
 # save results
