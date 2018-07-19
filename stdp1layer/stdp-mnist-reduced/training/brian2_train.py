@@ -61,8 +61,8 @@ def normalize_weights():
     for i in range(400):
         w_cpy[:, i] *= col_factor[i]
     # connections['XeAe'].w = w_cpy.reshape(784 * 400)
-    print (np.sum(np.absolute(connections['XeAe'].w - w_cpy.reshape(784 * 400))))
-    print (np.array_equal(connections['XeAe'].w, w_cpy.reshape(784 * 400)))
+    # print (np.sum(np.absolute(connections['XeAe'].w - w_cpy.reshape(784 * 400))))
+    # print (np.array_equal(connections['XeAe'].w, w_cpy.reshape(784 * 400)))
 
 #------------------------------------------------------------------------------ 
 # load MNIST
@@ -268,11 +268,12 @@ while j < num_examples:
     # print( np.sum(connections['XeAe'].w - prev_weights) )
     prev_weights = connections['XeAe'].w
     
-    print ( j, np.sum(np.asarray(spike_counters['Ae'].count[:])), input_intensity )
-    print ( np.asarray(spike_counters['Ae'].count[:]) )
-    print np.std(connections['XeAe'].w)
-    print np.average(neuron_groups['e'].theta)
     print "----------"
+    print ( j, input_intensity )
+    print ( np.sum(np.asarray(spike_counters['Ae'].count[:])) )
+    print ( np.std(connections['XeAe'].w), np.max(connections['XeAe'].w), np.min(connections['XeAe'].w) )
+    print ( np.asarray(spike_counters['Ae'].count[:]) )
+
 
 #------------------------------------------------------------------------------ 
 # save results

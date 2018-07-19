@@ -242,32 +242,6 @@ lif_inh = LIF_group(N=N,                      \
 
 print "starting sim"
 start = time.time()
-
-spks_mon = np.load('spks.npy')
-# print np.shape(spks_mon)
-# print type(spks_mon)
-# print len(spks_mon)
-# print np.count_nonzero(spks_mon)
-# print np.count_nonzero(spks_mon[0:500])
-# print spks_mon[0:500]
-
-'''
-spks = np.zeros(shape=(int(100 * (active_T + rest_T) / dt), 784))
-for ii in range(len(spks_mon)):
-    idx = spks_mon[ii][0]
-    t = spks_mon[ii][1]
-    
-    # print ii
-    # print idx, t    
-    
-    idx = int(idx)
-    t = int(t / dt)
-    
-    if t < int(50.0 / dt):
-        spks[t][idx] = 1
-        
-print np.count_nonzero(spks)
-'''
     
 I = np.zeros(shape=(N, 1))
 Iie = np.zeros(shape=(N, 1))
@@ -293,9 +267,6 @@ while ex < NUM_EX:
             labels[ex] = testing_labels[ex]
 
         spk = np.random.rand(784) < rates * dt
-        
-        # idx = ex * int((active_T + rest_T) / dt) + s
-        # spk = spks[idx]
         
         I = Syn.step(t, dt, spk, spkd)
         spkd = lif_exc.step(t, dt, I.flatten(), Iie.flatten())

@@ -194,10 +194,14 @@ spike_counters['Ae'] = b.SpikeCounter(neuron_groups['Ae'])
 input_groups['Xe'] = b.PoissonGroup(n_input, 0)
 rate_monitors['Xe'] = b.PopulationRateMonitor(input_groups['Xe'], bin = (single_example_time + resting_time) / b.second)
 
+# spike_monitors['Xe'] = b.SpikeMonitor(input_groups['Xe'])
+
 connName = 'XeAe'
 weightMatrix = np.load('../random/XeAe.npy')
-connections[connName] = b.Connection(input_groups['Xe'], neuron_groups['Ae'], structure='dense', state = 'g' + 'e', delay=True, max_delay=delay['ee_input'][1])
-connections[connName].connect(input_groups['Xe'], neuron_groups['Ae'], weightMatrix, delay=delay['ee_input'])
+#connections[connName] = b.Connection(input_groups['Xe'], neuron_groups['Ae'], structure='dense', state = 'g' + 'e', delay=True, max_delay=delay['ee_input'][1])
+#connections[connName].connect(input_groups['Xe'], neuron_groups['Ae'], weightMatrix, delay=delay['ee_input'])
+connections[connName] = b.Connection(input_groups['Xe'], neuron_groups['Ae'], structure='dense', state = 'ge')
+connections[connName].connect(input_groups['Xe'], neuron_groups['Ae'], weightMatrix)
 
 stdp_methods['XeAe'] = b.STDP(connections['XeAe'], eqs=eqs_stdp_ee, pre = eqs_stdp_pre_ee, post = eqs_stdp_post_ee, wmin=0., wmax= wmax_ee)
 
@@ -231,13 +235,16 @@ while j < num_examples:
     input_groups['Xe'].rate = 0
     b.run(resting_time)
     
-    print ( j, np.sum(np.asarray(spike_counters['Ae'].count[:])), input_intensity )
+    print ( "----------" )
+    print ( j, input_intensity )
+    print ( np.sum(np.asarray(spike_counters['Ae'].count[:])) )
     print ( np.asarray(spike_counters['Ae'].count[:]) )
     w = connections[connName][:]
     w = np.copy(w)
-    print ( np.std(w) )
-    # print ( np.average(neuron_groups['e'].theta) )
-    print ( "----------" )
+    print ( np.std(w), np.max(w), np.min(w) )
+
+# np.save('spks', np.array(spike_monitors['Xe'].spikes))
+# print np.count_nonzero(np.array(spike_monitors['Xe'].spikes))
 
 #------------------------------------------------------------------------------ 
 # save results

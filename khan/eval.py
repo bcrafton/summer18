@@ -10,10 +10,10 @@ from struct import unpack
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--train_spks', type=str)
-parser.add_argument('--train_labels', type=str)
-parser.add_argument('--test_spks', type=str)
-parser.add_argument('--test_labels', type=str)
+parser.add_argument('--train_spks', type=str, default='./results/spks_1000.npy')
+parser.add_argument('--train_labels', type=str, default='./results/labels_1000.npy')
+parser.add_argument('--test_spks', type=str, default='./results/spks_1000.npy')
+parser.add_argument('--test_labels', type=str, default='./results/labels_1000.npy')
 args = parser.parse_args()
 
 #------------------------------------------------------------------------------ 
