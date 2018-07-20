@@ -41,10 +41,12 @@ LIFGroup::LIFGroup(uint32_t N,
   
   this->last_spk.resize(this->N, 1);
   uint32_t ii;
-  for (ii=0; ii<this->N; ii++) this->last_spk(ii, 0) = -1.0;
+  for (ii=0; ii<this->N; ii++) { 
+    this->last_spk(ii, 0) = -1.0;
+  }
 }
 
-matrix<float> LIFGroup::step(float t, float dt, matrix<float> Iine, matrix<float> Iini)
+matrix<uint32_t> LIFGroup::step(float t, float dt, matrix<float> Iine, matrix<float> Iini)
 {
   matrix<uint32_t> spkd(this->N, 1);
   
@@ -82,7 +84,7 @@ matrix<float> LIFGroup::step(float t, float dt, matrix<float> Iine, matrix<float
   return spkd;
 }
 
-matrix<float> LIFGroup::step(float t, float dt, matrix<float> Iine)
+matrix<uint32_t> LIFGroup::step(float t, float dt, matrix<float> Iine)
 {
   matrix<uint32_t> spkd(this->N, 1);
   
@@ -126,7 +128,9 @@ void LIFGroup::reset()
   this->gi.clear();
   this->gi.clear();
   uint32_t ii;
-  for (ii=0; ii<this->N; ii++) this->last_spk(ii, 0) = -1.0;
+  for (ii=0; ii<this->N; ii++) {
+    this->last_spk(ii, 0) = -1.0;
+  }
 }
 
 

@@ -32,7 +32,7 @@ SynapseGroup::SynapseGroup(uint32_t N,
   this->last_post.clear();
 }
                
-matrix<float> SynapseGroup::step(float t, float dt, matrix<bool> pre_spk, matrix<bool> post_spk)
+matrix<float> SynapseGroup::step(float t, float dt, matrix<uint32_t> pre_spk, matrix<uint32_t> post_spk)
 {
   matrix<float> I = prod(trans(pre_spk), this->w);
   matrix<float> dw(this->N, this->M);
@@ -80,6 +80,7 @@ matrix<float> SynapseGroup::step(float t, float dt, matrix<bool> pre_spk, matrix
     }
     
   } // if (this->stdp) {
+  return I;
 } // matrix<float> SynapseGroup::step ...
 
 void SynapseGroup::reset()
