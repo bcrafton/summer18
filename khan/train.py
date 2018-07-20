@@ -195,10 +195,10 @@ if args.train:
     w = np.load('./random/XeAe.npy')
     theta = np.ones(N) * 20e-3
 else:
-    # w = np.load('./trained/XeAe_trained.npy')
-    # theta = np.load('./trained/theta_trained.npy')
-    w = np.load('./weights/XeAe.npy')
-    theta = np.load('./weights/theta_A.npy')
+    w = np.load('./trained/XeAe_trained.npy')
+    theta = np.load('./trained/theta_trained.npy')
+    # w = np.load('./weights/XeAe.npy')
+    # theta = np.load('./weights/theta_A.npy')
     
 wei = np.load('./random/AeAi.npy')
 wie = np.load('./random/AiAe.npy')
