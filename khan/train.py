@@ -306,7 +306,7 @@ while ex < NUM_EX:
     
     if np.sum(spk_count[ex]) < 5:
         spk_count[ex] = 0
-        input_intensity += 1
+        input_intensity += 0.1
     else:
         input_intensity = 2
         ex += 1    
