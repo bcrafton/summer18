@@ -24,8 +24,6 @@ matrix<double>* load_csv(string filename, unsigned int rows, unsigned int cols)
   return m;
 }
 
-
-
 int main() {
   matrix<double>* XeAe = load_csv("XeAe.csv", 784, 400);
   matrix<double>* AeAi = load_csv("AeAi.csv", 400, 400);

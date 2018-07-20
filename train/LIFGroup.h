@@ -19,7 +19,14 @@ class LIFGroup {
   float refrac_per; 
   float i_offset;
   float tc_theta; 
-  float theta_plus_e;  
+  float theta_plus_e; 
+  float ge_tau;
+  float gi_tau; 
+  
+  blas::matrix<float> ge;
+  blas::matrix<float> gi;
+  blas::matrix<float> v;
+  blas::matrix<float> last_spk;
 
   LIFGroup(uint32_t N, 
            float adapt, 
