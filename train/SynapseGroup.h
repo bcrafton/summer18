@@ -20,6 +20,9 @@ class SynapseGroup {
   float nu_ee_post; 
   float wmax_ee;
   
+  blas::matrix<float> last_pre;
+  blas::matrix<float> last_post;
+  
   SynapseGroup(uint32_t N, 
                uint32_t M, 
                blas::matrix<float> w, 
