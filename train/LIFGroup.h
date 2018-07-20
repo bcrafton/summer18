@@ -12,7 +12,7 @@ class LIFGroup {
   uint32_t N;
   float adapt;
   float tau;
-  float theta; 
+  blas::matrix<float> theta; 
   float vthr;
   float vrest; 
   float vreset; 
@@ -31,7 +31,7 @@ class LIFGroup {
   LIFGroup(uint32_t N, 
            float adapt, 
            float tau, 
-           float theta, 
+           blas::matrix<float> theta, 
            float vthr, 
            float vrest, 
            float vreset, 
