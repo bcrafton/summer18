@@ -41,6 +41,7 @@ class LIFGroup {
            float theta_plus_e);
            
   blas::matrix<float> step(float t, float dt, blas::matrix<float> Iine, blas::matrix<float> Iini);
+  blas::matrix<float> step(float t, float dt, blas::matrix<float> Iine);
   void reset();
 };
 

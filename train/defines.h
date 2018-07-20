@@ -11,6 +11,12 @@
 
 #include <cstdio>
 #include <boost/numeric/ublas/matrix.hpp>
+#include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/io.hpp>
+#include <random>
+#include <iostream>
+#include <fstream>
+
+typedef unsigned char uchar;
 
 #endif

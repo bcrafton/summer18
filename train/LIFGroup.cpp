@@ -60,7 +60,45 @@ matrix<float> LIFGroup::step(float t, float dt, matrix<float> Iine, matrix<float
     float dgi = -1 * (this->gi(ii, 0) / this->gi_tau * dt);
     
     this->v(ii, 0) += dv * nrefrac;
-    this->ge(ii, 0) += dge * nrefrac;
+    this->ge(ii, 0) += (dge + Iine(ii, 0)) * nrefrac;
+    this->gi(ii, 0) += (dgi + Iini(ii, 0)) * nrefrac;
+    
+    spkd(ii, 0) = this->v(ii, 0) > (this->theta(ii, 0) + this->vthr);
+    uint32_t nspkd = !spkd(ii, 0);
+    
+    if (spkd(ii, 0)) {
+      this->last_spk(ii, 0) = t;
+      this->v(ii, 0) = this->vreset;
+      this->ge(ii, 0) = 0.0;
+      this->gi(ii, 0) = 0.0;
+    }
+    
+    if (this->adapt) {
+      float dtheta = -1 * this->theta(ii, 0) / this->tc_theta * dt;
+      this->theta(ii, 0) += dtheta + spkd(ii, 0) * this->theta_plus_e;
+    }
+  }
+  
+  return spkd;
+}
+
+matrix<float> LIFGroup::step(float t, float dt, matrix<float> Iine)
+{
+  matrix<uint32_t> spkd(this->N, 1);
+  
+  uint32_t ii;
+  for(ii=0; ii<this->N; ii++) {
+    uint32_t nrefrac = ((t - this->last_spk(ii, 0) - this->refrac_per) > 0);
+    
+    float IsynE = -1 * this->ge(ii, 0) * this->v(ii, 0);
+    float IsynI = this->gi(ii, 0) * (this->i_offset - this->v(ii, 0));
+    
+    float dv = ((this->vrest - this->v(ii, 0)) + (IsynE + IsynI)) / this->tau * dt;
+    float dge = -1 * (this->ge(ii, 0) / this->ge_tau * dt);
+    float dgi = -1 * (this->gi(ii, 0) / this->gi_tau * dt);
+    
+    this->v(ii, 0) += dv * nrefrac;
+    this->ge(ii, 0) += (dge + Iine(ii, 0)) * nrefrac;
     this->gi(ii, 0) += dgi * nrefrac;
     
     spkd(ii, 0) = this->v(ii, 0) > (this->theta(ii, 0) + this->vthr);
@@ -84,10 +122,16 @@ matrix<float> LIFGroup::step(float t, float dt, matrix<float> Iine, matrix<float
 
 void LIFGroup::reset()
 {
-
   this->ge.clear();
   this->gi.clear();
   this->gi.clear();
   uint32_t ii;
   for (ii=0; ii<this->N; ii++) this->last_spk(ii, 0) = -1.0;
 }
+
+
+
+
+
+
+
