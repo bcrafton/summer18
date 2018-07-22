@@ -11,7 +11,7 @@ class Solver():
         self.epsilon = 1.0
         self.epsilon_min = 0.01
         self.epsilon_decay = 0.999
-        self.alpha = 0.0001
+        self.alpha = 0.00001
         self.alpha_decay = 0.01
         self.lmda = 0.9
         self.n_episodes = 10000
@@ -51,13 +51,13 @@ class Solver():
         y2 = np.dot(y1, self.w1)
         y3 = np.dot(y2, self.w2)
         
-        self.e0 = self.gamma * self.lmda * self.e0 + (1 - self.alpha * self.gamma * self.lmda * self.e0 * np.transpose(y0)) * np.transpose(y0)
-        self.e1 = self.gamma * self.lmda * self.e1 + (1 - self.alpha * self.gamma * self.lmda * self.e1 * np.transpose(y1)) * np.transpose(y1)
-        self.e2 = self.gamma * self.lmda * self.e2 + (1 - self.alpha * self.gamma * self.lmda * self.e2 * np.transpose(y2)) * np.transpose(y2)
+        self.e0 = np.clip(self.gamma * self.lmda * self.e0 + (1 - self.alpha * self.gamma * self.lmda * self.e0 * np.transpose(y0)) * np.transpose(y0), 0.0, 1.0)
+        self.e1 = np.clip(self.gamma * self.lmda * self.e1 + (1 - self.alpha * self.gamma * self.lmda * self.e1 * np.transpose(y1)) * np.transpose(y1), 0.0, 1.0)
+        self.e2 = np.clip(self.gamma * self.lmda * self.e2 + (1 - self.alpha * self.gamma * self.lmda * self.e2 * np.transpose(y2)) * np.transpose(y2), 0.0, 1.0)
 
-        self.w0 = self.w0 + (self.alpha * (d + vn - vc) * self.e0) - (self.alpha * (vn - vc) * np.transpose(y0))
-        self.w1 = self.w1 + (self.alpha * (d + vn - vc) * self.e1) - (self.alpha * (vn - vc) * np.transpose(y1))
-        self.w2 = self.w2 + (self.alpha * (d + vn - vc) * self.e2) - (self.alpha * (vn - vc) * np.transpose(y2))
+        self.w0 = np.clip(self.w0 + (self.alpha * (d + vn - vc) * self.e0) - (self.alpha * (vn - vc) * np.transpose(y0)), 0.0, 1.0)
+        self.w1 = np.clip(self.w1 + (self.alpha * (d + vn - vc) * self.e1) - (self.alpha * (vn - vc) * np.transpose(y1)), 0.0, 1.0)
+        self.w2 = np.clip(self.w2 + (self.alpha * (d + vn - vc) * self.e2) - (self.alpha * (vn - vc) * np.transpose(y2)), 0.0, 1.0)
         
     def reset(self):
         self.e0 = np.zeros(shape=(4, 1))
@@ -65,6 +65,7 @@ class Solver():
         self.e2 = np.zeros(shape=(48, 1))
         
     def normalize(self):
+    
         col_sum = np.sum(np.copy(self.w0), axis=0)
         col_factor = 1.0 / col_sum
         for i in range(24):
@@ -79,7 +80,28 @@ class Solver():
         col_factor = 1.0 / col_sum
         for i in range(2):
             self.w2[:, i] *= col_factor[i]
-
+            
+        '''
+        self.w0 = self.w0 * (1.0 / np.average(self.w0))
+        self.w1 = self.w1 * (1.0 / np.average(self.w1))
+        self.w2 = self.w2 * (1.0 / np.average(self.w2))
+        '''
+        
+    def decay_epsilon(self, score):
+        '''
+        if self.epsilon_min < self.epsilon 
+            self.epsilon = self.epsilon * self.epsilon_decay
+        '''
+        if score < 25:
+            self.epsilon = 0.5
+        elif score < 50:
+            self.epsilon = 0.25
+        elif score < 100:
+            self.epsilon = 0.10
+        else:
+            self.epsilon = 0.05
+        
+        
     def run(self):
         scores = deque(maxlen=100)
 
@@ -97,14 +119,14 @@ class Solver():
                 state = next_state
                 i += 1
 
-            self.reset()
-            self.normalize()
-            self.epsilon = self.epsilon * self.epsilon_decay
-            
             scores.append(i)
             mean_score = np.mean(scores)
             if e % 100 == 0:
-                print(mean_score)
+                print(mean_score, self.epsilon)
+
+            self.reset()
+            self.normalize()
+            self.decay_epsilon(mean_score)
        
 
 if __name__ == '__main__':
