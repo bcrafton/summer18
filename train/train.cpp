@@ -95,7 +95,7 @@ int main() {
   
     printf("#%u / %u\n", ex, NUM_EX);
   
-    matrix<uint32_t> spkd(400, 1);
+    matrix<bool> spkd(400, 1);
     matrix<float> Iie(400, 1);
     matrix<float> Iei(400, 1);
   
@@ -104,7 +104,7 @@ int main() {
       
       vector<float> rates = training_set[ex] / 8.0 * input_intensity;
       
-      matrix<uint32_t> spk(784, 1);
+      matrix<bool> spk(784, 1);
       for(ii=0; ii<784; ii++) {
         spk(ii, 0) = ((double) rand() / (RAND_MAX)) < rates[ii];
       }

@@ -34,7 +34,7 @@ class SynapseGroup {
                float nu_ee_post, 
                float wmax_ee);
                
-  blas::matrix<float> step(float t, float dt, blas::matrix<uint32_t> pre_spk, blas::matrix<uint32_t> post_spk);
+  blas::matrix<float> step(float t, float dt, blas::matrix<bool> pre_spk, blas::matrix<bool> post_spk);
   void reset();
 };
 
