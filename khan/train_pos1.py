@@ -55,23 +55,36 @@ class LIF_group:
         self.v = np.ones(shape=(N)) * self.vreset
         self.last_spk = np.ones(shape=(N)) * -1
         
+        self.vs = []
+        self.ges = []
+        self.gis = []
+        self.IsynEs = []
+        self.IsynIs = []
+        
     def step(self, t, dt, Iine, Iini=0):        
         nrefrac = (t - self.last_spk - self.refrac_per) > 0
             
-        IsynE = self.ge * -self.v
+        IsynE = self.ge * self.v
         IsynI = self.gi * (self.i_offset - self.v)
         
         # compute derivatives
-        dvdt = ((self.vrest - self.v) + (IsynE + IsynI)) / self.tau        
+        dvdt = ((self.vrest - self.v) + (IsynE - IsynI)) / self.tau
         dv = dvdt * dt
-        dge = -(self.ge / self.ge_tau * dt) 
-        dgi = -(self.gi / self.gi_tau * dt) 
+        dge = -(self.ge / self.ge_tau * dt)
+        dgi = -(self.gi / self.gi_tau * dt)
         
         # update state variables
-        self.v += nrefrac * dv
+        # self.v = np.clip(self.v + nrefrac * dv, self.vrest, 1.1 * self.vthr)
+        self.v += dv * nrefrac 
         self.ge += (dge + Iine) * nrefrac
         self.gi += (dgi + Iini) * nrefrac
-                
+        
+        self.vs.append(self.v)
+        self.ges.append(self.ge)
+        self.gis.append(self.gi)
+        self.IsynEs.append(IsynE)
+        self.IsynIs.append(IsynI)
+        
         # reset.
         spkd = self.v > (self.theta + self.vthr)
         nspkd = self.v < (self.theta + self.vthr)
@@ -206,35 +219,35 @@ wie = np.load('./random/AiAe.npy')
 Syn = Synapse_group(N=784,                   \
                     M=400,                   \
                     w=w,                     \
-                    stdp=args.train,         \
+                    stdp=False,              \
                     tc_pre_ee=20e-3,         \
                     tc_post_1_ee=20e-3,      \
                     tc_post_2_ee=40e-3,      \
-                    nu_ee_pre=1e-2,          \
+                    nu_ee_pre=1e-4,          \
                     nu_ee_post=1e-2,         \
                     wmax_ee=1.0)
 
 lif_exc = LIF_group(N=N,                     \
-                    adapt=args.train,        \
+                    adapt=False,             \
                     tau=1e-1,                \
-                    theta=theta,             \
-                    vthr=-20e-3 - 52e-3,     \
-                    vrest=-65e-3,            \
-                    vreset=-65e-3,           \
+                    theta=0.0,               \
+                    vthr=65e-3,              \
+                    vrest=52e-3,             \
+                    vreset=52e-3,            \
                     refrac_per=5e-3,         \
-                    i_offset=-100e-3,        \
+                    i_offset=100e-3,         \
                     tc_theta=1e7*1e-3,       \
                     theta_plus_e=0.05e-3)
 
 lif_inh = LIF_group(N=N,                      \
                     adapt=False,              \
                     tau=1e-2,                 \
-                    theta=0,                  \
-                    vthr=-40e-3,              \
-                    vrest=-60e-3,             \
-                    vreset=-45e-3,            \
+                    theta=0.0,                \
+                    vthr=60e-3,               \
+                    vrest=40e-3,              \
+                    vreset=55e-3,             \
                     refrac_per=2e-3,          \
-                    i_offset=-85e-3,          \
+                    i_offset=85e-3,           \
                     tc_theta=1e7*1e-3,        \
                     theta_plus_e=0.05e-3)
 
@@ -253,64 +266,71 @@ labels = np.zeros(NUM_EX)
 ex = 0
 input_intensity = 2
 
-while ex < NUM_EX:
-    #############
-    spkd = np.zeros(N)    
-    for s in range(active_steps):
-        t = active_Ts[s]
-        
-        if args.train:
-            rates = training_set[ex] * 32.0 * input_intensity
-            labels[ex] = training_labels[ex]
-        else:
-            rates = testing_set[ex] * 32.0 * input_intensity
-            labels[ex] = testing_labels[ex]
-
-        spk = np.random.rand(784) < rates * dt
-        
-        I = Syn.step(t, dt, spk, spkd)
-        spkd = lif_exc.step(t, dt, I.flatten(), Iie.flatten())
-        
-        spk_count[ex] += spkd
-    #############
-    for s in range(rest_steps):
-        t = rest_Ts[s]
-        
-        spk = np.zeros(784)
-        
-        I = Syn.step(t, dt, spk, spkd)
-        spkd = lif_exc.step(t, dt, I.flatten(), Iie.flatten())
-        
-        spk_count[ex] += spkd
-    #############
-    
-    lif_exc.reset()
-    # lif_inh.reset()
-    Syn.reset()
-    
-    print "----------"
-    print ex, input_intensity
-    print np.sum(spk_count)
-    print np.std(Syn.w), np.max(Syn.w), np.min(Syn.w) 
-    print np.sum(spk_count, axis=0)
-    
-    if np.sum(spk_count[ex]) < 5:
-        spk_count[ex] = 0
-        input_intensity += 0.1
-    else:
-        input_intensity = 2
-        ex += 1    
-
-end = time.time()
-print ("total time taken: " + str(end - start))
-
-if args.train:
-    np.save('XeAe_trained_only_exc', Syn.w)
-    np.save('theta_trained_only_exc', lif_exc.theta)
-else:
-    np.save('./results/spks_only_exc_'   + str(NUM_EX), spk_count)
-    np.save('./results/labels_only_exc_' + str(NUM_EX), labels)
 #############
+spkd = np.zeros(N)    
+for s in range(active_steps):
+    t = active_Ts[s]
+    
+    if args.train:
+        rates = training_set[ex] * 32.0 * input_intensity
+        labels[ex] = training_labels[ex]
+    else:
+        rates = testing_set[ex] * 32.0 * input_intensity
+        labels[ex] = testing_labels[ex]
+
+    spk = np.random.rand(784) < rates * dt
+    
+    I = Syn.step(t, dt, spk, spkd)
+    # spkd = lif_exc.step(t, dt, I.flatten(), Iie.flatten())
+    spkd = lif_exc.step(t, dt, I.flatten())
+    
+    spk_count[ex] += spkd
+    
+    Iei = np.dot(np.transpose(spkd), wei)
+    spkd = lif_inh.step(t, dt, Iei.flatten())
+    
+    Iie = np.dot(np.transpose(spkd), wie)
+#############
+for s in range(rest_steps):
+    t = rest_Ts[s]
+    
+    spk = np.zeros(784)
+    
+    I = Syn.step(t, dt, spk, spkd)
+    # spkd = lif_exc.step(t, dt, I.flatten(), Iie.flatten())
+    spkd = lif_exc.step(t, dt, I.flatten())
+    
+    spk_count[ex] += spkd
+    
+    Iei = np.dot(np.transpose(spkd), wei)
+    spkd = lif_inh.step(t, dt, Iei.flatten())
+    
+    Iie = np.dot(np.transpose(spkd), wie)
+#############
+
+lif_exc.reset()
+lif_inh.reset()
+Syn.reset()
+
+Ts = np.concatenate((active_Ts, rest_Ts))
+
+plt.subplot(511)
+plt.plot(Ts, np.transpose(lif_exc.vs)[0])
+
+plt.subplot(512)
+plt.plot(Ts, np.transpose(lif_exc.ges)[0])
+
+plt.subplot(513)
+plt.plot(Ts, np.transpose(lif_exc.gis)[0])
+
+plt.subplot(514)
+plt.plot(Ts, np.transpose(lif_exc.IsynEs)[0])
+
+plt.subplot(515)
+plt.plot(Ts, np.transpose(lif_exc.IsynIs)[0])
+
+plt.show()
+
 
 
 
