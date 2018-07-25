@@ -115,6 +115,15 @@ class LIF_group:
         self.v = np.ones(shape=(N)) * self.vreset
         self.last_spk = np.ones(shape=(N)) * -1
         
+    def clear(self):
+        self.vs = []
+        self.ges = []
+        self.gis = []
+        self.IsynEs = []
+        self.IsynIs = []
+        self.Iines = []
+        self.Iinis = []
+        
 #############
 class Synapse_group:
     def __init__(self, N, M, w, stdp, tc_pre_ee, tc_post_1_ee, tc_post_2_ee, nu_ee_pre, nu_ee_post, wmax_ee):
@@ -222,7 +231,7 @@ wie = np.load('./random/AiAe.npy')
 Syn = Synapse_group(N=784,                   \
                     M=400,                   \
                     w=w,                     \
-                    stdp=False,              \
+                    stdp=True,               \
                     tc_pre_ee=20e-3,         \
                     tc_post_1_ee=20e-3,      \
                     tc_post_2_ee=40e-3,      \
@@ -231,10 +240,10 @@ Syn = Synapse_group(N=784,                   \
                     wmax_ee=1.0)
 
 lif_exc = LIF_group(N=N,                     \
-                    adapt=False,             \
+                    adapt=True,              \
                     tau=1e-1,                \
-                    theta=0.0,               \
-                    vthr=-52e-3,             \
+                    theta=theta,             \
+                    vthr=-72e-3,             \
                     vrest=-65e-3,            \
                     vreset=-65e-3,           \
                     refrac_per=5e-3,         \
@@ -268,65 +277,73 @@ _lif_inh_spkd = np.zeros(shape=(N))
 spk_count = np.zeros(shape=(NUM_EX, N))
 labels = np.zeros(NUM_EX)
 
+NUM = 20
 ex = 0
 input_intensity = 2
 
-#############
-for s in range(active_steps):
-    t = active_Ts[s]
-    
-    if args.train:
-        rates = training_set[ex] * 32.0 * input_intensity
-        labels[ex] = training_labels[ex]
-    else:
-        rates = testing_set[ex] * 32.0 * input_intensity
-        labels[ex] = testing_labels[ex]
+for ex in range(NUM):
+    #############
+    for s in range(active_steps):
+        t = active_Ts[s]
+        
+        if args.train:
+            rates = training_set[ex] * 32.0 * input_intensity
+            labels[ex] = training_labels[ex]
+        else:
+            rates = testing_set[ex] * 32.0 * input_intensity
+            labels[ex] = testing_labels[ex]
 
-    spk = np.random.rand(784) < rates * dt
-    
-    I = Syn.step(t, dt, spk, _lif_exc_spkd)
-    lif_exc_spkd = lif_exc.step(t, dt, _I.flatten(), _Iie.flatten())
-    
-    spk_count[ex] += lif_exc_spkd
-    
-    Iei = np.dot(np.transpose(_lif_exc_spkd), wei)
-    lif_inh_spkd = lif_inh.step(t, dt, _Iei.flatten())
-    
-    Iie = np.dot(np.transpose(_lif_inh_spkd), wie)
-    
-    _I = I
-    _Iie = Iie
-    _Iei = Iei
-    _lif_exc_spkd = lif_exc_spkd
-    _lif_inh_spkd = lif_inh_spkd
-#############
-for s in range(rest_steps):
-    t = rest_Ts[s]
-    
-    spk = np.zeros(784)
-    
-    I = Syn.step(t, dt, spk, _lif_exc_spkd)
-    lif_exc_spkd = lif_exc.step(t, dt, _I.flatten(), _Iie.flatten())
-    
-    spk_count[ex] += lif_exc_spkd
-    
-    Iei = np.dot(np.transpose(_lif_exc_spkd), wei)
-    lif_inh_spkd = lif_inh.step(t, dt, _Iei.flatten())
-    
-    Iie = np.dot(np.transpose(_lif_inh_spkd), wie)
-    
-    _I = I
-    _Iie = Iie
-    _Iei = Iei
-    _lif_exc_spkd = lif_exc_spkd
-    _lif_inh_spkd = lif_inh_spkd
-#############
+        spk = np.random.rand(784) < rates * dt
+        
+        I = Syn.step(t, dt, spk, _lif_exc_spkd)
+        lif_exc_spkd = lif_exc.step(t, dt, _I.flatten(), _Iie.flatten())
+        
+        spk_count[ex] += lif_exc_spkd
+        
+        Iei = np.dot(np.transpose(_lif_exc_spkd), wei)
+        lif_inh_spkd = lif_inh.step(t, dt, _Iei.flatten())
+        
+        Iie = np.dot(np.transpose(_lif_inh_spkd), wie)
+        
+        _I = I
+        _Iie = Iie
+        _Iei = Iei
+        _lif_exc_spkd = lif_exc_spkd
+        _lif_inh_spkd = lif_inh_spkd
+    #############
+    for s in range(rest_steps):
+        t = rest_Ts[s]
+        
+        spk = np.zeros(784)
+        
+        I = Syn.step(t, dt, spk, _lif_exc_spkd)
+        lif_exc_spkd = lif_exc.step(t, dt, _I.flatten(), _Iie.flatten())
+        
+        spk_count[ex] += lif_exc_spkd
+        
+        Iei = np.dot(np.transpose(_lif_exc_spkd), wei)
+        lif_inh_spkd = lif_inh.step(t, dt, _Iei.flatten())
+        
+        Iie = np.dot(np.transpose(_lif_inh_spkd), wie)
+        
+        _I = I
+        _Iie = Iie
+        _Iei = Iei
+        _lif_exc_spkd = lif_exc_spkd
+        _lif_inh_spkd = lif_inh_spkd
+    #############
+    print (np.sum(spk_count))
 
-lif_exc.reset()
-lif_inh.reset()
-Syn.reset()
+    if ex == NUM-2:
+        lif_exc.clear()
+        lif_inh.clear()
+
+    lif_exc.reset()
+    lif_inh.reset()
+    Syn.reset()
     
 Ts = np.concatenate((active_Ts, rest_Ts))
+# Ts = np.linspace(0.0, 9*(active_T+rest_T), 9.0*(active_T+rest_T)/dt-9)
 
 plt.subplot(911)
 plt.plot(Ts, lif_exc.vs)
