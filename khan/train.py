@@ -195,10 +195,10 @@ if args.train:
     w = np.load('./random/XeAe.npy')
     theta = np.ones(N) * 20e-3
 else:
-    w = np.load('./trained/XeAe_trained.npy')
-    theta = np.load('./trained/theta_trained.npy')
-    # w = np.load('./weights/XeAe.npy')
-    # theta = np.load('./weights/theta_A.npy')
+    # w = np.load('./trained/XeAe_trained.npy')
+    # theta = np.load('./trained/theta_trained.npy')
+    w = np.load('./weights/XeAe.npy')
+    theta = np.load('./weights/theta_A.npy')
     
 wei = np.load('./random/AeAi.npy')
 wie = np.load('./random/AiAe.npy')
@@ -243,9 +243,11 @@ lif_inh = LIF_group(N=N,                      \
 print "starting sim"
 start = time.time()
     
-I = np.zeros(shape=(N, 1))
-Iie = np.zeros(shape=(N, 1))
-Iei = np.zeros(shape=(N, 1))
+_I = np.zeros(shape=(N))
+_Iie = np.zeros(shape=(N))
+_Iei = np.zeros(shape=(N))
+_lif_exc_spkd = np.zeros(shape=(N))
+_lif_inh_spkd = np.zeros(shape=(N))
 
 spk_count = np.zeros(shape=(NUM_EX, N))
 labels = np.zeros(NUM_EX)
@@ -268,30 +270,42 @@ while ex < NUM_EX:
 
         spk = np.random.rand(784) < rates * dt
         
-        I = Syn.step(t, dt, spk, spkd)
-        spkd = lif_exc.step(t, dt, I.flatten(), Iie.flatten())
+        I = Syn.step(t, dt, spk, _lif_exc_spkd)
+        lif_exc_spkd = lif_exc.step(t, dt, _I.flatten(), _Iie.flatten())
         
-        spk_count[ex] += spkd
+        spk_count[ex] += lif_exc_spkd
         
-        Iei = np.dot(np.transpose(spkd), wei)
-        spkd = lif_inh.step(t, dt, Iei.flatten())
+        Iei = np.dot(np.transpose(_lif_exc_spkd), wei)
+        lif_inh_spkd = lif_inh.step(t, dt, _Iei.flatten())
         
-        Iie = np.dot(np.transpose(spkd), wie)
+        Iie = np.dot(np.transpose(_lif_inh_spkd), wie)
+        
+        _I = I
+        _Iie = Iie
+        _Iei = Iei
+        _lif_exc_spkd = lif_exc_spkd
+        _lif_inh_spkd = lif_inh_spkd
     #############
     for s in range(rest_steps):
         t = rest_Ts[s]
         
         spk = np.zeros(784)
         
-        I = Syn.step(t, dt, spk, spkd)
-        spkd = lif_exc.step(t, dt, I.flatten(), Iie.flatten())
+        I = Syn.step(t, dt, spk, _lif_exc_spkd)
+        lif_exc_spkd = lif_exc.step(t, dt, _I.flatten(), _Iie.flatten())
         
-        spk_count[ex] += spkd
+        spk_count[ex] += lif_exc_spkd
         
-        Iei = np.dot(np.transpose(spkd), wei)
-        spkd = lif_inh.step(t, dt, Iei.flatten())
+        Iei = np.dot(np.transpose(_lif_exc_spkd), wei)
+        lif_inh_spkd = lif_inh.step(t, dt, _Iei.flatten())
         
-        Iie = np.dot(np.transpose(spkd), wie)
+        Iie = np.dot(np.transpose(_lif_inh_spkd), wie)
+        
+        _I = I
+        _Iie = Iie
+        _Iei = Iei
+        _lif_exc_spkd = lif_exc_spkd
+        _lif_inh_spkd = lif_inh_spkd
     #############
     
     lif_exc.reset()
