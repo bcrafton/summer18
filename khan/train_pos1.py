@@ -60,22 +60,25 @@ class LIF_group:
         self.gis = []
         self.IsynEs = []
         self.IsynIs = []
+        self.Iines = []
+        self.Iinis = []
         
-    def step(self, t, dt, Iine, Iini=0):        
+    def step(self, t, dt, Iine, Iini=0):   
         nrefrac = (t - self.last_spk - self.refrac_per) > 0
             
         IsynE = self.ge * self.v
         IsynI = self.gi * (self.i_offset - self.v)
         
         # compute derivatives
-        dvdt = ((self.vrest - self.v) + (IsynE - IsynI)) / self.tau
+        dvdt = ((self.vrest - self.v) + (IsynE - IsynI)) / self.tau        
         dv = dvdt * dt
-        dge = -(self.ge / self.ge_tau * dt)
-        dgi = -(self.gi / self.gi_tau * dt)
+        dge = -(self.ge / self.ge_tau * dt) 
+        dgi = -(self.gi / self.gi_tau * dt) 
         
         # update state variables
-        # self.v = np.clip(self.v + nrefrac * dv, self.vrest, 1.1 * self.vthr)
-        self.v += dv * nrefrac 
+        self.v = np.clip(self.v + nrefrac * dv, 0.9*self.vrest, 1.1*self.vthr)
+        # self.v = np.clip(self.v + nrefrac * dv, 0.0*self.vrest, 1.1*self.vthr)
+        # self.v += dv * nrefrac 
         self.ge += (dge + Iine) * nrefrac
         self.gi += (dgi + Iini) * nrefrac
         
@@ -84,7 +87,9 @@ class LIF_group:
         self.gis.append(self.gi)
         self.IsynEs.append(IsynE)
         self.IsynIs.append(IsynI)
-        
+        self.Iines.append(Iine)
+        self.Iinis.append(Iini)
+                
         # reset.
         spkd = self.v > (self.theta + self.vthr)
         nspkd = self.v < (self.theta + self.vthr)
@@ -245,7 +250,7 @@ lif_inh = LIF_group(N=N,                      \
                     theta=0.0,                \
                     vthr=60e-3,               \
                     vrest=40e-3,              \
-                    vreset=55e-3,             \
+                    vreset=40e-3,             \
                     refrac_per=2e-3,          \
                     i_offset=85e-3,           \
                     tc_theta=1e7*1e-3,        \
@@ -281,8 +286,8 @@ for s in range(active_steps):
     spk = np.random.rand(784) < rates * dt
     
     I = Syn.step(t, dt, spk, spkd)
-    # spkd = lif_exc.step(t, dt, I.flatten(), Iie.flatten())
-    spkd = lif_exc.step(t, dt, I.flatten())
+    spkd = lif_exc.step(t, dt, I.flatten(), Iie.flatten())
+    # spkd = lif_exc.step(t, dt, I.flatten())
     
     spk_count[ex] += spkd
     
@@ -297,8 +302,8 @@ for s in range(rest_steps):
     spk = np.zeros(784)
     
     I = Syn.step(t, dt, spk, spkd)
-    # spkd = lif_exc.step(t, dt, I.flatten(), Iie.flatten())
-    spkd = lif_exc.step(t, dt, I.flatten())
+    spkd = lif_exc.step(t, dt, I.flatten(), Iie.flatten())
+    # spkd = lif_exc.step(t, dt, I.flatten())
     
     spk_count[ex] += spkd
     
@@ -311,25 +316,38 @@ for s in range(rest_steps):
 lif_exc.reset()
 lif_inh.reset()
 Syn.reset()
-
+    
 Ts = np.concatenate((active_Ts, rest_Ts))
 
-plt.subplot(511)
-plt.plot(Ts, np.transpose(lif_exc.vs)[0])
+plt.subplot(911)
+plt.plot(Ts, lif_exc.vs)
 
-plt.subplot(512)
-plt.plot(Ts, np.transpose(lif_exc.ges)[0])
+plt.subplot(912)
+plt.plot(Ts, lif_exc.ges)
 
-plt.subplot(513)
-plt.plot(Ts, np.transpose(lif_exc.gis)[0])
+plt.subplot(913)
+plt.plot(Ts, lif_exc.gis)
 
-plt.subplot(514)
-plt.plot(Ts, np.transpose(lif_exc.IsynEs)[0])
+plt.subplot(914)
+plt.plot(Ts, lif_exc.Iines)
 
-plt.subplot(515)
-plt.plot(Ts, np.transpose(lif_exc.IsynIs)[0])
+plt.subplot(915)
+plt.plot(Ts, lif_exc.Iinis)
+
+plt.subplot(916)
+plt.plot(Ts, lif_exc.gis)
+
+plt.subplot(917)
+plt.plot(Ts, lif_inh.vs)
+
+plt.subplot(918)
+plt.plot(Ts, lif_inh.ges)
+
+plt.subplot(919)
+plt.plot(Ts, lif_inh.Iines)
 
 plt.show()
+
 
 
 
