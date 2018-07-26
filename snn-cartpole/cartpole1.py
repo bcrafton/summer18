@@ -83,6 +83,7 @@ class LIF_group:
         self.last_spk = np.ones(shape=(self.N)) * -1
         
 #############
+
 class Synapse_group:
     def __init__(self, N, M, w, stdp, tc_pre_ee, tc_post_1_ee, tc_post_2_ee, nu_ee_pre, nu_ee_post, wmax_ee):
     
@@ -153,6 +154,93 @@ class Synapse_group:
             col_factor = 78.0 / col_sum
             for i in range(self.M):
                 self.w[:, i] *= col_factor[i]
+
+#############
+
+class RSTDP_group:
+    def __init__(self, N, M, w, stdp, tc_pre_ee, tc_post_1_ee, tc_post_2_ee, nu_ee_pre, nu_ee_post, wmax_ee, lmda, gamma, alpha):
+    
+        # group level variables
+        self.N = N
+        self.M = M
+        self.stdp = stdp
+        self.tc_pre_ee = tc_pre_ee
+        self.tc_post_1_ee = tc_post_1_ee
+        self.tc_post_2_ee = tc_post_2_ee
+        self.nu_ee_pre = nu_ee_pre
+        self.nu_ee_post = nu_ee_post
+        self.wmax_ee = wmax_ee
+        
+        # rstdp stuff
+        self.lmda = lmda
+        self.gamma = gamma
+        self.alpha = alpha
+        
+        # synapse level variables
+        self.w = w
+        self.e = np.zeros(shape=(N, M))
+        
+        # pre level variables
+        self.last_pre = np.ones(self.N) * -1
+        
+        # post level variables
+        self.last_post = np.ones(self.M) * -1
+        
+    def step(self, t, dt, pre_spk, post_spk):
+        I = np.dot(np.transpose(pre_spk), self.w)
+
+        if self.stdp:
+            de = np.zeros(shape=(self.N, self.M))
+            got_pre = np.any(pre_spk)
+            got_post = np.any(post_spk)
+        
+            if (got_pre):
+                npre_spk = pre_spk == 0
+                self.last_pre = self.last_pre * npre_spk
+                self.last_pre += pre_spk * t
+            
+                post1 = np.exp(-(t - self.last_post) / self.tc_post_1_ee)
+                de += -self.nu_ee_pre * np.dot(pre_spk.reshape(self.N, 1), post1.reshape(1, self.M))
+
+            if (got_post):
+                pre = np.exp(-(t - self.last_pre) / self.tc_pre_ee)
+                post2 = np.exp(-(t - self.last_post) / self.tc_post_2_ee)
+                de += self.nu_ee_post * np.dot(pre.reshape(self.N, 1), post2.reshape(1, self.M) * post_spk.reshape(1, self.M))
+
+                npost_spk = post_spk == 0
+                self.last_post = self.last_post * npost_spk
+                self.last_post += post_spk * t
+                
+            self.e = np.clip(self.e + de, 0, 1.0)
+            
+        return I
+        
+    def reset(self):
+        # pre level variables
+        self.last_pre = np.ones(self.N) * -1
+        
+        # post level variables
+        self.last_post = np.ones(self.M) * -1 
+        
+        if self.stdp:
+            # normalize w
+            col_sum = np.sum(np.copy(self.w), axis=0)
+            col_factor = 78.0 / col_sum
+            for i in range(self.M):
+                self.w[:, i] *= col_factor[i]
+                
+    def update(self, reward, prev_state, prev_value, current_state, current_value):
+        d = reward + (self.gamma * current_value) - current_value
+        
+        # we can try eligibility as just the pre and post overlap.
+        # self.e = self.gamma * self.lmda * self.e + (1 - self.alpha * self.gamma * self.lmda * self.e * np.transpose(prev_state)) * np.transpose(prev_state)
+                
+        # no we are gonna maintain it in step
+        
+        '''       
+        dw = (self.alpha * (d + current_value - prev_value) * self.e) - (self.alpha * (current_value - prev_value) * np.transpose(prev_state))
+        self.w += dw
+        '''
         
 #############
 
@@ -237,16 +325,19 @@ class Solver():
                             
         ##########################################################
                             
-        self.l1_l2_syn = Synapse_group(N=self.LAYER1, \
+        self.l1_l2_syn = RSTDP_group(N=self.LAYER1,   \
                             M=self.LAYER2,            \
                             w=self.l1_l2_w,           \
-                            stdp=args.train,          \
+                            stdp=True,                \
                             tc_pre_ee=20e-3,          \
                             tc_post_1_ee=20e-3,       \
                             tc_post_2_ee=40e-3,       \
                             nu_ee_pre=1e-4,           \
                             nu_ee_post=1e-2,          \
-                            wmax_ee=1.0)
+                            wmax_ee=1.0,              \
+                            lmda=0.9,                 \
+                            gamma=0.99,               \
+                            alpha=1e-6)
 
         self.l2_exc_lif = LIF_group(N=self.LAYER2,   \
                             adapt=args.train,        \
@@ -318,7 +409,7 @@ class Solver():
     def decay_epsilon(self):
         self.epsilon *= self.epsilon_decay
         
-    def run_snn(self, state):
+    def run_snn(self, state, reward):
         # spks and currents
         l0_l1_spk = np.zeros(shape=(self.LAYER0))
         l0_l1_I = np.zeros(shape=(self.LAYER1))
@@ -341,7 +432,15 @@ class Solver():
         l1_exc_spks = np.zeros(shape=(self.LAYER1))
         l2_exc_spks = np.zeros(shape=(self.LAYER2))
         
-        #fix me
+        # last 2 values 
+        prev_value = np.zeros(shape=(self.LAYER2))
+        current_value = np.zeros(shape=(self.LAYER2))
+        
+        # last 2 states
+        prev_state = np.zeros(shape=(self.LAYER0))
+        current_state = np.zeros(shape=(self.LAYER0))
+        
+        # intensity, could probably make this smarter
         input_intensity = 64.0
         #############
         for s in range(self.active_steps):
@@ -364,6 +463,7 @@ class Solver():
             # l1 -> l2 connections
             l1_l2_spk = l1_exc_spk
             l1_l2_I = self.l1_l2_syn.step(t, self.dt, l1_l2_spk, l2_exc_spk)
+            self.l1_l2_syn.update(reward, prev_state, prev_value, current_state, current_value)
             
             # l2 recurrent connections
             l2_exc_spk = self.l2_exc_lif.step(t, self.dt, l1_l2_I.flatten(), l2_inh_I.flatten())
@@ -395,6 +495,7 @@ class Solver():
             # l1 -> l2 connections
             l1_l2_spk = l1_exc_spk
             l1_l2_I = self.l1_l2_syn.step(t, self.dt, l1_l2_spk, l2_exc_spk)
+            self.l1_l2_syn.update(reward, prev_state, prev_value, current_state, current_value)
             
             # l2 recurrent connections
             l2_exc_spk = self.l2_exc_lif.step(t, self.dt, l1_l2_I.flatten(), l2_inh_I.flatten())
@@ -425,11 +526,12 @@ class Solver():
         for e in range(self.n_episodes):
         
             state = self.preprocess_state(self.env.reset())
+            reward = 0.0 # to start, should probably start with a random action.
             done = False
             i = 0
             
             while not done:
-                l1_spks, l2_spks = self.run_snn(state)
+                l1_spks, l2_spks = self.run_snn(state, reward)
                 action = self.choose_action(l2_spks)
                 next_state, reward, done, _ = self.env.step(action)
                 next_state = self.preprocess_state(next_state)
