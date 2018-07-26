@@ -3,6 +3,7 @@ import gym
 import math
 import numpy as np
 import argparse
+import matplotlib.pyplot as plt
 from collections import deque
 
 #############
@@ -158,7 +159,7 @@ class Synapse_group:
 #############
 
 class RSTDP_group:
-    def __init__(self, N, M, w, stdp, tc_pre_ee, tc_post_1_ee, tc_post_2_ee, nu_ee_pre, nu_ee_post, wmax_ee, lmda, gamma, alpha):
+    def __init__(self, N, M, w, stdp, tc_pre_ee, tc_post_1_ee, tc_post_2_ee, nu_ee_pre, nu_ee_post, wmax_ee, lmda, gamma, alpha, e_tau):
     
         # group level variables
         self.N = N
@@ -175,6 +176,7 @@ class RSTDP_group:
         self.lmda = lmda
         self.gamma = gamma
         self.alpha = alpha
+        self.e_tau = e_tau
         
         # synapse level variables
         self.w = w
@@ -185,6 +187,9 @@ class RSTDP_group:
         
         # post level variables
         self.last_post = np.ones(self.M) * -1
+        
+        # want to store the e's so i can plot them...
+        self.es = []
         
     def step(self, t, dt, pre_spk, post_spk):
         I = np.dot(np.transpose(pre_spk), self.w)
@@ -200,18 +205,21 @@ class RSTDP_group:
                 self.last_pre += pre_spk * t
             
                 post1 = np.exp(-(t - self.last_post) / self.tc_post_1_ee)
-                de += -self.nu_ee_pre * np.dot(pre_spk.reshape(self.N, 1), post1.reshape(1, self.M))
+                # dont do anything to the eligibility during a pre.
+                # de += -self.nu_ee_pre * np.dot(pre_spk.reshape(self.N, 1), post1.reshape(1, self.M))
 
             if (got_post):
-                pre = np.exp(-(t - self.last_pre) / self.tc_pre_ee)
-                post2 = np.exp(-(t - self.last_post) / self.tc_post_2_ee)
-                de += self.nu_ee_post * np.dot(pre.reshape(self.N, 1), post2.reshape(1, self.M) * post_spk.reshape(1, self.M))
-
                 npost_spk = post_spk == 0
                 self.last_post = self.last_post * npost_spk
                 self.last_post += post_spk * t
                 
+                pre = np.exp(-(t - self.last_pre) / self.tc_pre_ee)
+                post2 = np.exp(-(t - self.last_post) / self.tc_post_2_ee)
+                de += self.nu_ee_post * np.dot(pre.reshape(self.N, 1), post2.reshape(1, self.M) * post_spk.reshape(1, self.M))
+                
+            de += -self.e / self.e_tau * dt
             self.e = np.clip(self.e + de, 0, 1.0)
+            self.es.append(self.e)
             
         return I
         
@@ -229,6 +237,8 @@ class RSTDP_group:
             for i in range(self.M):
                 self.w[:, i] *= col_factor[i]
                 
+            # we do NOT update eligibility.
+                
     def update(self, reward, prev_state, prev_value, current_state, current_value):
         d = reward + (self.gamma * current_value) - current_value
         
@@ -245,18 +255,14 @@ class RSTDP_group:
 #############
 
 class Solver():
-    def __init__(self):
+    def __init__(self, epsilon=0.5, epsilon_min=0.01, epsilon_decay=0.999, n_episodes=1000, n_win_ticks=195, max_env_steps=200):
         self.env = gym.make('CartPole-v0')
-        self.gamma = 0.99
-        self.epsilon = 1.0
-        self.epsilon_min = 0.01
-        self.epsilon_decay = 0.999
-        self.alpha = 1e-4
-        self.alpha_decay = self.alpha
-        self.lmda = 0.9
-        self.n_episodes = 100000
-        self.n_win_ticks = 195
-        self.max_env_steps = 200
+        self.epsilon = epsilon
+        self.epsilon_min = epsilon_min
+        self.epsilon_decay = epsilon_decay
+        self.n_episodes = n_episodes
+        self.n_win_ticks = n_win_ticks
+        self.max_env_steps = max_env_steps
 
         # layer sizes
         self.LAYER0 = 8
@@ -266,6 +272,7 @@ class Solver():
         # run time specs
         self.dt = 1e-4
 
+        ### NO LONGER USING THESE###
         self.active_T = 0.35
         self.active_steps = int(self.active_T / self.dt)
         self.active_Ts = np.linspace(0, self.active_T, self.active_steps)
@@ -273,6 +280,11 @@ class Solver():
         self.rest_T = 0.15
         self.rest_steps = int(self.rest_T / self.dt)
         self.rest_Ts = np.linspace(self.active_T, self.active_T + self.rest_T, self.rest_steps)
+        ### NO LONGER USING THESE###
+        
+        # run time metrics
+        self.time_elapsed = 0.0
+        self.total_steps = 0.0
         
         # initial weights
         self.l0_l1_w = np.absolute(np.random.normal(0.5, 0.3, size=(self.LAYER0, self.LAYER1)))
@@ -337,7 +349,8 @@ class Solver():
                             wmax_ee=1.0,              \
                             lmda=0.9,                 \
                             gamma=0.99,               \
-                            alpha=1e-6)
+                            alpha=1e-6,               \
+                            e_tau=2.0)
 
         self.l2_exc_lif = LIF_group(N=self.LAYER2,   \
                             adapt=args.train,        \
@@ -444,7 +457,9 @@ class Solver():
         input_intensity = 64.0
         #############
         for s in range(self.active_steps):
-            t = self.active_Ts[s]
+            t = self.time_elapsed
+            self.time_elapsed += self.dt
+            self.total_steps += 1
             
             rates = state
             rates *= 1.0 / np.average(rates) * input_intensity
@@ -480,7 +495,9 @@ class Solver():
             l0_spks += l0_l1_spk
         #############
         for s in range(self.rest_steps):
-            t = self.rest_Ts[s]
+            t = self.time_elapsed
+            self.time_elapsed += self.dt
+            self.total_steps += 1
             
             # l0 -> l1 connections
             l0_l1_spk = np.zeros(self.LAYER0)
@@ -563,14 +580,25 @@ class Solver():
             print (mean_score)
             
 
+agent = Solver(n_episodes=1)
+agent.run()
 
-if __name__ == '__main__':
-    agent = Solver()
-    agent.run()
-    
-    
-    
-    
+'''
+T = agent.n_episodes * (agent.active_T + agent.rest_T)
+steps = agent.n_episodes * (agent.active_steps + agent.rest_steps)
+Ts = np.linspace(0.0, T, steps)
+'''
+
+Ts = np.linspace(0.0, agent.time_elapsed, agent.total_steps)
+
+# this annoing as hell.
+# es = steps, N, M
+# so you need to slice it right.
+es = agent.l1_l2_syn.es
+es = np.array(es)[:, 0:10, 0]
+
+plt.plot(Ts, es)
+plt.show()
     
     
     
