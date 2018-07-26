@@ -231,7 +231,7 @@ wie = np.load('./random/AiAe.npy')
 Syn = Synapse_group(N=784,                   \
                     M=400,                   \
                     w=w,                     \
-                    stdp=True,               \
+                    stdp=False,              \
                     tc_pre_ee=20e-3,         \
                     tc_post_1_ee=20e-3,      \
                     tc_post_2_ee=40e-3,      \
@@ -240,7 +240,7 @@ Syn = Synapse_group(N=784,                   \
                     wmax_ee=1.0)
 
 lif_exc = LIF_group(N=N,                     \
-                    adapt=True,              \
+                    adapt=False,             \
                     tau=1e-1,                \
                     theta=theta,             \
                     vthr=-72e-3,             \

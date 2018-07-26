@@ -231,7 +231,7 @@ wie = np.load('./random/AiAe.npy')
 Syn = Synapse_group(N=784,                   \
                     M=400,                   \
                     w=w,                     \
-                    stdp=True,               \
+                    stdp=False,              \
                     tc_pre_ee=20e-3,         \
                     tc_post_1_ee=20e-3,      \
                     tc_post_2_ee=40e-3,      \
@@ -240,10 +240,10 @@ Syn = Synapse_group(N=784,                   \
                     wmax_ee=1.0)
 
 lif_exc = LIF_group(N=N,                     \
-                    adapt=True,              \
+                    adapt=False,             \
                     tau=1e-1,                \
                     theta=theta,             \
-                    vthr=65e-3,              \
+                    vthr=45e-3,              \
                     vrest=52e-3,             \
                     vreset=52e-3,            \
                     refrac_per=5e-3,         \
@@ -267,21 +267,22 @@ lif_inh = LIF_group(N=N,                      \
 
 print "starting sim"
 start = time.time()
-    
-_I = np.zeros(shape=(N))
-_Iie = np.zeros(shape=(N))
-_Iei = np.zeros(shape=(N))
-_lif_exc_spkd = np.zeros(shape=(N))
-_lif_inh_spkd = np.zeros(shape=(N))
 
 spk_count = np.zeros(shape=(NUM_EX, N))
 labels = np.zeros(NUM_EX)
 
-NUM = 20
+NUM = 10
 ex = 0
 input_intensity = 2
 
-for ex in range(NUM):
+for ii in range(NUM):
+    _I = np.zeros(shape=(N))
+    _Iie = np.zeros(shape=(N))
+    _Iei = np.zeros(shape=(N))
+    _lif_exc_spkd = np.zeros(shape=(N))
+    _lif_inh_spkd = np.zeros(shape=(N))
+
+    ex = 0 + ii
     #############
     for s in range(active_steps):
         t = active_Ts[s]
@@ -332,7 +333,7 @@ for ex in range(NUM):
         _lif_exc_spkd = lif_exc_spkd
         _lif_inh_spkd = lif_inh_spkd
     #############
-    print (np.sum(spk_count))
+    print (ex, np.sum(spk_count))
 
     if ex == NUM-2:
         lif_exc.clear()

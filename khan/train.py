@@ -58,7 +58,7 @@ class LIF_group:
     def step(self, t, dt, Iine, Iini=0):        
         nrefrac = (t - self.last_spk - self.refrac_per) > 0
             
-        IsynE = self.ge * -self.v
+        IsynE = self.ge * self.v
         IsynI = self.gi * (self.i_offset - self.v)
         
         # compute derivatives
@@ -68,7 +68,7 @@ class LIF_group:
         dgi = -(self.gi / self.gi_tau * dt) 
         
         # update state variables
-        self.v += nrefrac * dv
+        self.v += dv * nrefrac
         self.ge += (dge + Iine) * nrefrac
         self.gi += (dgi + Iini) * nrefrac
                 
@@ -177,7 +177,9 @@ N = 400
 # default timestep in brian is 0.1ms
 # original simulation uses 0.5ms
 # dt = 1e-4
-dt = 0.5e-3
+# dt = 0.5e-3
+# 0.5e-3 = 5e-4
+dt = 2.5e-4
 
 active_T = 0.35
 active_steps = int(active_T / dt)
@@ -218,23 +220,23 @@ lif_exc = LIF_group(N=N,                     \
                     adapt=args.train,        \
                     tau=1e-1,                \
                     theta=theta,             \
-                    vthr=-20e-3 - 52e-3,     \
-                    vrest=-65e-3,            \
-                    vreset=-65e-3,           \
+                    vthr=45e-3,              \
+                    vrest=52e-3,             \
+                    vreset=52e-3,            \
                     refrac_per=5e-3,         \
-                    i_offset=-100e-3,        \
+                    i_offset=17e-3,          \
                     tc_theta=1e7*1e-3,       \
                     theta_plus_e=0.05e-3)
 
 lif_inh = LIF_group(N=N,                      \
                     adapt=False,              \
                     tau=1e-2,                 \
-                    theta=0,                  \
-                    vthr=-40e-3,              \
-                    vrest=-60e-3,             \
-                    vreset=-45e-3,            \
+                    theta=0.0,                \
+                    vthr=60e-3,               \
+                    vrest=40e-3,              \
+                    vreset=40e-3,             \
                     refrac_per=2e-3,          \
-                    i_offset=-85e-3,          \
+                    i_offset=15e-3,           \
                     tc_theta=1e7*1e-3,        \
                     theta_plus_e=0.05e-3)
 
@@ -242,20 +244,17 @@ lif_inh = LIF_group(N=N,                      \
 
 print "starting sim"
 start = time.time()
-    
-_I = np.zeros(shape=(N))
-_Iie = np.zeros(shape=(N))
-_Iei = np.zeros(shape=(N))
-_lif_exc_spkd = np.zeros(shape=(N))
-_lif_inh_spkd = np.zeros(shape=(N))
 
 spk_count = np.zeros(shape=(NUM_EX, N))
 labels = np.zeros(NUM_EX)
 
 ex = 0
-input_intensity = 2
+input_intensity = 2.00
 
 while ex < NUM_EX:
+    lif_exc_spkd = np.zeros(shape=(N))
+    lif_inh_spkd = np.zeros(shape=(N))
+
     #############
     spkd = np.zeros(N)    
     for s in range(active_steps):
@@ -270,42 +269,28 @@ while ex < NUM_EX:
 
         spk = np.random.rand(784) < rates * dt
         
-        I = Syn.step(t, dt, spk, _lif_exc_spkd)
-        lif_exc_spkd = lif_exc.step(t, dt, _I.flatten(), _Iie.flatten())
+        I = Syn.step(t, dt, spk, lif_exc_spkd)
+        Iie = np.dot(np.transpose(lif_inh_spkd), wie)
+        Iei = np.dot(np.transpose(lif_exc_spkd), wei)
+        
+        lif_exc_spkd = lif_exc.step(t, dt, I.flatten(), Iie.flatten())        
+        lif_inh_spkd = lif_inh.step(t, dt, Iei.flatten())
         
         spk_count[ex] += lif_exc_spkd
-        
-        Iei = np.dot(np.transpose(_lif_exc_spkd), wei)
-        lif_inh_spkd = lif_inh.step(t, dt, _Iei.flatten())
-        
-        Iie = np.dot(np.transpose(_lif_inh_spkd), wie)
-        
-        _I = I
-        _Iie = Iie
-        _Iei = Iei
-        _lif_exc_spkd = lif_exc_spkd
-        _lif_inh_spkd = lif_inh_spkd
     #############
     for s in range(rest_steps):
         t = rest_Ts[s]
         
         spk = np.zeros(784)
         
-        I = Syn.step(t, dt, spk, _lif_exc_spkd)
-        lif_exc_spkd = lif_exc.step(t, dt, _I.flatten(), _Iie.flatten())
+        I = Syn.step(t, dt, spk, lif_exc_spkd)
+        Iie = np.dot(np.transpose(lif_inh_spkd), wie)
+        Iei = np.dot(np.transpose(lif_exc_spkd), wei)
+        
+        lif_exc_spkd = lif_exc.step(t, dt, I.flatten(), Iie.flatten())        
+        lif_inh_spkd = lif_inh.step(t, dt, Iei.flatten())
         
         spk_count[ex] += lif_exc_spkd
-        
-        Iei = np.dot(np.transpose(_lif_exc_spkd), wei)
-        lif_inh_spkd = lif_inh.step(t, dt, _Iei.flatten())
-        
-        Iie = np.dot(np.transpose(_lif_inh_spkd), wie)
-        
-        _I = I
-        _Iie = Iie
-        _Iei = Iei
-        _lif_exc_spkd = lif_exc_spkd
-        _lif_inh_spkd = lif_inh_spkd
     #############
     
     lif_exc.reset()
@@ -322,7 +307,7 @@ while ex < NUM_EX:
         spk_count[ex] = 0
         input_intensity += 0.1
     else:
-        input_intensity = 2
+        input_intensity = 2.00
         ex += 1    
 
 end = time.time()
