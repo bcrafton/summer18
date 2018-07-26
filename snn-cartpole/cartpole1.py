@@ -189,7 +189,7 @@ class RSTDP_group:
         self.last_post = np.ones(self.M) * -1
         
         # want to store the e's so i can plot them...
-        self.es = []
+        # self.es = []
         
     def step(self, t, dt, pre_spk, post_spk):
         I = np.dot(np.transpose(pre_spk), self.w)
@@ -219,7 +219,7 @@ class RSTDP_group:
                 
             de += -self.e / self.e_tau * dt
             self.e = np.clip(self.e + de, 0, 1.0)
-            self.es.append(self.e)
+            # self.es.append(self.e)
             
         return I
         
@@ -237,20 +237,15 @@ class RSTDP_group:
             for i in range(self.M):
                 self.w[:, i] *= col_factor[i]
                 
-            # we do NOT update eligibility.
+            self.e = np.zeros(shape=(self.N, self.M))
                 
-    def update(self, reward, prev_state, prev_value, current_state, current_value):
-        d = reward + (self.gamma * current_value) - current_value
+    def update(self, prev_state, prev_value, state, value, reward):
+        d = reward + (self.gamma * value) - prev_value
         
-        # we can try eligibility as just the pre and post overlap.
-        # self.e = self.gamma * self.lmda * self.e + (1 - self.alpha * self.gamma * self.lmda * self.e * np.transpose(prev_state)) * np.transpose(prev_state)
-                
-        # no we are gonna maintain it in step
+        print( np.shape(self.e), np.shape(prev_state), prev_value, np.shape(state), value, reward)
         
-        '''       
-        dw = (self.alpha * (d + current_value - prev_value) * self.e) - (self.alpha * (current_value - prev_value) * np.transpose(prev_state))
+        dw = (self.alpha * (d + value - prev_value) * self.e) - (self.alpha * (value - prev_value) * np.transpose(prev_state))
         self.w += dw
-        '''
         
 #############
 
@@ -422,7 +417,7 @@ class Solver():
     def decay_epsilon(self):
         self.epsilon *= self.epsilon_decay
         
-    def run_snn(self, state, reward):
+    def run_snn(self, state):
         # spks and currents
         l0_l1_spk = np.zeros(shape=(self.LAYER0))
         l0_l1_I = np.zeros(shape=(self.LAYER1))
@@ -444,14 +439,6 @@ class Solver():
         l0_spks = np.zeros(shape=(self.LAYER0, 1))
         l1_exc_spks = np.zeros(shape=(self.LAYER1))
         l2_exc_spks = np.zeros(shape=(self.LAYER2))
-        
-        # last 2 values 
-        prev_value = np.zeros(shape=(self.LAYER2))
-        current_value = np.zeros(shape=(self.LAYER2))
-        
-        # last 2 states
-        prev_state = np.zeros(shape=(self.LAYER0))
-        current_state = np.zeros(shape=(self.LAYER0))
         
         # intensity, could probably make this smarter
         input_intensity = 64.0
@@ -478,7 +465,6 @@ class Solver():
             # l1 -> l2 connections
             l1_l2_spk = l1_exc_spk
             l1_l2_I = self.l1_l2_syn.step(t, self.dt, l1_l2_spk, l2_exc_spk)
-            self.l1_l2_syn.update(reward, prev_state, prev_value, current_state, current_value)
             
             # l2 recurrent connections
             l2_exc_spk = self.l2_exc_lif.step(t, self.dt, l1_l2_I.flatten(), l2_inh_I.flatten())
@@ -486,20 +472,47 @@ class Solver():
             l2_inh_spk = self.l2_inh_lif.step(t, self.dt, l2_exc_I.flatten())
             l2_inh_I = np.dot(np.transpose(l2_inh_spk), self.l2_inh_w)
             
-            # if (np.any(l2_exc_spk)):
-            #     print (l2_exc_spk)
-            
             # spike counter updates
             l1_exc_spks += l1_exc_spk
             l2_exc_spks += l2_exc_spk
             l0_spks += l0_l1_spk
         #############
+        return l1_exc_spks, l2_exc_spks
+        #############
+
+    def train_snn(self, prev_state, prev_value, state, value, reward):
+        # spks and currents
+        l0_l1_spk = np.zeros(shape=(self.LAYER0))
+        l0_l1_I = np.zeros(shape=(self.LAYER1))
+        
+        l1_exc_spk = np.zeros(shape=(self.LAYER1))
+        l1_exc_I = np.zeros(shape=(self.LAYER1))
+        l1_inh_spk = np.zeros(shape=(self.LAYER1))
+        l1_inh_I = np.zeros(shape=(self.LAYER1))
+        
+        l1_l2_spk = np.zeros(shape=(self.LAYER1))
+        l1_l2_I = np.zeros(shape=(self.LAYER2))
+        
+        l2_exc_spk = np.zeros(shape=(self.LAYER2))
+        l2_exc_I = np.zeros(shape=(self.LAYER2))
+        l2_inh_spk = np.zeros(shape=(self.LAYER2))
+        l2_inh_I = np.zeros(shape=(self.LAYER2))
+    
+        # spk counters
+        l0_spks = np.zeros(shape=(self.LAYER0))
+        l1_exc_spks = np.zeros(shape=(self.LAYER1))
+        l2_exc_spks = np.zeros(shape=(self.LAYER2))
+        
+        # intensity, could probably make this smarter
+        input_intensity = 64.0
+        #############
         for s in range(self.rest_steps):
             t = self.time_elapsed
             self.time_elapsed += self.dt
             self.total_steps += 1
-            
+
             # l0 -> l1 connections
+            # rates and np.random.rand() have to have save dimensions or u get a NxN ... not Nx1
             l0_l1_spk = np.zeros(self.LAYER0)
             l0_l1_I = self.l0_l1_syn.step(t, self.dt, l0_l1_spk, l1_exc_spk)
             
@@ -512,7 +525,7 @@ class Solver():
             # l1 -> l2 connections
             l1_l2_spk = l1_exc_spk
             l1_l2_I = self.l1_l2_syn.step(t, self.dt, l1_l2_spk, l2_exc_spk)
-            self.l1_l2_syn.update(reward, prev_state, prev_value, current_state, current_value)
+            self.l1_l2_syn.update(prev_state, prev_value, state, value, reward)
             
             # l2 recurrent connections
             l2_exc_spk = self.l2_exc_lif.step(t, self.dt, l1_l2_I.flatten(), l2_inh_I.flatten())
@@ -523,6 +536,7 @@ class Solver():
             # spike counter updates
             l1_exc_spks += l1_exc_spk
             l2_exc_spks += l2_exc_spk
+            l0_spks += l0_l1_spk
         #############
         self.l0_l1_syn.reset()
         self.l1_exc_lif.reset()
@@ -531,8 +545,6 @@ class Solver():
         self.l1_l2_syn.reset()
         self.l2_exc_lif.reset()
         self.l2_inh_lif.reset()
-        #############
-        # print (l0_spks)
         #############
         return l1_exc_spks, l2_exc_spks
         #############
@@ -543,20 +555,28 @@ class Solver():
         for e in range(self.n_episodes):
         
             state = self.preprocess_state(self.env.reset())
-            reward = 0.0 # to start, should probably start with a random action.
-            done = False
-            i = 0
+            l1_spks, l2_spks = self.run_snn(state)
+            value = np.max(l2_spks) # not sure if correct to do this ... bc choose action randomizes
+            action = self.choose_action(value)
+            next_state, reward, done, _ = self.env.step(action)
             
-            while not done:
-                l1_spks, l2_spks = self.run_snn(state, reward)
+            prev_state = state
+            prev_value = value
+            
+            i=0
+            while not done:       
+                ###########################################     
+                l1_spks, l2_spks = self.run_snn(state)
+                value = np.max(l2_spks) # not sure if correct to do this ... bc choose action randomizes
+                _, _ = self.train_snn(prev_state, prev_value, state, value, reward)
                 action = self.choose_action(l2_spks)
                 next_state, reward, done, _ = self.env.step(action)
+                ###########################################
                 next_state = self.preprocess_state(next_state)
                 state = next_state
                 i += 1
-                         
+                ###########################################
                 print ('----------')
-                                       
                 print (e,                             \
                        np.max(l1_spks.flatten()),     \
                        np.min(l1_spks.flatten()),     \
@@ -570,6 +590,7 @@ class Solver():
                        np.sum(l2_spks.flatten()),     \
                        np.average(l2_spks.flatten()), \
                        np.std(l2_spks.flatten()))
+                ###########################################
                 
             # decay epsilon
             self.decay_epsilon()
@@ -580,7 +601,7 @@ class Solver():
             print (mean_score)
             
 
-agent = Solver(n_episodes=1)
+agent = Solver(n_episodes=100)
 agent.run()
 
 '''
@@ -588,7 +609,7 @@ T = agent.n_episodes * (agent.active_T + agent.rest_T)
 steps = agent.n_episodes * (agent.active_steps + agent.rest_steps)
 Ts = np.linspace(0.0, T, steps)
 '''
-
+'''
 Ts = np.linspace(0.0, agent.time_elapsed, agent.total_steps)
 
 # this annoing as hell.
@@ -599,7 +620,7 @@ es = np.array(es)[:, 0:10, 0]
 
 plt.plot(Ts, es)
 plt.show()
-    
+''' 
     
     
     
