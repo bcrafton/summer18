@@ -242,9 +242,9 @@ class RSTDP_group:
     def update(self, prev_state, prev_value, state, value, reward):
         d = reward + (self.gamma * value) - prev_value
         
-        print( np.shape(self.e), np.shape(prev_state), prev_value, np.shape(state), value, reward)
+        # print( np.shape(self.e), np.shape(prev_state), prev_value, np.shape(state), value, reward)
         
-        dw = (self.alpha * (d + value - prev_value) * self.e) - (self.alpha * (value - prev_value) * np.transpose(prev_state))
+        dw = (self.alpha * (d + value - prev_value) * self.e) - (self.alpha * (value - prev_value) * prev_state)
         self.w += dw
         
 #############
@@ -525,7 +525,9 @@ class Solver():
             # l1 -> l2 connections
             l1_l2_spk = l1_exc_spk
             l1_l2_I = self.l1_l2_syn.step(t, self.dt, l1_l2_spk, l2_exc_spk)
-            self.l1_l2_syn.update(prev_state, prev_value, state, value, reward)
+            
+            tmp = np.copy(l1_l2_spk).reshape(128, 1)
+            self.l1_l2_syn.update(tmp, prev_value, tmp, value, reward)
             
             # l2 recurrent connections
             l2_exc_spk = self.l2_exc_lif.step(t, self.dt, l1_l2_I.flatten(), l2_inh_I.flatten())
@@ -560,7 +562,7 @@ class Solver():
             action = self.choose_action(value)
             next_state, reward, done, _ = self.env.step(action)
             
-            prev_state = state
+            prev_l1_spks = l1_spks
             prev_value = value
             
             i=0
@@ -568,13 +570,16 @@ class Solver():
                 ###########################################     
                 l1_spks, l2_spks = self.run_snn(state)
                 value = np.max(l2_spks) # not sure if correct to do this ... bc choose action randomizes
-                _, _ = self.train_snn(prev_state, prev_value, state, value, reward)
+                _, _ = self.train_snn(prev_l1_spks, prev_value, l1_spks, value, reward)
                 action = self.choose_action(l2_spks)
                 next_state, reward, done, _ = self.env.step(action)
                 ###########################################
                 next_state = self.preprocess_state(next_state)
                 state = next_state
                 i += 1
+                
+                prev_l1_spks = l1_spks
+                prev_value = value
                 ###########################################
                 print ('----------')
                 print (e,                             \
