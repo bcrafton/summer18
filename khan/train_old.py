@@ -304,6 +304,10 @@ while ex < NUM_EX:
     print np.std(Syn.w), np.max(Syn.w), np.min(Syn.w) 
     print np.sum(spk_count, axis=0)
     
+    if (ex % 1000 == 0 and args.train):
+        np.save('XeAe_trained_' + str(ex), Syn.w)
+        np.save('theta_trained_' + str(ex), lif_exc.theta)
+    
     if np.sum(spk_count[ex]) < 5:
         spk_count[ex] = 0
         input_intensity += 0.1
