@@ -1,15 +1,9 @@
 
 import numpy as np
 import matplotlib.cm as cmap
-import brian as b
+import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
 
-
-def plot_2d_input_weights(weights):
-    fig = b.figure(0, figsize = (18, 18))
-    im2 = b.imshow(weights, vmin = 0, vmax = 1.0, cmap = cmap.get_cmap('hot_r'))
-    b.colorbar(im2)
-    fig.canvas.draw()
-    return im2, fig
     
 # 784 x 400
 weights1 = np.load('XeAe_trained.npy')
@@ -25,8 +19,9 @@ for ii in xrange(20):
                 y = ii * 28 + kk
                 x = jj * 28 + ll
                 weights2[x][y] = weights1[ii * 20 + jj][kk * 28 + ll]
-
+                
 weights2 = np.transpose(weights2)
 
-plot_2d_input_weights(weights2)
-b.show()
+# imgplot = plt.imshow(weights2, cmap=cmap.get_cmap('hot_r'))
+# plt.show()
+plt.imsave('10k.png', weights2, cmap=cmap.get_cmap('hot_r'))
