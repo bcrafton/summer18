@@ -68,7 +68,7 @@ class LIF_group:
         dgi = -(self.gi / self.gi_tau * dt) 
         
         # update state variables
-        self.v += dv * nrefrac
+        self.v += nrefrac * dv
         self.ge += (dge + Iine) * nrefrac
         self.gi += (dgi + Iini) * nrefrac
                 
@@ -218,7 +218,7 @@ lif_exc = LIF_group(N=N,                     \
                     adapt=args.train,        \
                     tau=1e-1,                \
                     theta=theta,             \
-                    vthr=-72e-3,             \
+                    vthr=-20e-3 - 52e-3,     \
                     vrest=-65e-3,            \
                     vreset=-65e-3,           \
                     refrac_per=5e-3,         \
@@ -229,10 +229,10 @@ lif_exc = LIF_group(N=N,                     \
 lif_inh = LIF_group(N=N,                      \
                     adapt=False,              \
                     tau=1e-2,                 \
-                    theta=0.0,                \
+                    theta=0,                  \
                     vthr=-40e-3,              \
                     vrest=-60e-3,             \
-                    vreset=-60e-3,            \
+                    vreset=-45e-3,            \
                     refrac_per=2e-3,          \
                     i_offset=-85e-3,          \
                     tc_theta=1e7*1e-3,        \
@@ -242,20 +242,18 @@ lif_inh = LIF_group(N=N,                      \
 
 print "starting sim"
 start = time.time()
+    
+I = np.zeros(shape=(N, 1))
+Iie = np.zeros(shape=(N, 1))
+Iei = np.zeros(shape=(N, 1))
 
 spk_count = np.zeros(shape=(NUM_EX, N))
 labels = np.zeros(NUM_EX)
 
 ex = 0
-input_intensity = 2.00
+input_intensity = 2
 
 while ex < NUM_EX:
-    _I = np.zeros(shape=(N))
-    _Iie = np.zeros(shape=(N))
-    _Iei = np.zeros(shape=(N))
-    _lif_exc_spkd = np.zeros(shape=(N))
-    _lif_inh_spkd = np.zeros(shape=(N))
-
     #############
     spkd = np.zeros(N)    
     for s in range(active_steps):
@@ -270,42 +268,30 @@ while ex < NUM_EX:
 
         spk = np.random.rand(784) < rates * dt
         
-        I = Syn.step(t, dt, spk, _lif_exc_spkd)
-        lif_exc_spkd = lif_exc.step(t, dt, _I.flatten(), _Iie.flatten())
+        I = Syn.step(t, dt, spk, spkd)
+        spkd = lif_exc.step(t, dt, I.flatten(), Iie.flatten())
         
-        spk_count[ex] += lif_exc_spkd
+        spk_count[ex] += spkd
         
-        Iei = np.dot(np.transpose(_lif_exc_spkd), wei)
-        lif_inh_spkd = lif_inh.step(t, dt, _Iei.flatten())
+        Iei = np.dot(np.transpose(spkd), wei)
+        spkd = lif_inh.step(t, dt, Iei.flatten())
         
-        Iie = np.dot(np.transpose(_lif_inh_spkd), wie)
-        
-        _I = I
-        _Iie = Iie
-        _Iei = Iei
-        _lif_exc_spkd = lif_exc_spkd
-        _lif_inh_spkd = lif_inh_spkd
+        Iie = np.dot(np.transpose(spkd), wie)
     #############
     for s in range(rest_steps):
         t = rest_Ts[s]
         
         spk = np.zeros(784)
         
-        I = Syn.step(t, dt, spk, _lif_exc_spkd)
-        lif_exc_spkd = lif_exc.step(t, dt, _I.flatten(), _Iie.flatten())
+        I = Syn.step(t, dt, spk, spkd)
+        spkd = lif_exc.step(t, dt, I.flatten(), Iie.flatten())
         
-        spk_count[ex] += lif_exc_spkd
+        spk_count[ex] += spkd
         
-        Iei = np.dot(np.transpose(_lif_exc_spkd), wei)
-        lif_inh_spkd = lif_inh.step(t, dt, _Iei.flatten())
+        Iei = np.dot(np.transpose(spkd), wei)
+        spkd = lif_inh.step(t, dt, Iei.flatten())
         
-        Iie = np.dot(np.transpose(_lif_inh_spkd), wie)
-        
-        _I = I
-        _Iie = Iie
-        _Iei = Iei
-        _lif_exc_spkd = lif_exc_spkd
-        _lif_inh_spkd = lif_inh_spkd
+        Iie = np.dot(np.transpose(spkd), wie)
     #############
     
     lif_exc.reset()
@@ -322,25 +308,18 @@ while ex < NUM_EX:
         spk_count[ex] = 0
         input_intensity += 0.1
     else:
-        input_intensity = 2.00
+        input_intensity = 2
         ex += 1    
 
 end = time.time()
 print ("total time taken: " + str(end - start))
 
 if args.train:
-    print "saving weights"
     np.save('XeAe_trained', Syn.w)
     np.save('theta_trained', lif_exc.theta)
 else:
-    num_assign = int(NUM_EX / 2) + int(NUM_EX % 2)
-    num_test = int(NUM_EX / 2)
-    
-    print "saving results"
-    np.save('./results/assign_spks_'   + str(NUM_EX), spk_count[0:num_assign])
-    np.save('./results/assign_labels_' + str(NUM_EX), labels[0:num_assign])
-    np.save('./results/test_spks_'   + str(NUM_EX), spk_count[num_assign:num_assign+num_test])
-    np.save('./results/test_labels_' + str(NUM_EX), labels[num_assign:num_assign+num_test])
+    np.save('./results/spks_'   + str(NUM_EX), spk_count)
+    np.save('./results/labels_' + str(NUM_EX), labels)
 #############
 
 
