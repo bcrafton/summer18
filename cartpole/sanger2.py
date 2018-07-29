@@ -28,6 +28,7 @@ def update_elig(elig, grad):
       elig = elig + grad
       elig = elig / np.max(elig)
 
+  print (np.average(elig))
   return elig
 
 def sigmoid(x):

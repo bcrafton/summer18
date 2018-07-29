@@ -1,0 +1,1 @@
+PARSELY.pInit({"apikey":"medium.com","bundle":"/code/ptrack-v1.1.0-engagedtime-slots.js","customizations":null,"track_third_party_cookies":true,"track_ip_addresses":true,"settings":{"tracker":true,"widget":false,"debug":false},"uuid":"b40ad703-58ac-489a-ae95-833c557f7903","network_uuid":"92c17551-1758-443b-8c08-816b75a09825","apikey_uuid":"b40ad703-58ac-489a-ae95-833c557f7903"});

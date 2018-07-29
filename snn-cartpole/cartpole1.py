@@ -240,11 +240,7 @@ class RSTDP_group:
             self.e = np.zeros(shape=(self.N, self.M))
                 
     def update(self, prev_state, prev_value, state, value, reward):
-        d = reward + (self.gamma * value) - prev_value
-        
-        # print( np.shape(self.e), np.shape(prev_state), prev_value, np.shape(state), value, reward)
-        
-        dw = (self.alpha * (d + value - prev_value) * self.e) - (self.alpha * (value - prev_value) * prev_state)
+        dw = (self.alpha * (reward + value - prev_value) * self.e)
         self.w += dw
         
 #############
