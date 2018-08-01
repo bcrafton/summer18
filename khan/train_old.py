@@ -1,11 +1,10 @@
 
 import numpy as np
-import matplotlib.pyplot as plt
 import random
 import math
-import cPickle as pickle
 import gzip
 import time
+import pickle
 import argparse
 
 parser = argparse.ArgumentParser()
@@ -19,7 +18,7 @@ np.random.seed(0)
 def load_data():
   global training_set, training_labels, testing_set, testing_labels
   f = gzip.open('mnist.pkl.gz', 'rb')
-  train, valid, test = pickle.load(f)
+  train, valid, test = pickle.load(f) 
   f.close()
 
   [training_set, training_labels] = train
@@ -195,10 +194,8 @@ if args.train:
     w = np.load('./random/XeAe.npy')
     theta = np.ones(N) * 20e-3
 else:
-    # w = np.load('./trained/XeAe_trained.npy')
-    # theta = np.load('./trained/theta_trained.npy')
-    w = np.load('./weights/XeAe.npy')
-    theta = np.load('./weights/theta_A.npy')
+    w = np.load('./10k/XeAe_trained.npy')
+    theta = np.load('./10k/theta_trained.npy')
     
 wei = np.load('./random/AeAi.npy')
 wie = np.load('./random/AiAe.npy')
@@ -240,7 +237,7 @@ lif_inh = LIF_group(N=N,                      \
 
 #############
 
-print "starting sim"
+print ("starting sim")
 start = time.time()
     
 I = np.zeros(shape=(N, 1))
@@ -298,11 +295,11 @@ while ex < NUM_EX:
     lif_inh.reset()
     Syn.reset()
     
-    print "----------"
-    print ex, input_intensity
-    print np.sum(spk_count)
-    print np.std(Syn.w), np.max(Syn.w), np.min(Syn.w) 
-    print np.sum(spk_count, axis=0)
+    print ("----------")
+    print (ex, input_intensity)
+    print (np.sum(spk_count))
+    print (np.std(Syn.w), np.max(Syn.w), np.min(Syn.w))
+    print (np.sum(spk_count, axis=0))
     
     if (ex % 1000 == 0 and args.train):
         np.save('XeAe_trained_' + str(ex), Syn.w)
@@ -319,11 +316,18 @@ end = time.time()
 print ("total time taken: " + str(end - start))
 
 if args.train:
+    print "saving weights"
     np.save('XeAe_trained', Syn.w)
     np.save('theta_trained', lif_exc.theta)
 else:
-    np.save('./results/spks_'   + str(NUM_EX), spk_count)
-    np.save('./results/labels_' + str(NUM_EX), labels)
+    num_assign = int(NUM_EX / 2) + int(NUM_EX % 2)
+    num_test = int(NUM_EX / 2)
+    
+    print "saving results"
+    np.save('./results/assign_spks',   spk_count[0:num_assign])
+    np.save('./results/assign_labels', labels[0:num_assign])
+    np.save('./results/test_spks',     spk_count[num_assign:num_assign+num_test])
+    np.save('./results/test_labels',   labels[num_assign:num_assign+num_test])
 #############
 
 

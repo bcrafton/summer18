@@ -46,14 +46,25 @@ load_data()
 
 #####################################
 
+'''
 scaler = StandardScaler()
 scaler.fit(training_set)
 
 training_set = scaler.transform(training_set)
 testing_set = scaler.transform(testing_set)
+'''
 
-pca = PCA(.95)
-pca.fit(training_set)
+for ii in range(50000):
+    training_set[ii] = training_set[ii] / np.average(training_set[ii])
+    training_set[ii] = training_set[ii] / np.max(training_set[ii])
+for ii in range(10000):    
+    testing_set[ii] = testing_set[ii] / np.average(testing_set[ii])
+    testing_set[ii] = testing_set[ii] / np.max(testing_set[ii])
+
+#####################################
+
+# pca = PCA(.95)
+# pca.fit(training_set)
 
 # can see values i think: 
 # http://scikit-learn.org/stable/modules/generated/sklearn.decomposition.PCA.html
@@ -69,7 +80,7 @@ pca.fit(training_set)
 
 w = np.absolute(np.random.normal(0.1, 0.05, size=(layer1, layer2)))
 
-NUM_ITRS = 5
+NUM_ITRS = 1
 NUM_TRAIN_EXAMPLES = 50000
 NUM_TEST_EXAMPLES = 10000
 
@@ -81,40 +92,69 @@ for itr in range(NUM_ITRS):
     wy = np.dot(w, y)
     d = x - wy
 
-    # we need to use 1e-4 bc sometimes col_norm actually goes to 0.    
-    # that seems like a problem ...
-    w = np.clip(w + 1e-8 * d.reshape(784, 1) * y.reshape(1, 400), 1e-6, 1.0)
+    w = np.clip(w + 1e-9 * d.reshape(layer1, 1) * y.reshape(1, layer2), 1e-9, 1.0)
     
-    if (i % 100 == 0):
-      col_norm = np.average(w, axis = 0)
-      if (np.count_nonzero(col_norm) < 400):
-        print col_norm
-      col_norm = 0.1 / col_norm
-      for j in range(layer2):
-        w[:, j] *= col_norm[j]
+    # if (i % 100 == 0):
+    col_norm = np.average(w, axis = 0)
+    col_norm = 0.1 / col_norm
+    for j in range(layer2):
+      w[:, j] *= col_norm[j]
   
 print np.std(w), np.average(w), np.max(w), np.min(w)
-  
+
+#####################################
+
 train_spks = np.zeros(shape=(NUM_TRAIN_EXAMPLES, layer2))
+max_rates = np.zeros(layer2)
+assignments = np.zeros(layer2)
 for i in range(NUM_TRAIN_EXAMPLES):
   x = training_set[i]
   y = np.dot(x, w)
-  train_spks[i] = y
+  train_spks[i] = y / np.average(y) # normalize it to how much the whole image spiked.
+  for j in range(layer2):
+    if max_rates[j] < y[j]:
+      max_rates[j] = y[j]
+      assignments[j] = training_labels[i]
+  
+#####################################
   
 test_spks = np.zeros(shape=(NUM_TEST_EXAMPLES, layer2))
+correct = 0
 for i in range(NUM_TEST_EXAMPLES):
   x = testing_set[i]
   y = np.dot(x, w)
   test_spks[i] = y
+  
+  max_spikes = 0
+  predict = 0
+  for j in range(10):
+    mask = assignments == j
+    num_assignments = np.count_nonzero(mask)
+    spikes = y / np.average(y) * mask
+    
+    if np.sum(spikes):
+      spikes = np.sum(spikes) / num_assignments
+    else:
+      spikes = 0
+      
+    if max_spikes < spikes:
+      max_spikes = spikes
+      predict = j
+      
+  correct += predict == training_labels[i]
+
+print (1.0 * correct) / NUM_TEST_EXAMPLES 
 
 #####################################
 
-# this performs 91.71 without pca transformation ... wud like to see the assignments performance with pca
 logisticRegr = LogisticRegression(solver = 'lbfgs')
 logisticRegr.fit(train_spks, training_labels)
-
 score = logisticRegr.score(test_spks, testing_labels)
 print(score)
+
+
+
+
 
 
 
