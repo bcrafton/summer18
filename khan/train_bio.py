@@ -8,8 +8,8 @@ import time
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--examples', type=int, default=1000)
-parser.add_argument('--train', type=int, default=False)
+parser.add_argument('--examples', type=int, default=150000)
+parser.add_argument('--train', type=int, default=True)
 args = parser.parse_args()
 
 np.random.seed(0)

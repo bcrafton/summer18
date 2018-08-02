@@ -60,6 +60,7 @@ training_input_numbers = np.load(assign_labels)[:]
 testing_result_monitor = np.load(test_spks)[:, :]
 testing_input_numbers = np.load(test_labels)[:]
 
+num_tests = len(testing_result_monitor)
 num_examples = len(training_result_monitor)
 assignments = get_new_assignments(training_result_monitor[:], training_input_numbers[:])
 
@@ -72,11 +73,11 @@ correct = len(np.where(difference == 0)[0])
 incorrect = np.where(difference != 0)[0]
 
 accuracy = correct/float(num_examples) * 100
-total_spks = np.sum(testing_result_monitor)
+total_spks = np.sum(testing_result_monitor) + np.sum(training_result_monitor)
 
 print "accuracy: " + str(accuracy)
 print "total spks: " + str(total_spks)
-print "spikes per: " + str(total_spks / num_examples)
+print "spikes per: " + str(total_spks / (num_examples + num_tests))
 
 
 
