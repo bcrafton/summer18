@@ -1,6 +1,5 @@
 
 import numpy as np
-import matplotlib.pyplot as plt
 import random
 import math
 import cPickle as pickle
@@ -252,6 +251,9 @@ ex = 0
 input_intensity = 2.00
 
 while ex < NUM_EX:
+    ex_number = ex % 50000
+    prev_weights = np.copy(Syn.w)
+
     lif_exc_spkd = np.zeros(shape=(N))
     lif_inh_spkd = np.zeros(shape=(N))
 
@@ -261,11 +263,11 @@ while ex < NUM_EX:
         t = active_Ts[s]
         
         if args.train:
-            rates = training_set[ex] * 32.0 * input_intensity
-            labels[ex] = training_labels[ex]
+            rates = training_set[ex_number] * 32.0 * input_intensity
+            labels[ex] = training_labels[ex_number]
         else:
-            rates = testing_set[ex] * 32.0 * input_intensity
-            labels[ex] = testing_labels[ex]
+            rates = testing_set[ex_number] * 32.0 * input_intensity
+            labels[ex] = testing_labels[ex_number]
 
         spk = np.random.rand(784) < rates * dt
         
@@ -298,16 +300,26 @@ while ex < NUM_EX:
     Syn.reset()
     
     print "----------"
-    print ex, input_intensity
+    print ex, ex_number, input_intensity
     print np.sum(spk_count)
     print np.std(Syn.w), np.max(Syn.w), np.min(Syn.w) 
     print np.sum(spk_count, axis=0)
+
+    if (ex % 5000 == 0 and args.train):
+        np.save('XeAe_trained_' + str(ex), Syn.w)
+        np.save('theta_trained_' + str(ex), lif_exc.theta)
     
     if np.sum(spk_count[ex]) < 5:
         spk_count[ex] = 0
         input_intensity += 0.1
+        Syn.w = prev_weights
+    elif np.sum(spk_count[ex]) > 100 and dt > 1e-6:
+        spk_count[ex] = 0
+        dt *= 0.5
+        Syn.w = prev_weights
     else:
         input_intensity = 2.00
+        dt = 0.5e-3
         ex += 1    
 
 end = time.time()
