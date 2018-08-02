@@ -197,8 +197,8 @@ if args.train:
     w = np.load('./random/XeAe.npy')
     theta = np.ones(N) * 20e-3
 else:
-    w = np.load('./weights/XeAe.npy')
-    theta = np.load('./weights/theta_A.npy')
+    w = np.load('./trained/XeAe_trained.npy')
+    theta = np.load('./trained/theta_trained.npy')
     
 wei = np.load('./random/AeAi.npy')
 wie = np.load('./random/AiAe.npy')
@@ -304,8 +304,8 @@ while ex < NUM_EX:
     print np.sum(spk_count, axis=0)
     
     if (ex % 5000 == 0 and args.train):
-        np.save('pos_XeAe_trained_' + str(ex), Syn.w)
-        np.save('pos_theta_trained_' + str(ex), lif_exc.theta)
+        np.save('XeAe_trained_' + str(ex), Syn.w)
+        np.save('theta_trained_' + str(ex), lif_exc.theta)
     
     if np.sum(spk_count[ex]) < 5:
         spk_count[ex] = 0
