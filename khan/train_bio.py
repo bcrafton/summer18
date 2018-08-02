@@ -178,7 +178,7 @@ N = 400
 # dt = 1e-4
 # dt = 0.5e-3
 # 0.5e-3 = 5e-4
-dt = 2.5e-4
+dt = 0.5e-3
 
 active_T = 0.35
 active_steps = int(active_T / dt)
@@ -252,7 +252,7 @@ input_intensity = 2.00
 
 while ex < NUM_EX:
     ex_number = ex % 50000
-    prev_weights = np.copy(Syn.w)
+    # prev_weights = np.copy(Syn.w)
 
     lif_exc_spkd = np.zeros(shape=(N))
     lif_inh_spkd = np.zeros(shape=(N))
@@ -311,12 +311,12 @@ while ex < NUM_EX:
     
     if np.sum(spk_count[ex]) < 5:
         spk_count[ex] = 0
-        input_intensity += 0.1
-        Syn.w = prev_weights
+        input_intensity += 0.5
+        # Syn.w = prev_weights
     elif np.sum(spk_count[ex]) > 100 and dt > 1e-6:
         spk_count[ex] = 0
         dt *= 0.5
-        Syn.w = prev_weights
+        # Syn.w = prev_weights
     else:
         input_intensity = 2.00
         dt = 0.5e-3
