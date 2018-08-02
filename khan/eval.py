@@ -61,22 +61,23 @@ testing_result_monitor = np.load(test_spks)[:, :]
 testing_input_numbers = np.load(test_labels)[:]
 
 num_examples = len(training_result_monitor)
+num_tests = len(testing_result_monitor)
 assignments = get_new_assignments(training_result_monitor[:], training_input_numbers[:])
 
-test_results = np.zeros((10, num_examples))
-for i in xrange(num_examples):
+test_results = np.zeros((10, num_tests))
+for i in xrange(num_tests):
     test_results[:, i] = get_recognized_number_ranking(assignments, testing_result_monitor[i, :])
 
-difference = test_results[0, :] - testing_input_numbers[0:num_examples]
+difference = test_results[0, :] - testing_input_numbers[0:num_tests]
 correct = len(np.where(difference == 0)[0])
 incorrect = np.where(difference != 0)[0]
 
-accuracy = correct/float(num_examples) * 100
+accuracy = correct/float(num_tests) * 100
 total_spks = np.sum(testing_result_monitor)
 
 print "accuracy: " + str(accuracy)
 print "total spks: " + str(total_spks)
-print "spikes per: " + str(total_spks / num_examples)
+print "spikes per: " + str(total_spks / num_tests)
 
 
 

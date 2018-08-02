@@ -308,6 +308,7 @@ while ex < NUM_EX:
         spk_count[ex] = 0
         input_intensity += 0.1
     elif np.sum(spk_count[ex]) > 100 and dt > 1e-6:
+        spk_count[ex] = 0
         dt *= 0.5
     else:
         input_intensity = 2
