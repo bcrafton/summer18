@@ -179,7 +179,7 @@ N = 400
 # dt = 1e-4
 # dt = 0.5e-3
 # 0.5e-3 = 5e-4
-dt = 2.5e-4
+dt = 0.5e-3
 
 active_T = 0.35
 active_steps = int(active_T / dt)
@@ -197,8 +197,6 @@ if args.train:
     w = np.load('./random/XeAe.npy')
     theta = np.ones(N) * 20e-3
 else:
-    # w = np.load('./trained/XeAe_trained.npy')
-    # theta = np.load('./trained/theta_trained.npy')
     w = np.load('./weights/XeAe.npy')
     theta = np.load('./weights/theta_A.npy')
     
@@ -234,7 +232,7 @@ lif_inh = LIF_group(N=N,                      \
                     theta=0.0,                \
                     vthr=60e-3,               \
                     vrest=40e-3,              \
-                    vreset=40e-3,             \
+                    vreset=50e-3,             \
                     refrac_per=2e-3,          \
                     i_offset=15e-3,           \
                     tc_theta=1e7*1e-3,        \
@@ -252,6 +250,8 @@ ex = 0
 input_intensity = 2.00
 
 while ex < NUM_EX:
+    prev_weights = np.copy(Syn.w)
+
     lif_exc_spkd = np.zeros(shape=(N))
     lif_inh_spkd = np.zeros(shape=(N))
 
@@ -298,17 +298,27 @@ while ex < NUM_EX:
     Syn.reset()
     
     print "----------"
-    print ex, input_intensity
+    print ex, dt, input_intensity
     print np.sum(spk_count)
     print np.std(Syn.w), np.max(Syn.w), np.min(Syn.w) 
     print np.sum(spk_count, axis=0)
     
+    if (ex % 5000 == 0 and args.train):
+        np.save('pos_XeAe_trained_' + str(ex), Syn.w)
+        np.save('pos_theta_trained_' + str(ex), lif_exc.theta)
+    
     if np.sum(spk_count[ex]) < 5:
         spk_count[ex] = 0
-        input_intensity += 0.1
+        input_intensity += 0.5
+        Syn.w = prev_weights
+    elif np.sum(spk_count[ex]) > 50 and dt > 1e-6:
+        spk_count[ex] = 0
+        dt *= 0.5
+        Syn.w = prev_weights
     else:
         input_intensity = 2.00
-        ex += 1    
+        dt = 0.5e-3
+        ex += 1
 
 end = time.time()
 print ("total time taken: " + str(end - start))
