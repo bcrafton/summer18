@@ -74,7 +74,7 @@ class LIF_group:
         self.ge += (dge + Iine) * nrefrac
         self.gi += (dgi + Iini) * nrefrac
         
-        self.Vs.append(self.v)
+        # self.Vs.append(self.v)
                 
         # reset.
         spkd = self.v > (self.theta + self.vthr)
@@ -222,7 +222,7 @@ lif_exc = LIF_group(N=N,                     \
                     adapt=args.train,        \
                     tau=1e-1,                \
                     theta=theta,             \
-                    vthr=45e-3,              \
+                    vthr=-20e-3 + 65e-3,     \
                     vrest=52e-3,             \
                     vreset=52e-3,            \
                     refrac_per=5e-3,         \
@@ -345,7 +345,7 @@ else:
     np.save('./results/test_labels_' + str(NUM_EX), labels[num_assign:num_assign+num_test])
 #############
 
-plt.plot(np.linspace(0, t, steps), lif_exc.Vs)
-plt.show()
+# plt.plot(np.linspace(0, t, steps), lif_exc.Vs)
+# plt.show()
 
 
