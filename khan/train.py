@@ -55,6 +55,8 @@ class LIF_group:
         self.v = np.ones(shape=(N)) * self.vreset
         self.last_spk = np.ones(shape=(N)) * -1
         
+        self.Vs = []
+        
     def step(self, t, dt, Iine, Iini=0):        
         nrefrac = (t - self.last_spk - self.refrac_per) > 0
             
@@ -71,6 +73,8 @@ class LIF_group:
         self.v += dv * nrefrac
         self.ge += (dge + Iine) * nrefrac
         self.gi += (dgi + Iini) * nrefrac
+        
+        self.Vs.append(self.v)
                 
         # reset.
         spkd = self.v > (self.theta + self.vthr)
@@ -180,14 +184,14 @@ N = 400
 # dt = 0.5e-3
 # 0.5e-3 = 5e-4
 dt = 0.5e-3
+t = 0.0
+steps = 0
 
 active_T = 0.35
 active_steps = int(active_T / dt)
-active_Ts = np.linspace(0, active_T, active_steps)
 
 rest_T = 0.15
 rest_steps = int(rest_T / dt)
-rest_Ts = np.linspace(active_T, active_T + rest_T, rest_steps)
 
 NUM_EX = args.examples
 
@@ -250,6 +254,7 @@ ex = 0
 input_intensity = 2.00
 
 while ex < NUM_EX:
+    ex_number = ex % 50000
     prev_weights = np.copy(Syn.w)
 
     lif_exc_spkd = np.zeros(shape=(N))
@@ -258,14 +263,15 @@ while ex < NUM_EX:
     #############
     spkd = np.zeros(N)    
     for s in range(active_steps):
-        t = active_Ts[s]
+        t += dt
+        steps += 1
         
         if args.train:
-            rates = training_set[ex] * 32.0 * input_intensity
-            labels[ex] = training_labels[ex]
+            rates = training_set[ex_number] * 32.0 * input_intensity
+            labels[ex] = training_labels[ex_number]
         else:
-            rates = testing_set[ex] * 32.0 * input_intensity
-            labels[ex] = testing_labels[ex]
+            rates = testing_set[ex_number] * 32.0 * input_intensity
+            labels[ex] = testing_labels[ex_number]
 
         spk = np.random.rand(784) < rates * dt
         
@@ -279,7 +285,8 @@ while ex < NUM_EX:
         spk_count[ex] += lif_exc_spkd
     #############
     for s in range(rest_steps):
-        t = rest_Ts[s]
+        t += dt
+        steps += 1
         
         spk = np.zeros(784)
         
@@ -298,7 +305,7 @@ while ex < NUM_EX:
     Syn.reset()
     
     print "----------"
-    print ex, dt, input_intensity
+    print ex, ex_number, dt, input_intensity
     print np.sum(spk_count)
     print np.std(Syn.w), np.max(Syn.w), np.min(Syn.w) 
     print np.sum(spk_count, axis=0)
@@ -338,6 +345,7 @@ else:
     np.save('./results/test_labels_' + str(NUM_EX), labels[num_assign:num_assign+num_test])
 #############
 
-
+plt.plot(np.linspace(0, t, steps), lif_exc.Vs)
+plt.show()
 
 
