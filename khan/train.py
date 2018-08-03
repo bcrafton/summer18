@@ -232,7 +232,7 @@ lif_inh = LIF_group(N=N,                      \
                     theta=0.0,                \
                     vthr=60e-3,               \
                     vrest=40e-3,              \
-                    vreset=50e-3,             \
+                    vreset=55e-3,             \
                     refrac_per=2e-3,          \
                     i_offset=15e-3,           \
                     tc_theta=1e7*1e-3,        \
