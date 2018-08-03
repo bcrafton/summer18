@@ -15,7 +15,7 @@ from keras.optimizers import Adam
 class DQNCartPoleSolver():
     def __init__(self):
         self.env = gym.make('CartPole-v0')
-        self.gamma = 0.95
+        self.gamma = 1.0
         self.epsilon = 1.0
         self.epsilon_min = 0.01
         self.epsilon_decay = 0.995
@@ -58,6 +58,8 @@ class DQNCartPoleSolver():
             state = self.preprocess_state(self.env.reset())
             done = False
             i = 0
+            
+            print (self.model.predict(state))
             
             while not done:
                 action = self.choose_action(state)

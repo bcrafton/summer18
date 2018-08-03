@@ -9,7 +9,15 @@ def sigmoid_gradient(x):
   gz = sigmoid(x)
   ret = gz * (1 - gz)
   return ret
-    
+  
+def relu(x):
+  ret = x * (x > 0.0)
+  return ret
+  
+def relu_gradient(x):
+  ret = 1.0 * (x > 0.0)
+  return ret
+  
 class NN:
     def __init__(self, size, weights, alpha, bias):
         # check to make sure we have the right number of layers and weights
@@ -42,10 +50,10 @@ class NN:
                 Z[ii] = None
             elif ii == self.num_layers-1:
                 Z[ii] = np.dot(A[ii-1], self.weights[ii-1])
-                A[ii] = sigmoid(Z[ii])
+                A[ii] = relu(Z[ii])
             else:
                 Z[ii] = np.dot(A[ii-1], self.weights[ii-1])
-                A[ii] = np.append(sigmoid(Z[ii]), 1)
+                A[ii] = np.append(relu(Z[ii]), 1)
                 
         return A[self.num_layers-1]
 
@@ -62,10 +70,10 @@ class NN:
                 Z[ii] = None
             elif ii == self.num_layers-1:
                 Z[ii] = np.dot(A[ii-1], self.weights[ii-1])
-                A[ii] = sigmoid(Z[ii])
+                A[ii] = relu(Z[ii])
             else:
                 Z[ii] = np.dot(A[ii-1], self.weights[ii-1])
-                A[ii] = np.append(sigmoid(Z[ii]), 1)
+                A[ii] = np.append(relu(Z[ii]), 1)
                 
         # if u write things out, then this becomes much easier.
         # D = [3,2,1]
@@ -82,7 +90,7 @@ class NN:
             if ii == self.num_layers-1:
                 D[ii] = A[ii] - y
             else:
-                D[ii] = np.dot(D[ii+1], np.transpose(self.weights[ii])) * np.append(sigmoid_gradient(Z[ii]), 1)
+                D[ii] = np.dot(D[ii+1], np.transpose(self.weights[ii])) * np.append(relu_gradient(Z[ii]), 1)
                 if self.bias:
                     D[ii] = D[ii][:-1]
 
