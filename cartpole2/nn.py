@@ -30,6 +30,7 @@ class NN:
         self.size = size
         self.weights = weights
         self.alpha = alpha
+        self.bias = bias
         
     def predict(self, x):
         A = [None] * self.num_layers
@@ -75,21 +76,18 @@ class NN:
         # really shuda wrote this out, probably still a better way to code this.
         # gradient corresponds to weights, A, Z, D correspond to neurons
         # think it through urself u can also derive it.
+        
         for ii in range(self.num_layers-1, 0, -1):
+
             if ii == self.num_layers-1:
                 D[ii] = A[ii] - y
-                G[ii-1] = np.dot(A[ii-1].reshape(self.size[ii-1]+1, 1), D[ii].reshape(1, self.size[ii]))
-                self.weights[ii-1] -= self.alpha * G[ii-1]
-            elif ii+1 == self.num_layers-1:
-                D[ii] = np.dot(D[ii+1], np.transpose(self.weights[ii])) * np.append(sigmoid_gradient(Z[ii]), 1)
-                G[ii-1] = np.dot(A[ii-1].reshape(self.size[ii-1]+1, 1), D[ii][:-1].reshape(1, self.size[ii]))
-                self.weights[ii-1] -= self.alpha * G[ii-1]
             else:
-                D[ii] = np.dot(D[ii+1][:-1], np.transpose(self.weights[ii])) * np.append(sigmoid_gradient(Z[ii]), 1)
-                G[ii-1] = np.dot(A[ii-1].reshape(self.size[ii-1]+1, 1), D[ii][:-1].reshape(1, self.size[ii]))
-                self.weights[ii-1] -= self.alpha * G[ii-1]
-        
-                
+                D[ii] = np.dot(D[ii+1], np.transpose(self.weights[ii])) * np.append(sigmoid_gradient(Z[ii]), 1)
+                if self.bias:
+                    D[ii] = D[ii][:-1]
+
+            G[ii-1] = np.dot(A[ii-1].reshape(self.size[ii-1]+1, 1), D[ii].reshape(1, self.size[ii]))
+            self.weights[ii-1] -= self.alpha * G[ii-1]
                 
                 
                 
