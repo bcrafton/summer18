@@ -61,7 +61,8 @@ EPSILON = 0.12
 weights1 = np.random.uniform(0.0, 1.0, size=(LAYER1 + 1, LAYER2)) * 2 * EPSILON - EPSILON
 weights2 = np.random.uniform(0.0, 1.0, size=(LAYER2 + 1, LAYER3)) * 2 * EPSILON - EPSILON
 
-b2 = np.random.uniform(0.25, 0.75, size=(LAYER2 + 1, LAYER3)) * 2 * EPSILON - EPSILON
+b1 = np.random.uniform(0.25, 0.75, size=(LAYER1 + 1, LAYER3)) * 2 * EPSILON - EPSILON
+b2 = np.random.uniform(0.25, 0.75, size=(LAYER2, LAYER3)) * 2 * EPSILON - EPSILON
 
 NUM_TRAIN_EPOCHS = 100
 NUM_TRAIN_EXAMPLES = 50000
@@ -81,16 +82,23 @@ for epoch in range(NUM_TRAIN_EPOCHS):
         
         ANS = training_labels[ex] == 2
         
-        D3 = A3 - ANS
-        D2 = np.dot(D3, np.transpose(b2)) * np.append(sigmoid_gradient(Z2), 1)
-        
-        print (np.shape(D2))
-        
-        LOCAL_G2 = np.dot(A2.reshape(LAYER2 + 1, 1), D3.reshape(1, LAYER3))
-        LOCAL_G1 = np.dot(A1.reshape(LAYER1 + 1, 1), D2[:-1].reshape(1, LAYER2))
+        '''        
+        E = A3 - ANS
 
-        weights2 -= ALPHA * LOCAL_G2        
-        weights1 -= ALPHA * LOCAL_G1
+        G2 = E * A2.reshape(LAYER2 + 1, 1)
+        G1 = E * np.dot(A1.reshape(LAYER1 + 1, 1), sigmoid_gradient(Z2).reshape(1, LAYER2))
+
+        weights2 -= ALPHA * G2
+        weights1 -= ALPHA * G1 * b1
+        '''
+        E = A3 - ANS
+
+        G2 = E * A2.reshape(LAYER2 + 1, 1)
+        G1 = E * np.dot(A1.reshape(LAYER1 + 1, 1), sigmoid_gradient(Z2).reshape(1, LAYER2) * b2.reshape(1, LAYER2))
+
+        weights2 -= ALPHA * G2
+        weights1 -= ALPHA * G1
+        
 
     if ((epoch + 1) % 5 == 0):
         correct = 0

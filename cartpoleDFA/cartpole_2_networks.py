@@ -34,16 +34,16 @@ class DQNCartPoleSolver():
         weights1 = np.random.uniform(0.0, 1.0, size=(LAYER1 + 1, LAYER2)) * 2 * EPSILON - EPSILON
         weights2 = np.random.uniform(0.0, 1.0, size=(LAYER2 + 1, LAYER3)) * 2 * EPSILON - EPSILON
         
-        b1 = np.random.uniform(0.25, 0.75, size=(LAYER1 + 1, LAYER3)) * 2 * EPSILON - EPSILON
-        b2 = np.random.uniform(0.25, 0.75, size=(LAYER2 + 1, LAYER3)) * 2 * EPSILON - EPSILON
+        b1 = np.random.uniform(0.25, 0.75, size=(LAYER1, LAYER3)) * 2 * EPSILON - EPSILON
+        b2 = np.random.uniform(0.25, 0.75, size=(LAYER2, LAYER3)) * 2 * EPSILON - EPSILON
                         
         self.left = NNDFA(size=[LAYER1, LAYER2, LAYER3], weights=[weights1, weights2], fb_weights=[b1, b2], alpha=self.alpha, bias=True)
         ################################################################################################################################
         weights1 = np.random.uniform(0.0, 1.0, size=(LAYER1 + 1, LAYER2)) * 2 * EPSILON - EPSILON
         weights2 = np.random.uniform(0.0, 1.0, size=(LAYER2 + 1, LAYER3)) * 2 * EPSILON - EPSILON
         
-        b1 = np.random.uniform(0.25, 0.75, size=(LAYER1 + 1, LAYER3)) * 2 * EPSILON - EPSILON
-        b2 = np.random.uniform(0.25, 0.75, size=(LAYER2 + 1, LAYER3)) * 2 * EPSILON - EPSILON
+        b1 = np.random.uniform(0.25, 0.75, size=(LAYER1, LAYER3)) * 2 * EPSILON - EPSILON
+        b2 = np.random.uniform(0.25, 0.75, size=(LAYER2, LAYER3)) * 2 * EPSILON - EPSILON
                         
         self.right = NNDFA(size=[LAYER1, LAYER2, LAYER3], weights=[weights1, weights2], fb_weights=[b1, b2], alpha=self.alpha, bias=True)
         ################################################################################################################################

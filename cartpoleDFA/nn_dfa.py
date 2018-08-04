@@ -38,7 +38,7 @@ class NNDFA:
         # check to make sure that the sizes of the feed back layers matches up
         for ii in range(1, self.num_layers):
             if bias:
-                shape1 = (size[ii-1]+1, size[self.num_layers-1])
+                shape1 = (size[ii-1], size[self.num_layers-1])
                 shape2 = np.shape(fb_weights[ii-1])
             else:
                 assert(False)
@@ -99,11 +99,10 @@ class NNDFA:
         for ii in range(self.num_layers-1, 0, -1):
 
             if ii == self.num_layers-1:
-                D[ii] = A[ii] - y
+                E = A[ii] - y
+                D[ii] = E
             else:
-                D[ii] = np.dot(D[self.num_layers-1], np.transpose(self.fb_weights[ii])) * np.append(relu_gradient(Z[ii]), 1)
-                if self.bias:
-                    D[ii] = D[ii][:-1]
+                D[ii] = E * np.transpose(self.fb_weights[ii]) * relu_gradient(Z[ii])
 
             G[ii-1] = np.dot(A[ii-1].reshape(self.size[ii-1]+1, 1), D[ii].reshape(1, self.size[ii]))
             self.weights[ii-1] -= self.alpha * G[ii-1]
