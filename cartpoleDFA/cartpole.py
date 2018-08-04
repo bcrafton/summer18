@@ -7,7 +7,7 @@ from collections import deque
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.optimizers import Adam
-from nn import NN
+from nn_dfa import NNDFA
 
 class DQNCartPoleSolver():
     def __init__(self):
@@ -32,8 +32,11 @@ class DQNCartPoleSolver():
         
         weights1 = np.random.uniform(0.0, 1.0, size=(LAYER1 + 1, LAYER2)) * 2 * EPSILON - EPSILON
         weights2 = np.random.uniform(0.0, 1.0, size=(LAYER2 + 1, LAYER3)) * 2 * EPSILON - EPSILON
+        
+        b1 = np.random.uniform(0.25, 0.75, size=(LAYER1 + 1, LAYER3)) * 2 * EPSILON - EPSILON
+        b2 = np.random.uniform(0.25, 0.75, size=(LAYER2 + 1, LAYER3)) * 2 * EPSILON - EPSILON
                         
-        self.model = NN(size=[LAYER1, LAYER2, LAYER3], weights=[weights1, weights2], alpha=self.alpha, bias=True)
+        self.model = NNDFA(size=[LAYER1, LAYER2, LAYER3], weights=[weights1, weights2], fb_weights=[b1, b2], alpha=self.alpha, bias=True)
 
     def choose_action(self, state):
         if (np.random.random() <= self.epsilon):
@@ -73,7 +76,6 @@ class DQNCartPoleSolver():
 
             scores.append(i)
             mean_score = np.mean(scores)
-            
             
             if total_reward <= mean_score and self.epsilon < self.epsilon_max:
                 self.epsilon *= self.epsilon_inc
