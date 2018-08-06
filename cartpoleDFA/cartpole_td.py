@@ -28,8 +28,8 @@ class DQNCartPoleSolver():
         self.lmda = 0.90
         self.epsilon = 1.0
         self.epsilon_min = 0.01
-        self.epsilon_decay = 0.995
-        self.epsilon_max = 0.75
+        self.epsilon_decay = 0.999
+        self.epsilon_max = 0.25
         self.epsilon_inc = 1.005
         self.alpha = 1e-4
         self.alpha_decay = 0.00
@@ -38,31 +38,30 @@ class DQNCartPoleSolver():
         self.max_env_steps = 200
         
         self.num_layers = 3
-        LAYER1 = 8
-        LAYER2 = 24
-        LAYER3 = 2
+        self.LAYER1 = 8
+        self.LAYER2 = 24
+        self.LAYER3 = 2
         ################################################################################################################################
-        EPSILON = 0.12
         
-        weights1 = np.random.uniform(0.0, 0.12, size=(LAYER1+1, LAYER2)) 
-        weights2 = np.random.uniform(0.0, 0.12, size=(LAYER2+1, LAYER3)) 
+        weights1 = np.random.uniform(0.0, 1.0, size=(self.LAYER1+1, self.LAYER2)) 
+        weights2 = np.random.uniform(0.0, 1.0, size=(self.LAYER2+1, self.LAYER3)) 
         
-        self.model = nn_td(size=[LAYER1, LAYER2, LAYER3], weights=[weights1, weights2], alpha=self.alpha, gamma=self.gamma, lmda=self.lmda, bias=True)
+        self.model = nn_td(size=[self.LAYER1, self.LAYER2, self.LAYER3], weights=[weights1, weights2], alpha=self.alpha, gamma=self.gamma, lmda=self.lmda, bias=True)
         ################################################################################################################################
 
     def choose_action(self, state):
         values = self.model.predict(state)
-        
+
         if (np.random.random() <= self.epsilon):
             action = self.env.action_space.sample()
         else:
             action = np.argmax(values)
+
+        print(values)
+        return action, values
                 
-        print (values)
-        return action, values[action]
-                
-    def train(self, state, action, reward, value, prev_value):
-        self.model.train(state, action, reward, value, prev_value)
+    def train(self, state, prev_action, action, reward, prev_values, values):
+        self.model.train(state, prev_action, action, reward, prev_values, values)
 
     def run(self):
         scores = deque(maxlen=100)
@@ -74,27 +73,28 @@ class DQNCartPoleSolver():
             done = False
             state = preprocess(self.env.reset())
             
-            action, value = self.choose_action(state)
+            action, values = self.choose_action(state)
             next_state, reward, done, _ = self.env.step(action)
             state = preprocess(next_state)
-            prev_value = value
-         
+            prev_values = values
+            prev_action = action
+                
             while not done:            
-                action, value = self.choose_action(state)
-                self.train(state, action, reward, value, prev_value)
+                action, values = self.choose_action(state)
+                self.train(state, prev_action, action, reward, prev_values, values)
                 
                 next_state, reward, done, _ = self.env.step(action)
                 state = preprocess(next_state)
-                prev_value = value
+                prev_values = values
+                prev_action = action
 
                 i += 1
                 total_reward += reward
 
-            self.train(state, action, reward, 0.0, prev_value)
+            self.train(state, prev_action, action, reward, prev_values, np.zeros(self.LAYER3))
 
             scores.append(i)
             mean_score = np.mean(scores)
-            
             # print (np.std(self.model.e[0]), np.min(self.model.e[0]), np.max(self.model.e[0]))
             self.model.clear()
             

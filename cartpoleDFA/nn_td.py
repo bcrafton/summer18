@@ -51,9 +51,9 @@ class nn_td:
         self.e = [None] * (self.num_layers-1)
         for ii in range(self.num_layers-1):
             if bias:
-                self.e[ii] = np.zeros(shape=(size[ii]+1))
+                self.e[ii] = np.zeros(shape=(size[ii]+1, size[ii+1]))
             else:
-                self.e[ii] = np.zeros(shape=(size[ii]))
+                self.e[ii] = np.zeros(shape=(size[ii], size[ii+1]))
 
         # constants
         self.alpha = alpha
@@ -79,10 +79,11 @@ class nn_td:
         return A[self.num_layers-1]
 
     
-    def train(self, state, action, reward, value, prev_value):
+    def train(self, state, prev_action, action, reward, prev_values, values):
         A = [None] * self.num_layers
         Z = [None] * self.num_layers
-        D = [None] * self.num_layers
+        DE = [None] * self.num_layers
+        DA = [None] * self.num_layers
         G = [None] * self.num_layers
     
         # feedforward
@@ -98,32 +99,42 @@ class nn_td:
                 A[ii] = add_bias(relu(Z[ii])) if self.bias else relu(Z[ii])
                 
         # update eligbility
-        for ii in range(self.num_layers-1):
-            self.e[ii] = self.gamma * self.lmda * self.e[ii] + (A[ii] / np.max(A[ii]) * (1 - self.lmda))
+        # for ii in range(self.num_layers-1):
+        #     self.e[ii] = self.gamma * self.lmda * 
         
         # backprop
         for ii in range(self.num_layers-1, 0, -1):
             if ii == self.num_layers-1:
-                D[ii] = np.zeros(2)
-                D[ii][action] = reward + self.gamma * value - prev_value
+                DE[ii] = np.zeros(2)
+                DE[ii][action] = reward + self.gamma * values[action] - prev_values[prev_action]
+                
+                DA[ii] = np.dot(A[ii-1].reshape(self.size[ii-1]+1, 1), relu_gradient(Z[ii]).reshape(1, self.size[ii]))
             else:
-                D[ii] = np.dot(D[ii+1], np.transpose(self.weights[ii]))
+                DE[ii] = np.dot(DE[ii+1], np.transpose(self.weights[ii]))
                 if self.bias:
-                    D[ii] = D[ii][:-1]
-                    D[ii] = D[ii] * relu_gradient(Z[ii])
+                    DE[ii] = DE[ii][:-1]
+                    DE[ii] = DE[ii]
+                
+                if self.bias:
+                    DA[ii] = np.dot(A[ii-1].reshape(self.size[ii-1]+1, 1), relu_gradient(Z[ii]).reshape(1, self.size[ii]))
+                else:
+                    DA[ii] = np.dot(A[ii-1].reshape(self.size[ii-1]+1, 1), relu_gradient(Z[ii]).reshape(1, self.size[ii]))
             
+            self.e[ii-1] = self.gamma * self.lmda * self.e[ii-1] + DA[ii]
             if self.bias:
-                self.weights[ii-1] += self.alpha * np.dot(self.e[ii-1].reshape(self.size[ii-1]+1, 1), D[ii].reshape(1, self.size[ii]))
+                self.weights[ii-1] += self.alpha * np.dot(self.e[ii-1].reshape(self.size[ii-1]+1, self.size[ii]), DE[ii].reshape(self.size[ii], 1))
             else:
-                self.weights[ii-1] += self.alpha * np.dot(self.e[ii-1].reshape(self.size[ii-1], 1), D[ii].reshape(1, self.size[ii]))
-            
+                self.weights[ii-1] += self.alpha * np.dot(self.e[ii-1].reshape(self.size[ii-1], self.size[ii]), DE[ii].reshape(self.size[ii], 1))
+
+
+
     def clear(self):
         self.e = [None] * (self.num_layers-1)
         for ii in range(self.num_layers-1):
             if self.bias:
-                self.e[ii] = np.zeros(shape=(self.size[ii]+1))
+                self.e[ii] = np.zeros(shape=(self.size[ii]+1, self.size[ii+1]))
             else:
-                self.e[ii] = np.zeros(shape=(self.size[ii]))
+                self.e[ii] = np.zeros(shape=(self.size[ii], self.size[ii+1]))
                 
     def stds(self):
         _stds = np.zeros(shape=(self.num_layers-1))
