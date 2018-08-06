@@ -88,6 +88,9 @@ class Synapse_group:
         # synapse level variables
         self.w = w
         
+        # do we use eligibility trace or just pre and post ? 
+        self.e = np.zeros(shape=(N, M))
+        
         # pre level variables
         self.last_pre = np.ones(self.N) * -1
         
@@ -109,16 +112,12 @@ class Synapse_group:
                 self.last_pre += pre_spk * t
             
                 post1 = np.exp(-(t - self.last_post) / self.tc_post_1_ee)
-                # self.w = np.clip(self.w - self.nu_ee_pre * np.dot(pre_spk.reshape(self.N, 1), post1.reshape(1, self.M)), 0, self.wmax_ee)
                 dw += -self.nu_ee_pre * np.dot(pre_spk.reshape(self.N, 1), post1.reshape(1, self.M))
-                # self.w = np.clip(self.w + dw, 0, self.wmax_ee)
 
             if (got_post):
                 pre = np.exp(-(t - self.last_pre) / self.tc_pre_ee)
                 post2 = np.exp(-(t - self.last_post) / self.tc_post_2_ee)
-                # self.w = np.clip(self.w + self.nu_ee_post * np.dot(pre.reshape(self.N, 1), post2.reshape(1, self.M) * post_spk.reshape(1, self.M)), 0, self.wmax_ee)
                 dw += self.nu_ee_post * np.dot(pre.reshape(self.N, 1), post2.reshape(1, self.M) * post_spk.reshape(1, self.M))
-                # self.w = np.clip(self.w + dw, 0, self.wmax_ee)
 
                 npost_spk = post_spk == 0
                 self.last_post = self.last_post * npost_spk
@@ -135,12 +134,18 @@ class Synapse_group:
         # post level variables
         self.last_post = np.ones(self.M) * -1 
         
+        # zero out the e-trace
+        self.e = np.zeros(shape=(N, M))
+        
+        # we dont need to normalize with back prop now.
+        '''
         if self.stdp:
             # normalize w
             col_sum = np.sum(np.copy(self.w), axis=0)
             col_factor = 78.0 / col_sum
             for i in range(self.M):
                 self.w[:, i] *= col_factor[i]
+        '''
 
 #############
 
@@ -372,9 +377,6 @@ class Solver():
         l0_spks = np.zeros(shape=(self.LAYER0))
         l1_exc_spks = np.zeros(shape=(self.LAYER1))
         l2_exc_spks = np.zeros(shape=(self.LAYER2))
-        
-        # intensity, could probably make this smarter
-        input_intensity = 64.0
         #############
         for s in range(self.rest_steps):
             t = self.time_elapsed
@@ -401,6 +403,10 @@ class Solver():
             l2_exc_I = np.dot(np.transpose(l2_exc_spk), self.l2_exc_w)
             l2_inh_spk = self.l2_inh_lif.step(t, self.dt, l2_exc_I.flatten())
             l2_inh_I = np.dot(np.transpose(l2_inh_spk), self.l2_inh_w)
+            
+            # update the synapses.
+            # l0_l1_syn.update()
+            # l1_l2_syn.update()
             
             # spike counter updates
             l1_exc_spks += l1_exc_spk
