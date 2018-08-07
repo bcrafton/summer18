@@ -18,6 +18,13 @@ def relu_gradient(x):
   ret = 1.0 * (x > 0.0)
   return ret
   
+def add_bias(x):
+  return np.append(x, 1)
+  
+def minus_bias(x):
+  cpy = np.copy(x)
+  return cpy[:-1]  
+  
 class NN:
     def __init__(self, size, weights, alpha, bias):
         # check to make sure we have the right number of layers and weights
@@ -46,14 +53,14 @@ class NN:
     
         for ii in range(self.num_layers):
             if ii == 0:
-                A[ii] = np.append(x, 1)
+                A[ii] = add_bias(x)
                 Z[ii] = None
             elif ii == self.num_layers-1:
                 Z[ii] = np.dot(A[ii-1], self.weights[ii-1])
                 A[ii] = relu(Z[ii])
             else:
                 Z[ii] = np.dot(A[ii-1], self.weights[ii-1])
-                A[ii] = np.append(relu(Z[ii]), 1)
+                A[ii] = add_bias(relu(Z[ii]))
                 
         return A[self.num_layers-1]
 
@@ -66,33 +73,23 @@ class NN:
     
         for ii in range(self.num_layers):
             if ii == 0:
-                A[ii] = np.append(x, 1)
+                A[ii] = add_bias(x)
                 Z[ii] = None
             elif ii == self.num_layers-1:
                 Z[ii] = np.dot(A[ii-1], self.weights[ii-1])
                 A[ii] = relu(Z[ii])
             else:
                 Z[ii] = np.dot(A[ii-1], self.weights[ii-1])
-                A[ii] = np.append(relu(Z[ii]), 1)
-                
-        # if u write things out, then this becomes much easier.
-        # D = [3,2,1]
-        # G = [2,1,0]
-        # A = [3,2,1,0]
-        # Z = [3,2,1]
-        # W = [2,1,0]
-        # really shuda wrote this out, probably still a better way to code this.
-        # gradient corresponds to weights, A, Z, D correspond to neurons
-        # think it through urself u can also derive it.
+                A[ii] = add_bias(relu(Z[ii]))
         
         for ii in range(self.num_layers-1, 0, -1):
 
             if ii == self.num_layers-1:
                 D[ii] = A[ii] - y
             else:
-                D[ii] = np.dot(D[ii+1], np.transpose(self.weights[ii])) * np.append(relu_gradient(Z[ii]), 1)
+                D[ii] = np.dot(D[ii+1], np.transpose(self.weights[ii])) * add_bias(relu_gradient(Z[ii]))
                 if self.bias:
-                    D[ii] = D[ii][:-1]
+                    D[ii] = minus_bias(D[ii])
 
             G[ii-1] = np.dot(A[ii-1].reshape(self.size[ii-1]+1, 1), D[ii].reshape(1, self.size[ii]))
             self.weights[ii-1] -= self.alpha * G[ii-1]
