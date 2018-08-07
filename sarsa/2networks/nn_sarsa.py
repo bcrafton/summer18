@@ -100,24 +100,18 @@ class nn:
         
         for ii in range(self.num_layers-1, 0, -1):
             if ii == self.num_layers-1:
-                D[ii] = np.zeros(shape=np.shape(A[ii]))
-                D[ii][action] = A[ii][action]
-                E = A[ii][action] - target
+                E = A[ii] - target
+                if action:
+                    D[ii] = A[ii]
+                else:
+                    D[ii] = np.zeros(shape=np.shape(A[ii]))
             else:
                 D[ii] = np.dot(D[ii+1], np.transpose(self.weights[ii])) * add_bias(relu_gradient(Z[ii]))
                 if self.bias:
                     D[ii] = minus_bias(D[ii])
 
             G[ii-1] = np.dot(A[ii-1].reshape(self.size[ii-1]+1, 1), D[ii].reshape(1, self.size[ii]))
-            
-            # print (np.shape(D[ii]))
-            # print (np.shape(G[ii-1])) 
-            # print (np.shape(self.e[ii-1])) 
-            
             self.e[ii-1] = self.gamma * self.lmda * self.e[ii-1] + G[ii-1]
-            
-            # print (np.max(self.e[ii-1]), np.min(self.e[ii-1]))
-            
             self.weights[ii-1] -= self.alpha * E * self.e[ii-1]
                 
     def clear(self):

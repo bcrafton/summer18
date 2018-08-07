@@ -41,30 +41,41 @@ class SarsaCartpole():
         
         LAYER1 = 8
         LAYER2 = 24
-        LAYER3 = 2
+        LAYER3 = 1
         
-        weights1 = np.random.uniform(0.0, 1.0, size=(LAYER1 + 1, LAYER2)) * 2 * EPSILON
-        weights2 = np.random.uniform(0.0, 1.0, size=(LAYER2 + 1, LAYER3)) * 2 * EPSILON
+        left_weights1 = np.random.uniform(0.0, 1.0, size=(LAYER1 + 1, LAYER2)) * 2 * EPSILON
+        left_weights2 = np.random.uniform(0.0, 1.0, size=(LAYER2 + 1, LAYER3)) * 2 * EPSILON
+        
+        right_weights1 = np.random.uniform(0.0, 1.0, size=(LAYER1 + 1, LAYER2)) * 2 * EPSILON
+        right_weights2 = np.random.uniform(0.0, 1.0, size=(LAYER2 + 1, LAYER3)) * 2 * EPSILON
                         
-        self.model = nn(size=[LAYER1, LAYER2, LAYER3],          \
-                        weights=[weights1, weights2],           \
-                        alpha=self.alpha,                       \
-                        gamma=self.gamma,                       \
-                        lmda=self.lmda,                         \
+        self.left = nn(size=[LAYER1, LAYER2, LAYER3],             \
+                        weights=[left_weights1, left_weights2],   \
+                        alpha=self.alpha,                         \
+                        gamma=self.gamma,                         \
+                        lmda=self.lmda,                           \
+                        bias=True)
+                        
+        self.right = nn(size=[LAYER1, LAYER2, LAYER3],            \
+                        weights=[right_weights1, right_weights2], \
+                        alpha=self.alpha,                         \
+                        gamma=self.gamma,                         \
+                        lmda=self.lmda,                           \
                         bias=True)
 
     def choose_action(self, state):
-        values = self.model.predict(state)
+        l = self.left.predict(state)
+        r = self.right.predict(state)
     
         if (np.random.random() <= self.epsilon):
             action = self.env.action_space.sample()
         else:
-            action = np.argmax(self.model.predict(state))
+            action = np.argmax([l, r])
             
-        if (np.any(np.isnan(values)) or np.any(np.isinf(values))):
+        if (np.any(np.isnan([l, r])) or np.any(np.isinf([l, r]))):
             assert(False)
         
-        return action, values
+        return action, np.array([l, r])
 
     def train(self, state, action, reward, values, next_value, done):        
         if done:
@@ -72,7 +83,8 @@ class SarsaCartpole():
         else:
             values[action] = reward + self.gamma * next_value
                         
-        self.model.train(state, action, values[action])
+        self.left.train(state, action==0, values[0])
+        self.right.train(state, action==1, values[1])
 
     def run(self):
         scores = deque(maxlen=100)
@@ -106,7 +118,9 @@ class SarsaCartpole():
                 total_reward += reward
                 
             self.train(state, action, reward, values, 0.0, done)
-            self.model.clear()
+            self.left.clear()
+            self.right.clear()
+            
             scores.append(i)
             mean_score = np.mean(scores)
             
