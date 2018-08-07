@@ -61,14 +61,18 @@ class nn:
     
         for ii in range(self.num_layers):
             if ii == 0:
-                A[ii] = add_bias(state)
                 Z[ii] = None
+                A[ii] = add_bias(state)
+                # A0 may be less than 0
+                assert(np.all(A[ii] >= 0.0))
             elif ii == self.num_layers-1:
                 Z[ii] = np.dot(A[ii-1], self.weights[ii-1])
                 A[ii] = relu(Z[ii])
+                assert(np.all(A[ii] >= 0.0))
             else:
                 Z[ii] = np.dot(A[ii-1], self.weights[ii-1])
                 A[ii] = add_bias(relu(Z[ii]))
+                assert(np.all(A[ii] >= 0.0))
                 
         return A[self.num_layers-1]
 
@@ -81,14 +85,18 @@ class nn:
     
         for ii in range(self.num_layers):
             if ii == 0:
-                A[ii] = add_bias(state)
                 Z[ii] = None
+                A[ii] = add_bias(state)
+                # A0 may be less than 0
+                assert(np.all(A[ii] >= 0.0))
             elif ii == self.num_layers-1:
                 Z[ii] = np.dot(A[ii-1], self.weights[ii-1])
                 A[ii] = relu(Z[ii])
+                assert(np.all(A[ii] >= 0.0))
             else:
                 Z[ii] = np.dot(A[ii-1], self.weights[ii-1])
                 A[ii] = add_bias(relu(Z[ii]))
+                assert(np.all(A[ii] >= 0.0))
         
         for ii in range(self.num_layers-1, 0, -1):
             if ii == self.num_layers-1:
@@ -107,6 +115,9 @@ class nn:
             # print (np.shape(self.e[ii-1])) 
             
             self.e[ii-1] = self.gamma * self.lmda * self.e[ii-1] + G[ii-1]
+            
+            # print (np.max(self.e[ii-1]), np.min(self.e[ii-1]))
+            
             self.weights[ii-1] -= self.alpha * E * self.e[ii-1]
                 
     def clear(self):
