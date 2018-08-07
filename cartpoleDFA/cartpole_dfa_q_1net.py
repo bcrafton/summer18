@@ -7,24 +7,24 @@ from collections import deque
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.optimizers import Adam
-from nn import NN
+from nn_dfa import NNDFA
 
 class DQNCartPoleSolver():
     def __init__(self):
         self.env = gym.make('CartPole-v0')
-        self.gamma = 0.9
+        self.gamma = 0.95
         self.epsilon = 0.5
         self.epsilon_min = 0.01
-        self.epsilon_decay = 0.999
+        self.epsilon_decay = 0.995
         self.epsilon_max = 0.25
-        self.epsilon_inc = 1.001
-        self.alpha = 1e-4
+        self.epsilon_inc = 1.005
+        self.alpha = 0.0005
         self.alpha_decay = 0.00
         self.n_episodes = 100000
         self.n_win_ticks = 195
         self.max_env_steps = 200
 
-        EPSILON = 0.12
+        EPSILON = 1.0
         
         LAYER1 = 4
         LAYER2 = 24
@@ -32,58 +32,50 @@ class DQNCartPoleSolver():
         
         weights1 = np.random.uniform(0.0, 1.0, size=(LAYER1 + 1, LAYER2)) * 2 * EPSILON - EPSILON
         weights2 = np.random.uniform(0.0, 1.0, size=(LAYER2 + 1, LAYER3)) * 2 * EPSILON - EPSILON
+        
+        b1 = np.random.uniform(0.25, 0.75, size=(LAYER1 + 1, LAYER3)) * 2 * EPSILON - EPSILON
+        b2 = np.random.uniform(0.25, 0.75, size=(LAYER2 + 1, LAYER3)) * 2 * EPSILON - EPSILON
                         
-        self.model = NN(size=[LAYER1, LAYER2, LAYER3], weights=[weights1, weights2], alpha=self.alpha, bias=True)
+        self.model = NNDFA(size=[LAYER1, LAYER2, LAYER3], weights=[weights1, weights2], fb_weights=[b1, b2], alpha=self.alpha, bias=True)
 
     def choose_action(self, state):
-        values = self.model.predict(state)
-    
         if (np.random.random() <= self.epsilon):
             action = self.env.action_space.sample()
         else:
             action = np.argmax(self.model.predict(state))
             
-        if (np.any(np.isnan(values)) or np.any(np.isinf(values))):
-            assert(False)
-            
-        return action, values
+        return action
 
-    def train(self, state, action, reward, values, next_value, done):        
+    def train(self, state, action, reward, next_state, done):
+        target = self.model.predict(state)
+        
         if done:
-            values[action] = reward
+            target[action] = reward
         else:
-            values[action] = reward + self.gamma * next_value
+            target[action] = reward + self.gamma * np.max(self.model.predict(next_state))
                         
-        self.model.train(state, values)
+        self.model.train(state, target)
 
     def run(self):
         scores = deque(maxlen=100)
 
         for e in range(self.n_episodes):
-            i = 0
             total_reward = 0
-
-            done = False
             state = self.env.reset()
-
-            action, values = self.choose_action(state)
-            next_state, reward, done, _ = self.env.step(action)
+            done = False
+            i = 0
                            
             while not done:
-                next_action, next_values = self.choose_action(next_state)
-                self.train(state, action, reward, values, next_values[next_action], done)  
-                state = next_state
-                action = next_action
-                values = next_values
-                # print (values)
+                action = self.choose_action(state)
                 next_state, reward, done, _ = self.env.step(action)
-                
+                                
+                self.train(state, action, reward, next_state, done)                    
+                state = next_state
                 i += 1
                 total_reward += reward
 
             scores.append(i)
             mean_score = np.mean(scores)
-            
             
             if total_reward <= mean_score and self.epsilon < self.epsilon_max:
                 self.epsilon *= self.epsilon_inc

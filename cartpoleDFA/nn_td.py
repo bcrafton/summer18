@@ -102,6 +102,17 @@ class nn_td:
         # for ii in range(self.num_layers-1):
         #     self.e[ii] = self.gamma * self.lmda * 
         
+        for ii in range(self.num_layers-1, 0, -1):
+            if ii == self.num_layers-1:
+                D[ii] = relu_gradient(Z[ii])
+            else:
+                D[ii] = np.dot(D[ii+1], np.transpose(self.weights[ii])) * np.append(relu_gradient(Z[ii]), 1)
+                if self.bias:
+                    D[ii] = D[ii][:-1]
+
+            G[ii-1] = np.dot(A[ii-1].reshape(self.size[ii-1]+1, 1), D[ii].reshape(1, self.size[ii]))
+            self.weights[ii-1] -= self.alpha * G[ii-1]
+        
         # backprop
         for ii in range(self.num_layers-1, 0, -1):
             if ii == self.num_layers-1:
