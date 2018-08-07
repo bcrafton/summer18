@@ -106,11 +106,16 @@ class nn:
                 else:
                     D[ii] = np.zeros(shape=np.shape(A[ii]))
             else:
-                D[ii] = np.dot(D[ii+1], np.transpose(self.weights[ii])) * add_bias(relu_gradient(Z[ii]))
+                D[ii] = np.dot(D[ii+1], np.transpose(self.weights[ii]))
                 if self.bias:
                     D[ii] = minus_bias(D[ii])
+                D[ii] = D[ii] * relu_gradient(Z[ii])
 
-            G[ii-1] = np.dot(A[ii-1].reshape(self.size[ii-1]+1, 1), D[ii].reshape(1, self.size[ii]))
+            if self.bias:
+                G[ii-1] = np.dot(A[ii-1].reshape(self.size[ii-1]+1, 1), D[ii].reshape(1, self.size[ii]))
+            else:
+                G[ii-1] = np.dot(A[ii-1].reshape(self.size[ii-1], 1), D[ii].reshape(1, self.size[ii]))
+                
             self.e[ii-1] = self.gamma * self.lmda * self.e[ii-1] + G[ii-1]
             self.weights[ii-1] -= self.alpha * E * self.e[ii-1]
                 

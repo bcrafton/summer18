@@ -113,18 +113,6 @@ class nn_sarsa_dfa:
                 E = A[ii][action] - target
             else:
                 D[ii] = np.dot(D[ii+1], np.transpose(self.b[ii])) * relu_gradient(Z[ii])
-                #print (np.shape(self.b[ii]))
-                #print (np.shape(relu_gradient(Z[ii])))
-                
-            # print (A[self.num_layers-1])
-            # print (A[self.num_layers-1][action])
-            '''
-            print (V)
-            print (np.shape(relu_gradient(Z[ii])))
-            print (np.shape(G[ii-1]))
-            print (np.shape(A[ii-1]))
-            print (np.shape(D[ii]))
-            '''
 
             if self.bias:
                 G[ii-1] = np.dot(A[ii-1].reshape(self.size[ii-1]+1, 1), D[ii].reshape(1, self.size[ii]))
