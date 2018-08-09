@@ -1,19 +1,30 @@
 
-import tensorflow as tf
-import numpy as np
-import keras
 import argparse
-from nn_dfa_tf import nn_dfa_tf
+import os
 
 ##############################################
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--layers', type=int, nargs='*')
 parser.add_argument('--epochs', type=int, default=100)
+parser.add_argument('--batch_size', type=int, default=32)
+parser.add_argument('--alpha', type=int, default=1e-2)
+parser.add_argument('--gpu', type=int, default=-1)
 args = parser.parse_args()
 
 num_layers = len(args.layers)
 assert(num_layers >= 2)
+
+if args.gpu >= 0:
+    os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
+    os.environ["CUDA_VISIBLE_DEVICES"]=str(args.gpu)
+
+##############################################
+
+import tensorflow as tf
+import numpy as np
+import keras
+from nn_dfa_tf import nn_dfa_tf
 
 ##############################################
 
@@ -24,7 +35,8 @@ cifar10 = tf.keras.datasets.cifar10.load_data()
 EPOCHS = args.epochs
 TRAIN_EXAMPLES = 50000
 TEST_EXAMPLES = 10000
-BATCH_SIZE = 64
+BATCH_SIZE = args.batch_size
+ALPHA = args.alpha
 
 ##############################################
 
@@ -45,7 +57,7 @@ Y = tf.placeholder(tf.float32, [None, args.layers[-1]])
 model = nn_dfa_tf(size=args.layers,  \
                   weights=W,         \
                   B=B,               \
-                  alpha=1e-2,        \
+                  alpha=ALPHA,       \
                   bias=True)
 # predict
 predict = model.predict(X)
@@ -70,7 +82,6 @@ for ii in range(0, EPOCHS * TRAIN_EXAMPLES, BATCH_SIZE):
     start = ii % TRAIN_EXAMPLES
     end = ii % TRAIN_EXAMPLES + BATCH_SIZE
     sess.run([ret], feed_dict={X: x_train[start:end], Y: y_train[start:end]})
-    print(ii)
 
 correct_prediction = tf.equal(tf.argmax(predict,1), tf.argmax(Y,1))
 accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
