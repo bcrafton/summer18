@@ -15,7 +15,7 @@ LAYER5 = 10
 EPOCHS = 1000
 TRAIN_EXAMPLES = 50000
 TEST_EXAMPLES = 10000
-BATCH_SIZE = 100
+BATCH_SIZE = 128
 
 ##############################################
 
