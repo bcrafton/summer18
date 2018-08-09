@@ -5,19 +5,23 @@ from tensorflow.examples.tutorials.mnist import input_data
 
 mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
 
+def add_bias(x):
+  return tf.concat([x, tf.ones([tf.shape(x)[0], 1])], axis=1)
+
 ##############################################
 
 W1 = tf.Variable(tf.random_uniform(shape=[785, 100]) * (2 * 0.12) - 0.12)
 W2 = tf.Variable(tf.random_uniform(shape=[101, 10]) * (2 * 0.12) - 0.12)
-print(W2)
-print(W1)
+
 ##############################################
 
 X = tf.placeholder(tf.float32, [None, 784])
-A1 = tf.concat([X, tf.ones([tf.shape(X)[0], 1])], axis=1)
+# A1 = tf.concat([X, tf.ones([tf.shape(X)[0], 1])], axis=1)
+A1 = add_bias(X)
 
 Y2 = tf.matmul(A1, W1)
-A2 = tf.concat([tf.sigmoid(Y2), tf.ones([tf.shape(X)[0], 1])], axis=1)
+# A2 = tf.concat([tf.sigmoid(Y2), tf.ones([tf.shape(X)[0], 1])], axis=1)
+A2 = add_bias(Y2)
 
 Y3 = tf.matmul(A2, W2)
 A3 = tf.sigmoid(Y3)
