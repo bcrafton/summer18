@@ -8,10 +8,11 @@ cifar10 = tf.keras.datasets.cifar10.load_data()
 
 LAYER1 = 3072
 LAYER2 = 1024
-LAYER3 = 256
-LAYER4 = 10
+LAYER3 = 512
+LAYER4 = 256
+LAYER5 = 10
 
-EPOCHS = 100
+EPOCHS = 1000
 TRAIN_EXAMPLES = 50000
 TEST_EXAMPLES = 10000
 BATCH_SIZE = 100
@@ -21,19 +22,20 @@ BATCH_SIZE = 100
 W1 = tf.Variable(tf.random_uniform(shape=[LAYER1 + 1, LAYER2]) * (2 * 0.12) - 0.12)
 W2 = tf.Variable(tf.random_uniform(shape=[LAYER2 + 1, LAYER3]) * (2 * 0.12) - 0.12)
 W3 = tf.Variable(tf.random_uniform(shape=[LAYER3 + 1, LAYER4]) * (2 * 0.12) - 0.12)
+W4 = tf.Variable(tf.random_uniform(shape=[LAYER4 + 1, LAYER5]) * (2 * 0.12) - 0.12)
 
 X = tf.placeholder(tf.float32, [None, LAYER1])
-Y = tf.placeholder(tf.float32, [None, LAYER4])
+Y = tf.placeholder(tf.float32, [None, LAYER5])
 
-model = nn_tf(size=[LAYER1, LAYER2, LAYER3, LAYER4],  \
-              weights=[W1, W2, W3],                   \
-              alpha=1e-4,                             \
+model = nn_tf(size=[LAYER1, LAYER2, LAYER3, LAYER4, LAYER5],  \
+              weights=[W1, W2, W3, W4],                       \
+              alpha=1e-5,                                     \
               bias=True)
 # predict
 predict = model.predict(X)
 
 # train     
-[W1, W2, W3] = model.train(X, Y)
+[W1, W2, W3, W3] = model.train(X, Y)
 
 ##############################################
 
