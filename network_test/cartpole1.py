@@ -135,7 +135,7 @@ class Synapse_group:
         self.last_post = np.ones(self.M) * -1 
         
         # zero out the e-trace
-        self.e = np.zeros(shape=(N, M))
+        self.e = np.zeros(shape=(self.N, self.M))
         
         # we dont need to normalize with back prop now.
         '''
