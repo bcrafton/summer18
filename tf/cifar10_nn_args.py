@@ -8,7 +8,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--layers', type=int, nargs='*')
 parser.add_argument('--epochs', type=int, default=100)
 parser.add_argument('--batch_size', type=int, default=32)
-parser.add_argument('--alpha', type=int, default=1e-2)
+parser.add_argument('--alpha', type=float, default=1e-2)
 parser.add_argument('--gpu', type=int, default=-1)
 args = parser.parse_args()
 

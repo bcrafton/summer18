@@ -8,7 +8,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--layers', type=int, nargs='*')
 parser.add_argument('--epochs', type=int, default=100)
 parser.add_argument('--batch_size', type=int, default=32)
-parser.add_argument('--alpha', type=int, default=1e-2)
+parser.add_argument('--alpha', type=float, default=1e-2)
 parser.add_argument('--gpu', type=int, default=-1)
 args = parser.parse_args()
 
@@ -87,7 +87,7 @@ sess = tf.InteractiveSession()
 tf.global_variables_initializer().run()
 
 start = time.time()
-for ii in range(EPOCHS * TRAIN_EXAMPLES / BATCH_SIZE):
+for ii in range(int(EPOCHS * TRAIN_EXAMPLES / BATCH_SIZE)):
     batch_xs, batch_ys = mnist.train.next_batch(BATCH_SIZE, shuffle=False)
     sess.run(ret, feed_dict={X: batch_xs, Y: batch_ys})
 end = time.time()
