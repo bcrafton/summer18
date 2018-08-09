@@ -1,9 +1,8 @@
 
-import time
 import tensorflow as tf
 import numpy as np
+import keras
 import argparse
-from tensorflow.examples.tutorials.mnist import input_data
 from nn_tf import nn_tf
 
 ##############################################
@@ -18,7 +17,7 @@ assert(num_layers >= 2)
 
 ##############################################
 
-mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
+cifar10 = tf.keras.datasets.cifar10.load_data()
 
 ##############################################
 
@@ -33,14 +32,13 @@ W = [None] * (num_layers-1)
 for ii in range(0, num_layers-1):
     W[ii] = tf.Variable(tf.random_uniform(shape=[args.layers[ii]+1, args.layers[ii+1]]) * (2 * 0.12) - 0.12)
 
-X = tf.placeholder(tf.float32, [None, 784])
-Y = tf.placeholder(tf.float32, [None, 10])
+X = tf.placeholder(tf.float32, [None, args.layers[0]])
+Y = tf.placeholder(tf.float32, [None, args.layers[-1]])
 
 model = nn_tf(size=args.layers,  \
               weights=W,         \
               alpha=1e-2,        \
               bias=True)
-
 # predict
 predict = model.predict(X)
 
@@ -52,18 +50,32 @@ ret = model.train(X, Y)
 sess = tf.InteractiveSession()
 tf.global_variables_initializer().run()
 
-start = time.time()
-for ii in range(EPOCHS * TRAIN_EXAMPLES / BATCH_SIZE):
-    batch_xs, batch_ys = mnist.train.next_batch(BATCH_SIZE, shuffle=False)
-    sess.run(ret, feed_dict={X: batch_xs, Y: batch_ys})
-    print (ii * BATCH_SIZE)
-end = time.time()
+(x_train, y_train), (x_test, y_test) = cifar10
+
+x_train = x_train.reshape(TRAIN_EXAMPLES, args.layers[0])
+y_train = keras.utils.to_categorical(y_train, args.layers[-1])
+
+x_test = x_test.reshape(TEST_EXAMPLES, args.layers[0])
+y_test = keras.utils.to_categorical(y_test, args.layers[-1])
+
+for ii in range(0, EPOCHS * TRAIN_EXAMPLES, BATCH_SIZE):
+    start = ii % TRAIN_EXAMPLES
+    end = ii % TRAIN_EXAMPLES + BATCH_SIZE
+    sess.run([ret], feed_dict={X: x_train[start:end], Y: y_train[start:end]})
+    print(ii)
 
 correct_prediction = tf.equal(tf.argmax(predict,1), tf.argmax(Y,1))
 accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-print(sess.run(accuracy, feed_dict={X: mnist.test.images, Y: mnist.test.labels}))
-print("time taken: " + str(end - start))
+print(sess.run(accuracy, feed_dict={X: x_test, Y: y_test}))
 
-##############################################
+
+
+
+
+
+
+
+
+
 
 
