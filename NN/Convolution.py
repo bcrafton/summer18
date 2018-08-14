@@ -27,12 +27,12 @@ class Convolution(Layer):
         self.activation = activation
         self.last_layer = last_layer
         
-    def forward(self, X : np.ndarray):
+    def forward(self, batch_size : int, X : np.ndarray):
         Z = tf.nn.conv2d(X, self.filters, self.stride, self.padding)
         A = self.activation.forward(Z)
         return A
         
-    def backward(self, AI: np.ndarray, AO: np.ndarray, DO: np.ndarray):
+    def backward(self, batch_size : int, AI: np.ndarray, AO: np.ndarray, DO: np.ndarray):
         # apply activation gradient
         DO = tf.multiply(DO, self.activation.gradient(AO))
         

@@ -10,12 +10,13 @@ class Layer:
     def initialize(self, input_size: tuple, num_classes: int):
         pass
 
-    def forward(self, X: np.ndarray) -> np.ndarray:
+    def forward(self, batch_size : int, X: np.ndarray) -> np.ndarray:
         pass
 
-    def dfa(self, E: np.ndarray) -> tuple:
+    def backward(self, batch_size : int, E: np.ndarray) -> tuple:
         pass
 
-    def back_prob(self, E: np.ndarray) -> tuple:
+    def dfa(self, batch_size : int, E: np.ndarray) -> tuple:
         pass
+
 
