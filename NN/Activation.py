@@ -22,3 +22,14 @@ class Sigmoid(Activation):
         
     def gradient(self, x : np.ndarray) -> np.ndarray:
         return tf.multiply(x, tf.subtract(1.0, x))
+        
+class ReLU(Activation):
+
+    def __init__(self) -> None:
+        pass
+
+    def forward(self, x: np.ndarray) -> np.ndarray:
+        return np.maximum(x, 0, x)
+
+    def gradient(self, x: np.ndarray) -> np.ndarray:
+        return x > 0

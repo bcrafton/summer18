@@ -33,10 +33,7 @@ class FullyConnected(Layer):
         Z = tf.matmul(X, self.weights) + self.bias
         A = self.activation.forward(Z)
         return A
-        
-    def dfa(self, AIN : np.ndarray, AOUT : np.ndarray, DIN : np.ndarray):
-        pass
-    
+            
     def backward(self, AIN : np.ndarray, AOUT : np.ndarray, DIN : np.ndarray):
 
         # print (AIN.get_shape(), AOUT.get_shape(), DIN.get_shape(), DOUT.get_shape(), self.weights.get_shape())
@@ -45,5 +42,9 @@ class FullyConnected(Layer):
         DOUT = tf.matmul(DIN, tf.transpose(self.weights))
         G = tf.matmul(tf.transpose(AIN), DIN)
         self.weights = self.weights.assign(tf.subtract(self.weights, tf.scalar_mul(self.alpha, G)))
+        # WE NEED TO UPDATE OUR BIAS...
         
         return DOUT
+        
+    def dfa(self, AIN : np.ndarray, AOUT : np.ndarray, DIN : np.ndarray):
+        pass
