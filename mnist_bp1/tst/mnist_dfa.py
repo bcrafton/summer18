@@ -92,7 +92,13 @@ for epoch in range(NUM_TRAIN_EPOCHS):
         
         D3 = A3 - ANS
         D2 = np.dot(D3, np.transpose(b2)) * np.append(sigmoid_gradient(Z2), 1)
-        
+
+        np.savetxt("D3.csv", D3, delimiter=",")
+        np.savetxt("D2.csv", np.dot(D3, np.transpose(b2)), delimiter=",")
+        np.savetxt("b2.csv", b2, delimiter=",")
+
+        assert(False)
+
         LOCAL_G2 = np.dot(A2.reshape(LAYER2 + 1, 1), D3.reshape(1, LAYER3))
         LOCAL_G1 = np.dot(A1.reshape(LAYER1 + 1, 1), D2[:-1].reshape(1, LAYER2))
         
@@ -106,7 +112,7 @@ for epoch in range(NUM_TRAIN_EPOCHS):
             Z2 = np.dot(A1, weights1)
             A2 = np.append(sigmoid(Z2), 1)
             Z3 = np.dot(A2, weights2)
-            A3 = sigmoid(Z3)    
+            A3 = sigmoid(Z3)
             
             if (np.argmax(A3) == testing_labels[ex]):
                 correct += 1
