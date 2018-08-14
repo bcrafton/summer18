@@ -8,7 +8,7 @@ from Activation import Activation
 from Activation import Sigmoid
 
 class FullyConnected(Layer):
-    def __init__(self, size : tuple, weights : np.ndarray, B : np.ndarray, alpha : float, activation : Activation, last_layer : bool):
+    def __init__(self, size : tuple, weights : np.ndarray, alpha : float, activation : Activation, last_layer : bool):
         
         # TODO
         # check to make sure what we put in here is correct
@@ -20,7 +20,7 @@ class FullyConnected(Layer):
         
         # weights
         self.weights = weights
-        self.B = B
+        # self.B = B
         self.bias = np.zeros(self.output_size)
         
         # lr

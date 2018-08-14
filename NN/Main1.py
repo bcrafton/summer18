@@ -5,9 +5,12 @@ import numpy as np
 from tensorflow.examples.tutorials.mnist import input_data
 
 from Model import Model
+
 from Layer import Layer 
+from ConvToFullyConnected import ConvToFullyConnected
 from FullyConnected import FullyConnected
 from Convolution import Convolution
+
 from Activation import Activation
 from Activation import Sigmoid
 
@@ -25,21 +28,18 @@ ALPHA = 1e-2
 
 ##############################################
 
-W0 = tf.Variable(tf.random_uniform(shape=[5, 5, 3, 16]) * (2 * 0.12) - 0.12)
-l0 = Convolution(size=[5, 5, 3, 16], weights=W0, stride=1, padding=1, alpha=ALPHA, activation=Sigmoid(), last_layer=False)
+W0 = tf.Variable(tf.random_uniform(shape=[5, 5, 1, 16]) * (2 * 0.12) - 0.12)
+l0 = Convolution(input_sizes=[BATCH_SIZE, 28, 28, 1], filter_sizes=[5, 5, 1, 16], filters=W0, stride=1, padding=1, alpha=ALPHA, activation=Sigmoid(), last_layer=False)
 
-W1 = tf.Variable(tf.random_uniform(shape=[784, 100]) * (2 * 0.12) - 0.12)
-B1 = tf.Variable(tf.random_uniform(shape=[100, 784]) * (2 * 0.12) - 0.12)
-l1 = FullyConnected(size=[784, 100], weights=W1, B=B1, alpha=ALPHA, activation=Sigmoid(), last_layer=False)
+l1 = ConvToFullyConnected(shape=[28, 28, 16])
 
-W2 = tf.Variable(tf.random_uniform(shape=[100, 10]) * (2 * 0.12) - 0.12)
-B2 = tf.Variable(tf.random_uniform(shape=[10, 100]) * (2 * 0.12) - 0.12)
-l2 = FullyConnected(size=[100, 10], weights=W2, B=B2, alpha=ALPHA, activation=Sigmoid(), last_layer=True)
+W2 = tf.Variable(tf.random_uniform(shape=[28*28*16, 10]) * (2 * 0.12) - 0.12)
+l2 = FullyConnected(size=[28*28*16, 10], weights=W2, alpha=ALPHA, activation=Sigmoid(), last_layer=False)
 
-X = tf.placeholder(tf.float32, [None, 784])
-Y = tf.placeholder(tf.float32, [None, 10])
+X = tf.placeholder(tf.float32, [BATCH_SIZE, 28, 28, 1])
+Y = tf.placeholder(tf.float32, [BATCH_SIZE, 10])
 
-model = Model(layers=[l1, l2])
+model = Model(layers=[l0, l1, l2])
 ret = model.train(X=X, Y=Y)
 predict = model.predict(X=X)
 
@@ -51,6 +51,7 @@ tf.global_variables_initializer().run()
 start = time.time()
 for ii in range(int(EPOCHS * TRAIN_EXAMPLES / BATCH_SIZE)):
     batch_xs, batch_ys = mnist.train.next_batch(BATCH_SIZE, shuffle=False)
+    batch_xs = batch_xs.reshape(BATCH_SIZE, 28, 28, 1)
     sess.run(ret, feed_dict={X: batch_xs, Y: batch_ys})
 end = time.time()
 

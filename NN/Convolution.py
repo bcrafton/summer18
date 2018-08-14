@@ -8,20 +8,27 @@ from Activation import Activation
 from Activation import Sigmoid
 
 class Convolution(Layer):
-    def __init__(self, size, weights, stride, padding, alpha, activation: Activation=None, last_layer=False):
-        self.size = size
-        self.fh, self.fw, self.ch_in, self.ch_out = self.size
+    def __init__(self, input_sizes, filter_sizes, filters, stride, padding, alpha, activation: Activation=None, last_layer=False):
+        self.input_sizes = input_sizes
+        self.filter_sizes = filter_sizes
         
-        self.weights = weights
+        self.filters = filters
         
+        # TODO
         self.stride = stride
+        self.stride = [1,1,1,1]
+        
+        # TODO
         self.padding = padding
+        self.padding = "SAME"
+        
+        self.alpha = alpha
         
         self.activation = activation
         self.last_layer = last_layer
         
     def forward(self, X : np.ndarray):
-        Z = tf.nn.conv2d(X, self.weights, self.stride, self.padding)
+        Z = tf.nn.conv2d(X, self.filters, self.stride, self.padding)
         A = self.activation.forward(Z)
         return A
         
@@ -31,14 +38,14 @@ class Convolution(Layer):
         
         # send this back
         # DI = tf.nn.conv2d_backprop_input(input_sizes=[BATCH_SIZE, 28, 28, 1], filter=W, out_backprop=Y, strides=[1,1,1,1], padding="SAME")
-        DI = tf.nn.conv2d_backprop_input(input_sizes=self.input_sizes, filter=self.weights, out_backprop=DO, strides=self.stride, padding="SAME")
+        DI = tf.nn.conv2d_backprop_input(input_sizes=self.input_sizes, filter=self.filters, out_backprop=DO, strides=self.stride, padding="SAME")
         
         # update with this
         # DF = tf.nn.conv2d_backprop_filter(input=X, filter_sizes=[5, 5, 1, 16], out_backprop=Y, strides=[1,1,1,1], padding="SAME")        
         DF = tf.nn.conv2d_backprop_filter(input=AI, filter_sizes=self.filter_sizes, out_backprop=DO, strides=self.stride, padding="SAME")
         
-        # update weights
-        self.weights = self.weights.assign(tf.subtract(self.weights, tf.scalar_mul(self.alpha, DF)))
+        # update filters
+        self.filters = self.filters.assign(tf.subtract(self.filters, tf.scalar_mul(self.alpha, DF)))
         
         # return error wtr to input 
         return DI

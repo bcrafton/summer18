@@ -3,7 +3,6 @@ import tensorflow as tf
 import numpy as np
 
 class Model:
-
     def __init__(self, layers : tuple):
         self.num_layers = len(layers)
         self.layers = layers
@@ -32,9 +31,6 @@ class Model:
                 D[ii] = l.backward(A[ii-1], A[ii], D[ii+1])
                 
         ret = []
-        for ii in range(self.num_layers):
-            l = self.layers[ii]
-            ret.append(l.weights)
         return ret
     
     def predict(self, X : np.ndarray):
