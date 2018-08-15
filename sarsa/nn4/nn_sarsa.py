@@ -114,7 +114,7 @@ class nn:
             else:
                 G[ii-1] = np.dot(A[ii-1].reshape(self.size[ii-1], 1), D[ii].reshape(1, self.size[ii]))
             
-            self.e[ii-1] = self.gamma * self.lmda * self.e[ii-1] + G[ii-1]
+            self.e[ii-1] = self.gamma * self.lmda * self.e[ii-1] + G[ii-1] / np.max(G[ii-1])
             self.weights[ii-1] -= self.alpha * E * self.e[ii-1]
                 
     def clear(self):

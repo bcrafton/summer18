@@ -1,4 +1,9 @@
 
+import os
+os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
+# specify which GPU(s) to be use
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
+
 import tensorflow as tf
 import numpy as np
 from tensorflow.examples.tutorials.mnist import input_data
@@ -11,37 +16,33 @@ mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
 ##############################################
 
 LAYER1 = 784
-LAYER2 = 500
-LAYER3 = 250
-LAYER4 = 100
-LAYER5 = 10
+LAYER2 = 100
+LAYER3 = 10
 
 EPOCHS = 100
 TRAIN_EXAMPLES = 50000
 TEST_EXAMPLES = 10000
-BATCH_SIZE = 128
+BATCH_SIZE = 32
 
 ##############################################
 
 # tf random seed not np
 W1 = tf.Variable(tf.random_uniform(shape=[LAYER1+1, LAYER2]) * (2 * 0.12) - 0.12)
 W2 = tf.Variable(tf.random_uniform(shape=[LAYER2+1, LAYER3]) * (2 * 0.12) - 0.12)
-W3 = tf.Variable(tf.random_uniform(shape=[LAYER3+1, LAYER4]) * (2 * 0.12) - 0.12)
-W4 = tf.Variable(tf.random_uniform(shape=[LAYER4+1, LAYER5]) * (2 * 0.12) - 0.12)
 
 X = tf.placeholder(tf.float32, [None, 784])
 Y = tf.placeholder(tf.float32, [None, 10])
 
-model = nn_tf(size=[LAYER1, LAYER2, LAYER3, LAYER4, LAYER5], \
-              weights=[W1, W2, W3, W4],                                      \
-              alpha=1e-2,                                                    \
+model = nn_tf(size=[LAYER1, LAYER2, LAYER3], \
+              weights=[W1, W2],              \
+              alpha=1e-2,                    \
               bias=True)
 
 # predict
 predict = model.predict(X)
 
 # train     
-[W1, W2, W3, W4] = model.train(X, Y)
+ret = model.train(X, Y)
 
 ##############################################
 
@@ -50,8 +51,7 @@ tf.global_variables_initializer().run()
 
 for ii in range(EPOCHS * TRAIN_EXAMPLES / BATCH_SIZE):
     batch_xs, batch_ys = mnist.train.next_batch(BATCH_SIZE, shuffle=False)
-    sess.run([W1, W2, W3, W4], feed_dict={X: batch_xs, Y: batch_ys})
-    print (ii * BATCH_SIZE)
+    sess.run([ret], feed_dict={X: batch_xs, Y: batch_ys})
 
 correct_prediction = tf.equal(tf.argmax(predict,1), tf.argmax(Y,1))
 accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
