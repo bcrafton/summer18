@@ -32,12 +32,12 @@ class FullyConnected(Layer):
     def get_weights(self):
         return self.weights
 
-    def forward(self, batch_size : int, X : np.ndarray):
+    def forward(self, X : np.ndarray):
         Z = tf.matmul(X, self.weights) + self.bias
         A = self.activation.forward(Z)
         return A
             
-    def backward(self, batch_size : int, AIN : np.ndarray, AOUT : np.ndarray, DIN : np.ndarray):
+    def backward(self, AIN : np.ndarray, AOUT : np.ndarray, DIN : np.ndarray):
 
         # print (AIN.get_shape(), AOUT.get_shape(), DIN.get_shape(), DOUT.get_shape(), self.weights.get_shape())
 

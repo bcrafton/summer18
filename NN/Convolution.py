@@ -30,12 +30,12 @@ class Convolution(Layer):
     def get_weights(self):
         return self.filters
         
-    def forward(self, batch_size : int, X : np.ndarray):
+    def forward(self, X : np.ndarray):
         Z = tf.nn.conv2d(X, self.filters, self.stride, self.padding)
         A = self.activation.forward(Z)
         return A
         
-    def backward(self, batch_size : int, AI: np.ndarray, AO: np.ndarray, DO: np.ndarray):
+    def backward(self, AI: np.ndarray, AO: np.ndarray, DO: np.ndarray):
         # apply activation gradient
         DO = tf.multiply(DO, self.activation.gradient(AO))
         

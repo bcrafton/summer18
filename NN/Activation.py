@@ -10,26 +10,26 @@ class Activation(object):
         pass
         
 class Sigmoid(Activation):
-    def __init__(self) -> None:
+    def __init__(self):
         pass
 
-    def forward(self, x : np.ndarray) -> np.ndarray:
+    def forward(self, x : np.ndarray):
         return tf.sigmoid(x)
 
-    def sigmoid_gradient(self, x : np.ndarray) -> np.ndarray:
+    def sigmoid_gradient(self, x : np.ndarray):
         sig = tf.sigmoid(x)
         return tf.multiply(sig, tf.subtract(1.0, sig))
         
-    def gradient(self, x : np.ndarray) -> np.ndarray:
+    def gradient(self, x : np.ndarray):
         return tf.multiply(x, tf.subtract(1.0, x))
         
-class ReLU(Activation):
+class Relu(Activation):
 
-    def __init__(self) -> None:
+    def __init__(self):
         pass
 
-    def forward(self, x: np.ndarray) -> np.ndarray:
-        return np.maximum(x, 0, x)
+    def forward(self, x):
+        return tf.nn.relu(x)
 
-    def gradient(self, x: np.ndarray) -> np.ndarray:
-        return x > 0
+    def gradient(self, x):
+        return tf.multiply(tf.cast(x > 0.0, dtype=tf.float32), 1.0)

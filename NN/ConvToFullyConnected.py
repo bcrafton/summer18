@@ -13,11 +13,11 @@ class ConvToFullyConnected(Layer):
     def get_weights(self):
         return tf.random_uniform(shape=(1, 1))
 
-    def forward(self, batch_size : int, X: np.ndarray):
-        return tf.reshape(X, [batch_size, -1])
+    def forward(self, X: np.ndarray):
+        return tf.reshape(X, [tf.shape(X)[0], -1])
 
-    def backward(self, batch_size : int, AIN : np.ndarray, AOUT : np.ndarray, DO : np.ndarray):
-        return tf.reshape(DO, [batch_size] + self.shape)
+    def backward(self, AIN : np.ndarray, AOUT : np.ndarray, DO : np.ndarray):
+        return tf.reshape(DO, [tf.shape(AIN)[0]] + self.shape)
 
     def dfa(self, AIN : np.ndarray, AOUT : np.ndarray, DO : np.ndarray):
         pass

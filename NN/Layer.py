@@ -10,13 +10,13 @@ class Layer:
     def get_weights(self):
         pass
 
-    def forward(self, batch_size : int, X: np.ndarray) -> np.ndarray:
+    def forward(self, X: np.ndarray) -> np.ndarray:
         pass
 
-    def backward(self, batch_size : int, E: np.ndarray) -> tuple:
+    def backward(self, E: np.ndarray) -> tuple:
         pass
 
-    def dfa(self, batch_size : int, E: np.ndarray) -> tuple:
+    def dfa(self, E: np.ndarray) -> tuple:
         pass
 
 
