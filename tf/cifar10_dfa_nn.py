@@ -73,9 +73,11 @@ tf.global_variables_initializer().run()
 (x_train, y_train), (x_test, y_test) = cifar10
 
 x_train = x_train.reshape(TRAIN_EXAMPLES, args.layers[0])
+x_train = x_train / 255.
 y_train = keras.utils.to_categorical(y_train, args.layers[-1])
 
 x_test = x_test.reshape(TEST_EXAMPLES, args.layers[0])
+x_test = x_test / 255.
 y_test = keras.utils.to_categorical(y_test, args.layers[-1])
 
 for ii in range(0, EPOCHS * TRAIN_EXAMPLES, BATCH_SIZE):
