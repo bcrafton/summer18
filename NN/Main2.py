@@ -22,18 +22,20 @@ mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
 
 ##############################################
 
-EPOCHS = 5
+EPOCHS = 2
 TRAIN_EXAMPLES = 50000
 TEST_EXAMPLES = 10000
-BATCH_SIZE = 32
-ALPHA = 1e-3
+BATCH_SIZE = 10
+ALPHA = 1e-2
 
 ##############################################
+
+tf.set_random_seed(0)
+tf.reset_default_graph()
 
 batch_size = tf.placeholder(tf.int32, shape=())
 X = tf.placeholder(tf.float32, [None, 28, 28, 1])
 Y = tf.placeholder(tf.float32, [None, 10])
-TESTY = tf.placeholder(tf.float32, [None, 10])
 
 W0 = tf.Variable(tf.random_uniform(shape=[3, 3, 1, 32]) * (2 * 0.12) - 0.12)
 l0 = Convolution(input_sizes=[batch_size, 28, 28, 1], filter_sizes=[3, 3, 1, 32], filters=W0, stride=1, padding=1, alpha=ALPHA, activation=Relu(), last_layer=False)
@@ -61,17 +63,22 @@ predict = model.predict(X=X)
 correct_prediction = tf.equal(tf.argmax(predict, 1), tf.argmax(Y, 1))
 total_correct = tf.reduce_sum(tf.cast(correct_prediction, tf.float32))
 
+acc, acc_op = tf.metrics.accuracy(labels=tf.argmax(Y, 1), predictions=tf.argmax(predict, 1))
+
 ##############################################
 
 sess = tf.InteractiveSession()
+tf.local_variables_initializer().run()
 tf.global_variables_initializer().run()
 
 start = time.time()
-for ii in range(int(EPOCHS * TRAIN_EXAMPLES / BATCH_SIZE)):
-    print (str(ii * BATCH_SIZE) + "/" + str(int(EPOCHS * TRAIN_EXAMPLES)))
-    batch_xs, batch_ys = mnist.train.next_batch(BATCH_SIZE, shuffle=False)
-    batch_xs = batch_xs.reshape(BATCH_SIZE, 28, 28, 1)
-    sess.run(ret, feed_dict={batch_size: BATCH_SIZE, X: batch_xs, Y: batch_ys})
+for ii in range(EPOCHS):
+    for jj in range(int(TRAIN_EXAMPLES / BATCH_SIZE)):
+        print (str(ii * TRAIN_EXAMPLES + jj * BATCH_SIZE) + "/" + str(int(EPOCHS * TRAIN_EXAMPLES)))
+        batch_xs, batch_ys = mnist.train.next_batch(BATCH_SIZE, shuffle=False)
+        batch_xs = batch_xs.reshape(BATCH_SIZE, 28, 28, 1)
+        # train
+        sess.run(ret, feed_dict={batch_size: BATCH_SIZE, X: batch_xs, Y: batch_ys})
 end = time.time()
 
 correct = 0
@@ -80,10 +87,14 @@ for ii in range(int(TEST_EXAMPLES / BATCH_SIZE)):
     print (str(ii * BATCH_SIZE) + "/" + str(int(TEST_EXAMPLES)))
     batch_xs, batch_ys = mnist.test.next_batch(BATCH_SIZE, shuffle=False)
     batch_xs = batch_xs.reshape(BATCH_SIZE, 28, 28, 1)
-    batch_correct_count = sess.run(total_correct, feed_dict={batch_size: BATCH_SIZE, X: batch_xs, Y: batch_ys})
     
+    # test
+    batch_correct_count = sess.run(total_correct, feed_dict={batch_size: BATCH_SIZE, X: batch_xs, Y: batch_ys})
     correct += batch_correct_count
     total += BATCH_SIZE
+    # test
+    print('acc:', sess.run(acc_op, feed_dict={batch_size: BATCH_SIZE, X: batch_xs, Y: batch_ys}))
+
 
 ##############################################
 total_accuracy = correct / total
