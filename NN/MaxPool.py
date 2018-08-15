@@ -2,6 +2,8 @@
 import tensorflow as tf
 import numpy as np
 import math
+# from tensorflow.python.ops import gen_nn_ops
+# return gen_nn_ops.max_pool_v2(value=X, ksize=self.size, strides=self.stride, padding="SAME")
 
 from Layer import Layer 
 from Activation import Activation
