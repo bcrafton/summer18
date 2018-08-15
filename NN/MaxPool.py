@@ -19,14 +19,14 @@ class MaxPool(Layer):
 
     def forward(self, X: np.ndarray):
         # return tf.nn.max_pool(value=X, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="SAME")
-        return gen_nn_ops.max_pool_v2(X, [1, 2, 2, 1], [1, 2, 2, 1], padding="SAME")
+        return tf.nn.max_pool(X, [1, 2, 2, 1], [1, 2, 2, 1], padding="SAME")
     
     def backward(self, AIN : np.ndarray, AOUT : np.ndarray, DIN : np.ndarray):
         # think both of these would work
         
         # return tf.multiply(tf.cast(AOUT > 0.0, dtype=tf.float32), 1.0)
         
-        grad = gen_nn_ops.max_pool_grad_v2(grad=DIN, orig_input=AIN, orig_output=AOUT, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="SAME")
+        grad = gen_nn_ops.max_pool_grad(grad=DIN, orig_input=AIN, orig_output=AOUT, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="SAME")
         # pool, argmax = tf.nn.max_pool_with_argmax(AIN, self.size, self.stride, padding="SAME")
         # return tf.multiply(tf.cast(pool > 0.0, dtype=tf.float32), 1.0)
         return grad

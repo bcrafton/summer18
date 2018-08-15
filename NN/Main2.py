@@ -1,4 +1,9 @@
 
+import os
+
+os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"]=str(0)
+
 import time
 import tensorflow as tf
 import numpy as np
@@ -22,11 +27,11 @@ mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
 
 ##############################################
 
-EPOCHS = 2
+EPOCHS = 10
 TRAIN_EXAMPLES = 50000
 TEST_EXAMPLES = 10000
 BATCH_SIZE = 10
-ALPHA = 1e-2
+ALPHA = 1e-3
 
 ##############################################
 
