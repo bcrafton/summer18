@@ -27,6 +27,9 @@ class Convolution(Layer):
         self.activation = activation
         self.last_layer = last_layer
         
+    def get_weights(self):
+        return self.filters
+        
     def forward(self, batch_size : int, X : np.ndarray):
         Z = tf.nn.conv2d(X, self.filters, self.stride, self.padding)
         A = self.activation.forward(Z)

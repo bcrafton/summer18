@@ -29,6 +29,9 @@ class FullyConnected(Layer):
         # activation function
         self.activation = activation
 
+    def get_weights(self):
+        return self.weights
+
     def forward(self, batch_size : int, X : np.ndarray):
         Z = tf.matmul(X, self.weights) + self.bias
         A = self.activation.forward(Z)

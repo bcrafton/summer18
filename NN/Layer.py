@@ -7,7 +7,7 @@ class Layer:
     def __init__(self):
         super().__init__()
 
-    def initialize(self, input_size: tuple, num_classes: int):
+    def get_weights(self):
         pass
 
     def forward(self, batch_size : int, X: np.ndarray) -> np.ndarray:

@@ -9,6 +9,9 @@ class ConvToFullyConnected(Layer):
 
     def __init__(self, shape):
         self.shape = shape
+        
+    def get_weights(self):
+        return tf.random_uniform(shape=(1, 1))
 
     def forward(self, batch_size : int, X: np.ndarray):
         return tf.reshape(X, [batch_size, -1])

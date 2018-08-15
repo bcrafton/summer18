@@ -29,6 +29,7 @@ ALPHA = 1e-2
 ##############################################
 
 batch = tf.placeholder(tf.int32)
+
 XTRAIN = tf.placeholder(tf.float32, [BATCH_SIZE, 28, 28, 1])
 YTRAIN = tf.placeholder(tf.float32, [BATCH_SIZE, 10])
 
@@ -44,6 +45,25 @@ W2 = tf.Variable(tf.random_uniform(shape=[28*28*16, 10]) * (2 * 0.12) - 0.12)
 l2 = FullyConnected(size=[28*28*16, 10], weights=W2, alpha=ALPHA, activation=Sigmoid(), last_layer=False)
 
 model = Model(layers=[l0, l1, l2])
+
+'''
+XTRAIN = tf.placeholder(tf.float32, [BATCH_SIZE, 784])
+YTRAIN = tf.placeholder(tf.float32, [BATCH_SIZE, 10])
+
+XTEST = tf.placeholder(tf.float32, [TEST_EXAMPLES, 784])
+YTEST = tf.placeholder(tf.float32, [TEST_EXAMPLES, 10])
+
+W0 = tf.Variable(tf.random_uniform(shape=[784, 100]) * (2 * 0.12) - 0.12)
+l0 = FullyConnected(size=[784, 100], weights=W0, alpha=ALPHA, activation=Sigmoid(), last_layer=False)
+
+W1 = tf.Variable(tf.random_uniform(shape=[100, 10]) * (2 * 0.12) - 0.12)
+l1 = FullyConnected(size=[100, 10], weights=W1, alpha=ALPHA, activation=Sigmoid(), last_layer=True)
+
+model = Model(layers=[l0, l1])
+'''
+
+##############################################
+
 ret = model.train(batch_size=BATCH_SIZE, X=XTRAIN, Y=YTRAIN)
 predict = model.predict(batch_size=TEST_EXAMPLES, X=XTEST)
 
@@ -56,13 +76,14 @@ start = time.time()
 for ii in range(int(EPOCHS * TRAIN_EXAMPLES / BATCH_SIZE)):
     batch_xs, batch_ys = mnist.train.next_batch(BATCH_SIZE, shuffle=False)
     batch_xs = batch_xs.reshape(BATCH_SIZE, 28, 28, 1)
-    sess.run(ret, feed_dict={XTRAIN: batch_xs, YTRAIN: batch_ys})
+    sess.run(ret, feed_dict={batch: BATCH_SIZE, XTRAIN: batch_xs, YTRAIN: batch_ys})
 end = time.time()
 
 correct_prediction = tf.equal(tf.argmax(predict,1), tf.argmax(YTEST,1))
 accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
-print(sess.run(accuracy, feed_dict={XTRAIN: batch_xs, YTRAIN: batch_ys, XTEST: mnist.test.images.reshape(TEST_EXAMPLES, 28, 28, 1), YTEST: mnist.test.labels}))
+print(sess.run(accuracy, feed_dict={batch: TEST_EXAMPLES, XTRAIN: batch_xs, YTRAIN: batch_ys, XTEST: mnist.test.images.reshape(TEST_EXAMPLES, 28, 28, 1), YTEST: mnist.test.labels}))
+# print(sess.run(accuracy, feed_dict={XTRAIN: batch_xs, YTRAIN: batch_ys, XTEST: mnist.test.images, YTEST: mnist.test.labels}))
 print("time taken: " + str(end - start))
 
 ##############################################

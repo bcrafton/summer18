@@ -31,6 +31,9 @@ class Model:
                 D[ii] = l.backward(batch_size, A[ii-1], A[ii], D[ii+1])
                 
         ret = []
+        for ii in range(self.num_layers):
+            l = self.layers[ii]
+            ret.append(l.get_weights())
         return ret
     
     def predict(self, batch_size : int, X : np.ndarray):
