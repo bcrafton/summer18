@@ -24,7 +24,7 @@ mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
 
 EPOCHS = 1
 TRAIN_EXAMPLES = 50000
-TEST_EXAMPLES = 1000
+TEST_EXAMPLES = 10000
 BATCH_SIZE = 128
 ALPHA = 1e-2
 
@@ -74,14 +74,19 @@ for ii in range(int(EPOCHS * TRAIN_EXAMPLES / BATCH_SIZE)):
     sess.run(ret, feed_dict={batch_size: BATCH_SIZE, X: batch_xs, Y: batch_ys})
 end = time.time()
 
-correct_prediction = tf.equal(tf.argmax(predict, 1), tf.argmax(Y, 1))
-accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+correct_sum = 0
+for ii in range(int(TEST_EXAMPLES / BATCH_SIZE)):
+    print (str(ii * BATCH_SIZE) + "/" + str(int(TEST_EXAMPLES)))
+    batch_xs, batch_ys = mnist.test.next_batch(BATCH_SIZE, shuffle=False)
+    batch_xs = batch_xs.reshape(BATCH_SIZE, 28, 28, 1)
+    batch_correct_count = sess.run(total_correct, feed_dict={batch_size: BATCH_SIZE, X: batch_xs, Y: batch_ys})
+    correct_sum += batch_correct_count
 
-print(sess.run(accuracy, feed_dict={batch_size: TEST_EXAMPLES, X: mnist.test.images[0:TEST_EXAMPLES].reshape(TEST_EXAMPLES, 28, 28, 1), Y: mnist.test.labels[0:TEST_EXAMPLES]}))
-print("time taken: " + str(end - start))
+total_accuracy = correct_sum / TEST_EXAMPLES
+print ("accuracy: " + str(total_accuracy))
 ##############################################
 
-
+print("time taken: " + str(end - start))
 
 
 
