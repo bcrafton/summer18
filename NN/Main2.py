@@ -22,11 +22,11 @@ mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
 
 ##############################################
 
-EPOCHS = 1
+EPOCHS = 5
 TRAIN_EXAMPLES = 50000
 TEST_EXAMPLES = 10000
-BATCH_SIZE = 128
-ALPHA = 1e-2
+BATCH_SIZE = 32
+ALPHA = 1e-3
 
 ##############################################
 
@@ -74,18 +74,21 @@ for ii in range(int(EPOCHS * TRAIN_EXAMPLES / BATCH_SIZE)):
     sess.run(ret, feed_dict={batch_size: BATCH_SIZE, X: batch_xs, Y: batch_ys})
 end = time.time()
 
-correct_sum = 0
+correct = 0
+total = 0
 for ii in range(int(TEST_EXAMPLES / BATCH_SIZE)):
     print (str(ii * BATCH_SIZE) + "/" + str(int(TEST_EXAMPLES)))
     batch_xs, batch_ys = mnist.test.next_batch(BATCH_SIZE, shuffle=False)
     batch_xs = batch_xs.reshape(BATCH_SIZE, 28, 28, 1)
     batch_correct_count = sess.run(total_correct, feed_dict={batch_size: BATCH_SIZE, X: batch_xs, Y: batch_ys})
-    correct_sum += batch_correct_count
+    
+    correct += batch_correct_count
+    total += BATCH_SIZE
 
-total_accuracy = correct_sum / TEST_EXAMPLES
-print ("accuracy: " + str(total_accuracy))
 ##############################################
-
+total_accuracy = correct / total
+print ("correct: " + str(correct) + " total: " + str(total) + " accuracy: " + str(total_accuracy))
+##############################################
 print("time taken: " + str(end - start))
 
 
