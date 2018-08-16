@@ -1,4 +1,9 @@
 
+import os 
+
+os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"]="0"
+
 import time
 import tensorflow as tf
 import numpy as np
@@ -16,7 +21,7 @@ mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
 
 ##############################################
 
-EPOCHS = 100
+EPOCHS = 10
 TRAIN_EXAMPLES = 50000
 TEST_EXAMPLES = 10000
 BATCH_SIZE = 32
@@ -34,8 +39,8 @@ X = tf.placeholder(tf.float32, [None, 784])
 Y = tf.placeholder(tf.float32, [None, 10])
 
 model = Model(layers=[l1, l2])
-ret = model.train(batch_size=BATCH_SIZE,X=X, Y=Y)
-predict = model.predict(batch_size=BATCH_SIZE,X=X)
+ret = model.train(X=X, Y=Y)
+predict = model.predict(X=X)
 
 ##############################################
 
