@@ -77,8 +77,9 @@ model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11])
 
 ##############################################
 
-ret = model.train(X=X, Y=Y)
 predict = model.predict(X=X)
+ret = model.train(X=X, Y=Y)
+# predict = model.predict(X=X)
 
 correct_prediction = tf.equal(tf.argmax(predict, 1), tf.argmax(Y, 1))
 total_correct = tf.reduce_sum(tf.cast(correct_prediction, tf.float32))

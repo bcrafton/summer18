@@ -45,8 +45,9 @@ class FullyConnected(Layer):
         DO = tf.multiply(DO, self.activation.gradient(AO))
         DI = tf.matmul(DO, tf.transpose(self.weights))
         DW = tf.matmul(tf.transpose(AI), DO)
+        DB = tf.reduce_sum(DO, axis=0)
         self.weights = self.weights.assign(tf.subtract(self.weights, tf.scalar_mul(self.alpha, DW)))
-        self.bias = self.bias.assign(tf.subtract(self.bias, tf.scalar_mul(self.alpha, tf.reduce_sum(DO, axis=0))))
+        self.bias = self.bias.assign(tf.subtract(self.bias, tf.scalar_mul(self.alpha, DB)))
                 
         return DI
         
