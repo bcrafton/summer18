@@ -29,7 +29,7 @@ cifar10 = tf.keras.datasets.cifar10.load_data()
 
 ##############################################
 
-EPOCHS = 1
+EPOCHS = 10
 TRAIN_EXAMPLES = 50000
 TEST_EXAMPLES = 10000
 BATCH_SIZE = 25
@@ -37,7 +37,7 @@ ALPHA = 1e-2
 
 ##############################################
 
-EPSILON = 1e-5
+EPSILON = 0.12
 
 tf.set_random_seed(0)
 tf.reset_default_graph()
