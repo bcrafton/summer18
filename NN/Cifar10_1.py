@@ -96,11 +96,11 @@ y_test = keras.utils.to_categorical(y_test, 10)
 for ii in range(0, EPOCHS * TRAIN_EXAMPLES, BATCH_SIZE):
     start = ii % TRAIN_EXAMPLES
     end = ii % TRAIN_EXAMPLES + BATCH_SIZE
-    sess.run([ret], feed_dict={X: x_train[start:end], Y: y_train[start:end]})
+    sess.run([ret], feed_dict={batch_size: BATCH_SIZE, X: x_train[start:end], Y: y_train[start:end]})
 
 correct_prediction = tf.equal(tf.argmax(predict,1), tf.argmax(Y,1))
 accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-print(sess.run(accuracy, feed_dict={X: x_test, Y: y_test}))
+print(sess.run(accuracy, feed_dict={batch_size: TEST_EXAMPLES, X: x_test, Y: y_test}))
 
 
 
