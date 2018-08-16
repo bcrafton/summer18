@@ -30,24 +30,24 @@ class FullyConnected(Layer):
         self.activation = activation
 
     def get_weights(self):
-        return self.weights
+        return [self.weights, self.bias]
 
     def forward(self, X : np.ndarray):
         Z = tf.matmul(X, self.weights) + self.bias
         A = self.activation.forward(Z)
         return A
             
-    def backward(self, AIN : np.ndarray, AOUT : np.ndarray, DIN : np.ndarray):
+    def backward(self, AI : np.ndarray, AO : np.ndarray, DO : np.ndarray):
 
         # print (AIN.get_shape(), AOUT.get_shape(), DIN.get_shape(), DOUT.get_shape(), self.weights.get_shape())
 
-        DIN = tf.multiply(DIN, self.activation.gradient(AOUT))
-        DOUT = tf.matmul(DIN, tf.transpose(self.weights))
-        G = tf.matmul(tf.transpose(AIN), DIN)
-        self.weights = self.weights.assign(tf.subtract(self.weights, tf.scalar_mul(self.alpha, G)))
-        # WE NEED TO UPDATE OUR BIAS...
-        
-        return DOUT
+        DO = tf.multiply(DO, self.activation.gradient(AO))
+        DI = tf.matmul(DO, tf.transpose(self.weights))
+        DW = tf.matmul(tf.transpose(AI), DO)
+        self.weights = self.weights.assign(tf.subtract(self.weights, tf.scalar_mul(self.alpha, DW)))
+        self.bias = self.bias.assign(tf.subtract(self.bias, tf.scalar_mul(self.alpha, DO))
+                
+        return DI
         
     def dfa(self, AIN : np.ndarray, AOUT : np.ndarray, DIN : np.ndarray):
         pass
