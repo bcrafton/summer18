@@ -29,7 +29,7 @@ cifar10 = tf.keras.datasets.cifar10.load_data()
 
 ##############################################
 
-EPOCHS = 10
+EPOCHS = 1
 TRAIN_EXAMPLES = 50000
 TEST_EXAMPLES = 10000
 BATCH_SIZE = 25
@@ -77,6 +77,8 @@ model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9])
 
 ret = model.train(X=X, Y=Y)
 predict = model.predict(X=X)
+argmax_predict = tf.argmax(model.predict(X=X), 1)
+argmax_y = tf.argmax(Y, 1)
 
 correct_prediction = tf.equal(tf.argmax(predict, 1), tf.argmax(Y, 1))
 total_correct = tf.reduce_sum(tf.cast(correct_prediction, tf.float32))
@@ -105,18 +107,22 @@ for ii in range(EPOCHS):
 
         start = jj % TRAIN_EXAMPLES
         end = jj % TRAIN_EXAMPLES + BATCH_SIZE
+
+        x = x_train[start:end].reshape(BATCH_SIZE, 32, 32, 3)
+        y = y_train[start:end].reshape(BATCH_SIZE, 10)
+
         sess.run([ret], feed_dict={batch_size: BATCH_SIZE, X: x_train[start:end], Y: y_train[start:end]})
 
 for jj in range(0, TEST_EXAMPLES, BATCH_SIZE):
     start = jj % TEST_EXAMPLES
     end = jj % TEST_EXAMPLES + BATCH_SIZE
-    print('acc:', sess.run(acc_op, feed_dict={batch_size: BATCH_SIZE, X: x_test[start:end], Y: y_test[start:end]}))
 
+    x = x_test[start:end].reshape(BATCH_SIZE, 32, 32, 3)
+    y = y_test[start:end].reshape(BATCH_SIZE, 10)
 
-
-
-
-
+    print('acc:', sess.run(acc_op, feed_dict={batch_size: BATCH_SIZE, X: x, Y: y}))
+    print(sess.run([argmax_predict, argmax_y], feed_dict={batch_size: BATCH_SIZE, X: x, Y: y}))
+    print(sess.run(predict, feed_dict={batch_size: BATCH_SIZE, X: x, Y: y}))
 
 
 
