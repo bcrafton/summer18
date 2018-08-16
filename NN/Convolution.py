@@ -30,7 +30,7 @@ class Convolution(Layer):
     def get_weights(self):
         return self.filters
         
-    def forward(self, X : np.ndarray):
+    def forward(self, X : np.ndarray, dropout=False):
         Z = tf.nn.conv2d(X, self.filters, self.stride, self.padding)
         A = self.activation.forward(Z)
         return A

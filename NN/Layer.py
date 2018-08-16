@@ -10,13 +10,13 @@ class Layer:
     def get_weights(self):
         pass
 
-    def forward(self, X: np.ndarray) -> np.ndarray:
+    def forward(self, X : np.ndarray, dropout=False):
         pass
 
-    def backward(self, E: np.ndarray) -> tuple:
+    def backward(self, AI : np.ndarray, AO : np.ndarray, DO : np.ndarray):
         pass
 
-    def dfa(self, E: np.ndarray) -> tuple:
+    def dfa(self, AI : np.ndarray, AO : np.ndarray, DO : np.ndarray):
         pass
 
 

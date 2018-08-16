@@ -10,21 +10,19 @@ class Dropout(Layer):
     def __init__(self, rate):
         self.rate = rate
 
-    def initialize(self, input_size, out_layer_size, train_method):
-        return input_size
+    def get_weights(self):
+        return tf.random_uniform(shape=(1, 1))
 
-    def forward(self, X):
-        if mode == 'train':
+    def forward(self, X : np.ndarray, dropout=False):
+        if dropout:
             self.dropout_mask = np.random.binomial(size=X.shape, n=1, p=1 - self.rate)
             return X * self.dropout_mask
         else:
             return X
 
-    def dfa(self, E: np.ndarray):
+    def backward(self, AI : np.ndarray, AO : np.ndarray, DO : np.ndarray):
+        return DO * self.dropout_mask
+
+    def dfa(self, AI : np.ndarray, AO : np.ndarray, DO : np.ndarray):
         return None
-
-    def back_prob(self, E: np.ndarray):
-        return E * self.dropout_mask, 0, 0
-
-
 

@@ -14,9 +14,9 @@ class Model:
         for ii in range(self.num_layers):
             l = self.layers[ii]
             if ii == 0:
-                A[ii] = l.forward(X)
+                A[ii] = l.forward(X, dropout=True)
             else:
-                A[ii] = l.forward(A[ii-1])
+                A[ii] = l.forward(A[ii-1], dropout=True)
             
         E = A[self.num_layers-1] - Y
             
@@ -42,8 +42,8 @@ class Model:
         for ii in range(self.num_layers):
             l = self.layers[ii]
             if ii == 0:
-                A[ii] = l.forward(X)
+                A[ii] = l.forward(X, dropout=False)
             else:
-                A[ii] = l.forward(A[ii-1])
+                A[ii] = l.forward(A[ii-1], dropout=False)
                 
         return A[self.num_layers-1]

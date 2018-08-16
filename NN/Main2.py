@@ -50,15 +50,19 @@ l1 = Convolution(input_sizes=[batch_size, 28, 28, 32], filter_sizes=[3, 3, 32, 6
 
 l2 = MaxPool(size=[batch_size, 28, 28, 64], stride=[1, 2, 2, 1])
 
-l3 = ConvToFullyConnected(shape=[14, 14, 64])
+l3 = Dropout(rate=0.25)
 
-W4 = tf.Variable(tf.random_uniform(shape=[14*14*64, 128]) * (2 * 0.12) - 0.12)
-l4 = FullyConnected(size=[14*14*64, 128], weights=W4, alpha=ALPHA, activation=Relu(), last_layer=False)
+l4 = ConvToFullyConnected(shape=[14, 14, 64])
 
-W5 = tf.Variable(tf.random_uniform(shape=[128, 10]) * (2 * 0.12) - 0.12)
-l5 = FullyConnected(size=[128, 10], weights=W5, alpha=ALPHA, activation=Relu(), last_layer=False)
+W5 = tf.Variable(tf.random_uniform(shape=[14*14*64, 128]) * (2 * 0.12) - 0.12)
+l5 = FullyConnected(size=[14*14*64, 128], weights=W5, alpha=ALPHA, activation=Relu(), last_layer=False)
 
-model = Model(layers=[l0, l1, l2, l3, l4, l5])
+l6 = Dropout(rate=0.5)
+
+W7 = tf.Variable(tf.random_uniform(shape=[128, 10]) * (2 * 0.12) - 0.12)
+l7 = FullyConnected(size=[128, 10], weights=W7, alpha=ALPHA, activation=Relu(), last_layer=False)
+
+model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7])
 
 ##############################################
 

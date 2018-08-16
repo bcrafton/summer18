@@ -33,7 +33,7 @@ class FullyConnected(Layer):
     def get_weights(self):
         return [self.weights, self.bias]
 
-    def forward(self, X : np.ndarray):
+    def forward(self, X : np.ndarray, dropout=False):
         Z = tf.matmul(X, self.weights) + self.bias
         A = self.activation.forward(Z)
         return A

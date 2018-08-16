@@ -13,7 +13,7 @@ class ConvToFullyConnected(Layer):
     def get_weights(self):
         return tf.random_uniform(shape=(1, 1))
 
-    def forward(self, X: np.ndarray):
+    def forward(self, X: np.ndarray, dropout=False):
         return tf.reshape(X, [tf.shape(X)[0], -1])
 
     def backward(self, AIN : np.ndarray, AOUT : np.ndarray, DO : np.ndarray):
