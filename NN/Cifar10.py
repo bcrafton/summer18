@@ -2,7 +2,7 @@
 import os
 
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]=str(0)
+os.environ["CUDA_VISIBLE_DEVICES"]=str(2)
 
 import time
 import tensorflow as tf
@@ -17,6 +17,7 @@ from ConvToFullyConnected import ConvToFullyConnected
 from FullyConnected import FullyConnected
 from Convolution import Convolution
 from MaxPool import MaxPool
+from Dropout import Dropout
 
 from Activation import Activation
 from Activation import Sigmoid
@@ -28,10 +29,10 @@ cifar10 = tf.keras.datasets.cifar10.load_data()
 
 ##############################################
 
-EPOCHS = 1
+EPOCHS = 3
 TRAIN_EXAMPLES = 50000
 TEST_EXAMPLES = 10000
-BATCH_SIZE = 25
+BATCH_SIZE = 20
 ALPHA = 1e-3
 
 ##############################################
@@ -46,25 +47,33 @@ Y = tf.placeholder(tf.float32, [None, 10])
 W0 = tf.Variable(tf.random_uniform(shape=[5, 5, 3, 96]) * (2 * 0.0025) - 0.0025)
 l0 = Convolution(input_sizes=[batch_size, 32, 32, 3], filter_sizes=[5, 5, 3, 96], filters=W0, stride=1, padding=1, alpha=ALPHA, activation=Relu(), last_layer=False)
 
-W1 = tf.Variable(tf.random_uniform(shape=[5, 5, 96, 128]) * (2 * 0.0025) - 0.0025)
-l1 = Convolution(input_sizes=[batch_size, 32, 32, 96], filter_sizes=[5, 5, 96, 128], filters=W1, stride=1, padding=1, alpha=ALPHA, activation=Relu(), last_layer=False)
+l1 = Dropout(rate=0.25)
 
-l2 = MaxPool(size=[batch_size, 32, 32, 128], stride=[1, 2, 2, 1])
+W2 = tf.Variable(tf.random_uniform(shape=[5, 5, 96, 128]) * (2 * 0.0025) - 0.0025)
+l2 = Convolution(input_sizes=[batch_size, 32, 32, 96], filter_sizes=[5, 5, 96, 128], filters=W2, stride=1, padding=1, alpha=ALPHA, activation=Relu(), last_layer=False)
 
-W3 = tf.Variable(tf.random_uniform(shape=[5, 5, 128, 256]) * (2 * 0.0025) - 0.0025)
-l3 = Convolution(input_sizes=[batch_size, 16, 16, 128], filter_sizes=[5, 5, 128, 256], filters=W3, stride=1, padding=1, alpha=ALPHA, activation=Relu(), last_layer=False)
+l3 = Dropout(rate=0.25)
 
-l4 = MaxPool(size=[batch_size, 16, 16, 256], stride=[1, 2, 2, 1])
+l4 = MaxPool(size=[batch_size, 32, 32, 128], stride=[1, 2, 2, 1])
 
-l5 = ConvToFullyConnected(shape=[8, 8, 256])
+W5 = tf.Variable(tf.random_uniform(shape=[5, 5, 128, 256]) * (2 * 0.0025) - 0.0025)
+l5 = Convolution(input_sizes=[batch_size, 16, 16, 128], filter_sizes=[5, 5, 128, 256], filters=W5, stride=1, padding=1, alpha=ALPHA, activation=Relu(), last_layer=False)
 
-W6 = tf.Variable(tf.random_uniform(shape=[8*8*256, 2048]) * (2 * 0.0025) - 0.0025)
-l6 = FullyConnected(size=[8*8*256, 2048], weights=W6, alpha=ALPHA, activation=Relu(), last_layer=False)
+l6 = Dropout(rate=0.5)
 
-W7 = tf.Variable(tf.random_uniform(shape=[2048, 10]) * (2 * 0.0025) - 0.0025)
-l7 = FullyConnected(size=[2048, 10], weights=W7, alpha=ALPHA, activation=Relu(), last_layer=False)
+l7 = MaxPool(size=[batch_size, 16, 16, 256], stride=[1, 2, 2, 1])
 
-model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7])
+l8 = ConvToFullyConnected(shape=[8, 8, 256])
+
+W9 = tf.Variable(tf.random_uniform(shape=[8*8*256, 2048]) * (2 * 0.0025) - 0.0025)
+l9 = FullyConnected(size=[8*8*256, 2048], weights=W9, alpha=ALPHA, activation=Relu(), last_layer=False)
+
+l10 = Dropout(rate=0.5)
+
+W11 = tf.Variable(tf.random_uniform(shape=[2048, 10]) * (2 * 0.0025) - 0.0025)
+l11 = FullyConnected(size=[2048, 10], weights=W11, alpha=ALPHA, activation=Relu(), last_layer=False)
+
+model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11])
 
 ##############################################
 
