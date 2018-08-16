@@ -29,7 +29,7 @@ cifar10 = tf.keras.datasets.cifar10.load_data()
 
 ##############################################
 
-EPOCHS = 3
+EPOCHS = 1
 TRAIN_EXAMPLES = 50000
 TEST_EXAMPLES = 10000
 BATCH_SIZE = 20
@@ -104,11 +104,17 @@ for ii in range(0, EPOCHS * TRAIN_EXAMPLES, BATCH_SIZE):
 
 correct_prediction = tf.equal(tf.argmax(predict,1), tf.argmax(Y,1))
 accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-print(sess.run(accuracy, feed_dict={batch_size: TEST_EXAMPLES, X: x_test, Y: y_test}))
 
+count = 0
+total_acc = 0
 
+for ii in range(0, TEST_EXAMPLES, BATCH_SIZE):
+    start = ii % TEST_EXAMPLES
+    end = ii % TEST_EXAMPLES + BATCH_SIZE
+    acc = sess.run(accuracy, feed_dict={batch_size: BATCH_SIZE, X: x_test[start:end], Y: y_test[start:end]})
 
-
+    count += 1
+    total_acc += acc
 
 
 
