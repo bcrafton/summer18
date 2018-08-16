@@ -17,7 +17,7 @@ class MaxPool(Layer):
     def get_weights(self):
         return tf.random_uniform(shape=(1, 1))
 
-    def forward(self, X: np.ndarray):
+    def forward(self, X: np.ndarray, dropout=False):
         # return tf.nn.max_pool(value=X, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="SAME")
         return tf.nn.max_pool(X, [1, 2, 2, 1], [1, 2, 2, 1], padding="SAME")
     

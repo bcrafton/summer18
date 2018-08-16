@@ -16,6 +16,7 @@ from ConvToFullyConnected import ConvToFullyConnected
 from FullyConnected import FullyConnected
 from Convolution import Convolution
 from MaxPool import MaxPool
+from Dropout import Dropout
 
 from Activation import Activation
 from Activation import Sigmoid
