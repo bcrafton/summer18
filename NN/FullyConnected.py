@@ -21,8 +21,9 @@ class FullyConnected(Layer):
         # weights
         self.weights = weights
         # self.B = B
-        self.bias = np.zeros(self.output_size)
-        
+        # self.bias = np.zeros(self.output_size)
+        self.bias = tf.Variable(tf.zeros(shape=[self.output_size]))        
+
         # lr
         self.alpha = alpha
         
@@ -45,7 +46,7 @@ class FullyConnected(Layer):
         DI = tf.matmul(DO, tf.transpose(self.weights))
         DW = tf.matmul(tf.transpose(AI), DO)
         self.weights = self.weights.assign(tf.subtract(self.weights, tf.scalar_mul(self.alpha, DW)))
-        self.bias = self.bias.assign(tf.subtract(self.bias, tf.scalar_mul(self.alpha, DO))
+        self.bias = self.bias.assign(tf.subtract(self.bias, tf.scalar_mul(self.alpha, tf.reduce_sum(DO, axis=0))))
                 
         return DI
         
