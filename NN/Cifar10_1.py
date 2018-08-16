@@ -46,44 +46,36 @@ batch_size = tf.placeholder(tf.int32, shape=())
 X = tf.placeholder(tf.float32, [None, 32, 32, 3])
 Y = tf.placeholder(tf.float32, [None, 10])
 
-W0 = tf.Variable(tf.random_uniform(shape=[3, 3, 3, 32], maxval=EPSILON, minval=-EPSILON))
+W0 = tf.Variable(tf.random_uniform(shape=[3, 3, 3, 32]) * 2 * EPSILON - EPSILON)
 l0 = Convolution(input_sizes=[batch_size, 32, 32, 3], filter_sizes=[3, 3, 3, 32], filters=W0, stride=1, padding=1, alpha=ALPHA, activation=Relu(), last_layer=False)
 
 l1 = MaxPool(size=[batch_size, 32, 32, 32], stride=[1, 2, 2, 1])
 
-W2 = tf.Variable(tf.random_uniform(shape=[3, 3, 32, 32], maxval=EPSILON, minval=-EPSILON))
+W2 = tf.Variable(tf.random_uniform(shape=[3, 3, 32, 32]) * 2 * EPSILON - EPSILON)
 l2 = Convolution(input_sizes=[batch_size, 16, 16, 32], filter_sizes=[3, 3, 32, 32], filters=W2, stride=1, padding=1, alpha=ALPHA, activation=Relu(), last_layer=False)
 
 l3 = MaxPool(size=[batch_size, 16, 16, 32], stride=[1, 2, 2, 1])
 
-W4 = tf.Variable(tf.random_uniform(shape=[3, 3, 32, 64], maxval=EPSILON, minval=-EPSILON))
+W4 = tf.Variable(tf.random_uniform(shape=[3, 3, 32, 64]) * 2 * EPSILON - EPSILON)
 l4 = Convolution(input_sizes=[batch_size, 8, 8, 32], filter_sizes=[3, 3, 32, 64], filters=W4, stride=1, padding=1, alpha=ALPHA, activation=Relu(), last_layer=False)
 
 l5 = MaxPool(size=[batch_size, 8, 8, 64], stride=[1, 2, 2, 1])
 
 l6 = ConvToFullyConnected(shape=[4, 4, 64])
 
-W7 = tf.Variable(tf.random_uniform(shape=[4*4*64, 128], maxval=EPSILON, minval=-EPSILON))
+W7 = tf.Variable(tf.random_uniform(shape=[4*4*64, 128]) * 2 * EPSILON - EPSILON)
 l7 = FullyConnected(size=[4*4*64, 128], weights=W7, alpha=ALPHA, activation=Relu(), last_layer=False)
 
 l8 = Dropout(rate=0.5)
 
-W9 = tf.Variable(tf.random_uniform(shape=[128, 10], maxval=EPSILON, minval=-EPSILON))
+W9 = tf.Variable(tf.random_uniform(shape=[128, 10]) * 2 * EPSILON - EPSILON)
 l9 = FullyConnected(size=[128, 10], weights=W9, alpha=ALPHA, activation=Relu(), last_layer=False)
 
 model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9])
 
-##############################################
+predict = model.predict(X=X)
 
 ret = model.train(X=X, Y=Y)
-predict = model.predict(X=X)
-argmax_predict = tf.argmax(model.predict(X=X), 1)
-argmax_y = tf.argmax(Y, 1)
-
-correct_prediction = tf.equal(tf.argmax(predict, 1), tf.argmax(Y, 1))
-total_correct = tf.reduce_sum(tf.cast(correct_prediction, tf.float32))
-
-acc, acc_op = tf.metrics.accuracy(labels=tf.argmax(Y, 1), predictions=tf.argmax(predict, 1))
 
 ##############################################
 
@@ -101,32 +93,14 @@ x_test = x_test.reshape(TEST_EXAMPLES, 32, 32, 3)
 x_test = x_test / 255.
 y_test = keras.utils.to_categorical(y_test, 10)
 
-for ii in range(EPOCHS):
-    for jj in range(0, TRAIN_EXAMPLES, BATCH_SIZE):
-        print (str(ii * TRAIN_EXAMPLES + jj) + "/" + str(EPOCHS * TRAIN_EXAMPLES))
+for ii in range(0, EPOCHS * TRAIN_EXAMPLES, BATCH_SIZE):
+    start = ii % TRAIN_EXAMPLES
+    end = ii % TRAIN_EXAMPLES + BATCH_SIZE
+    sess.run([ret], feed_dict={X: x_train[start:end], Y: y_train[start:end]})
 
-        start = jj % TRAIN_EXAMPLES
-        end = jj % TRAIN_EXAMPLES + BATCH_SIZE
-
-        x = x_train[start:end].reshape(BATCH_SIZE, 32, 32, 3)
-        y = y_train[start:end].reshape(BATCH_SIZE, 10)
-
-        sess.run([ret], feed_dict={batch_size: BATCH_SIZE, X: x_train[start:end], Y: y_train[start:end]})
-
-for jj in range(0, TEST_EXAMPLES, BATCH_SIZE):
-    start = jj % TEST_EXAMPLES
-    end = jj % TEST_EXAMPLES + BATCH_SIZE
-
-    x = x_test[start:end].reshape(BATCH_SIZE, 32, 32, 3)
-    y = y_test[start:end].reshape(BATCH_SIZE, 10)
-
-    print('acc:', sess.run(acc_op, feed_dict={batch_size: BATCH_SIZE, X: x, Y: y}))
-    print(sess.run([argmax_predict, argmax_y], feed_dict={batch_size: BATCH_SIZE, X: x, Y: y}))
-    print(sess.run(predict, feed_dict={batch_size: BATCH_SIZE, X: x, Y: y}))
-
-
-
-
+correct_prediction = tf.equal(tf.argmax(predict,1), tf.argmax(Y,1))
+accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+print(sess.run(accuracy, feed_dict={X: x_test, Y: y_test}))
 
 
 
