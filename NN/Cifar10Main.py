@@ -44,8 +44,10 @@ X = tf.placeholder(tf.float32, [None, 3072])
 Y = tf.placeholder(tf.float32, [None, 10])
 
 model = Model(layers=[l1, l2, l3])
-ret = model.train(X=X, Y=Y)
+
 predict = model.predict(X=X)
+
+ret = model.train(X=X, Y=Y)
 
 ##############################################
 
