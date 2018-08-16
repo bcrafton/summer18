@@ -6,6 +6,7 @@ os.environ["CUDA_VISIBLE_DEVICES"]="0"
 
 import time
 import tensorflow as tf
+import keras
 import numpy as np
 from tensorflow.examples.tutorials.mnist import input_data
 
@@ -63,8 +64,11 @@ x_test = x_test / 255.
 y_test = keras.utils.to_categorical(y_test, 10)
 
 start = time.time()
-for ii in range(int(EPOCHS * TRAIN_EXAMPLES / BATCH_SIZE)):
-    sess.run(ret, feed_dict={X: x_train[ii:(ii+BATCH_SIZE)], Y: y_train[ii:(ii+BATCH_SIZE)]})
+for ii in range(0, EPOCHS * TRAIN_EXAMPLES, BATCH_SIZE):
+    start = ii % TRAIN_EXAMPLES
+    end = ii % TRAIN_EXAMPLES + BATCH_SIZE
+    sess.run([ret], feed_dict={X: x_train[start:end], Y: y_train[start:end]})
+
 end = time.time()
 
 correct_prediction = tf.equal(tf.argmax(predict,1), tf.argmax(Y,1))
