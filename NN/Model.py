@@ -74,3 +74,11 @@ class Model:
                 A[ii] = l.forward(A[ii-1], dropout=False)
                 
         return A[self.num_layers-1]
+        
+        
+        
+        
+        
+        
+        
+        

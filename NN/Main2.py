@@ -31,7 +31,7 @@ mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
 EPOCHS = 1
 TRAIN_EXAMPLES = 50000
 TEST_EXAMPLES = 10000
-BATCH_SIZE = 20
+BATCH_SIZE = 1
 ALPHA = 1e-2
 
 ##############################################
@@ -40,8 +40,11 @@ tf.set_random_seed(0)
 tf.reset_default_graph()
 
 batch_size = tf.placeholder(tf.int32, shape=())
-X = tf.placeholder(tf.float32, [None, 28, 28, 1])
-Y = tf.placeholder(tf.float32, [None, 10])
+XTRAIN = tf.placeholder(tf.float32, [None, 28, 28, 1])
+YTRAIN = tf.placeholder(tf.float32, [None, 10])
+
+XTEST = tf.placeholder(tf.float32, [None, 28, 28, 1])
+YTEST = tf.placeholder(tf.float32, [None, 10])
 
 W0 = tf.Variable(tf.random_uniform(shape=[3, 3, 1, 32]) * (2 * 0.12) - 0.12)
 l0 = Convolution(input_sizes=[batch_size, 28, 28, 1], filter_sizes=[3, 3, 1, 32], num_classes=10, filters=W0, stride=1, padding=1, alpha=ALPHA, activation=Relu(), last_layer=False)
@@ -61,20 +64,19 @@ l5 = FullyConnected(size=[14*14*64, 128], num_classes=10, weights=W5, alpha=ALPH
 l6 = Dropout(rate=0.5)
 
 W7 = tf.Variable(tf.random_uniform(shape=[128, 10]) * (2 * 0.12) - 0.12)
-l7 = FullyConnected(size=[128, 10], num_classes=10, weights=W7, alpha=ALPHA, activation=Relu(), last_layer=False)
+l7 = FullyConnected(size=[128, 10], num_classes=10, weights=W7, alpha=ALPHA, activation=Relu(), last_layer=True)
 
 model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7])
 
 ##############################################
 
-predict = model.predict(X=X)
+predict = model.predict(X=XTEST)
 
-ret = model.dfa(X=X, Y=Y)
+ret = model.dfa(X=XTRAIN, Y=YTRAIN)
 
-correct_prediction = tf.equal(tf.argmax(predict, 1), tf.argmax(Y, 1))
+correct_prediction = tf.equal(tf.argmax(predict, 1), tf.argmax(YTEST, 1))
 total_correct = tf.reduce_sum(tf.cast(correct_prediction, tf.float32))
-
-acc, acc_op = tf.metrics.accuracy(labels=tf.argmax(Y, 1), predictions=tf.argmax(predict, 1))
+acc, acc_op = tf.metrics.accuracy(labels=tf.argmax(YTEST, 1), predictions=tf.argmax(predict, 1))
 
 ##############################################
 
@@ -89,7 +91,7 @@ for ii in range(EPOCHS):
         batch_xs, batch_ys = mnist.train.next_batch(BATCH_SIZE, shuffle=False)
         batch_xs = batch_xs.reshape(BATCH_SIZE, 28, 28, 1)
         # train
-        sess.run(ret, feed_dict={batch_size: BATCH_SIZE, X: batch_xs, Y: batch_ys})
+        sess.run(ret, feed_dict={batch_size: BATCH_SIZE, XTRAIN: batch_xs, YTRAIN: batch_ys})
 end = time.time()
 
 correct = 0
@@ -100,11 +102,11 @@ for ii in range(int(TEST_EXAMPLES / BATCH_SIZE)):
     batch_xs = batch_xs.reshape(BATCH_SIZE, 28, 28, 1)
     
     # test
-    batch_correct_count = sess.run(total_correct, feed_dict={batch_size: BATCH_SIZE, X: batch_xs, Y: batch_ys})
+    batch_correct_count = sess.run(total_correct, feed_dict={batch_size: BATCH_SIZE, XTEST: batch_xs, YTEST: batch_ys})
     correct += batch_correct_count
     total += BATCH_SIZE
     # test
-    print('acc:', sess.run(acc_op, feed_dict={batch_size: BATCH_SIZE, X: batch_xs, Y: batch_ys}))
+    # print('acc:', sess.run(acc_op, feed_dict={batch_size: BATCH_SIZE, X: batch_xs, Y: batch_ys}))
 
 
 ##############################################

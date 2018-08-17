@@ -23,7 +23,7 @@ class FullyConnected(Layer):
         self.weights = weights
         
         sqrt_fan_out = math.sqrt(self.output_size)
-        self.B = tf.Variable(tf.random_uniform(shape=[self.num_classes, self.output_size], minval=-1.0/sqrt_fan_out, maxval=1.0/sqrt_fan_out))
+        self.B = tf.Variable(tf.random_uniform(shape=[self.num_classes, self.output_size], minval=-1.0, maxval=1.0))
         
         # self.bias = np.zeros(self.output_size)
         self.bias = tf.Variable(tf.zeros(shape=[self.output_size]))        
@@ -54,20 +54,19 @@ class FullyConnected(Layer):
         return DI
         
     def dfa(self, AI : np.ndarray, AO : np.ndarray, DO : np.ndarray):
-        
-        # dropout_mask = tf.cast(tf.random_uniform(shape=tf.shape(DO)) > 0.25, tf.float32)
-        # DO = DO * dropout_mask
-        
+                
         if self.last_layer:
             DO = tf.multiply(DO, self.activation.gradient(AO))
-            DW = tf.matmul(tf.transpose(AI), DO)
-            DB = tf.reduce_sum(DO, axis=0)
         else:
             DO = tf.matmul(DO, self.B)
             DO = tf.multiply(DO, self.activation.gradient(AO))
-            DW = tf.matmul(tf.transpose(AI), DO)
-            DB = tf.reduce_sum(DO, axis=0)
             
+        # dropout_mask = tf.cast(tf.random_uniform(shape=tf.shape(DO)) > 0.5, tf.float32)
+        # DO = tf.multiply(DO, dropout_mask)
+            
+        DW = tf.matmul(tf.transpose(AI), DO)
+        DB = tf.reduce_sum(DO, axis=0)
+        
         self.weights = self.weights.assign(tf.subtract(self.weights, tf.scalar_mul(self.alpha, DW)))
         self.bias = self.bias.assign(tf.subtract(self.bias, tf.scalar_mul(self.alpha, DB)))
         
