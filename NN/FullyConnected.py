@@ -7,8 +7,6 @@ from Layer import Layer
 from Activation import Activation
 from Activation import Sigmoid
 
-EPSILON = 0.12
-
 class FullyConnected(Layer):
     def __init__(self, size : tuple, num_classes : int, weights : np.ndarray, alpha : float, activation : Activation, last_layer : bool):
         
@@ -23,7 +21,10 @@ class FullyConnected(Layer):
         
         # weights
         self.weights = weights
-        self.B = tf.Variable(tf.random_uniform(shape=[self.num_classes, self.output_size]) * 2 * EPSILON - EPSILON)
+        
+        sqrt_fan_out = math.sqrt(self.output_size)
+        self.B = tf.Variable(tf.random_uniform(shape=[self.num_classes, self.output_size], minval=-1.0/sqrt_fan_out, maxval=1.0/sqrt_fan_out))
+        
         # self.bias = np.zeros(self.output_size)
         self.bias = tf.Variable(tf.zeros(shape=[self.output_size]))        
 

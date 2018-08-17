@@ -7,8 +7,6 @@ from Layer import Layer
 from Activation import Activation
 from Activation import Sigmoid
 
-EPSILON = 0.12
-
 class Convolution(Layer):
     def __init__(self, input_sizes, filter_sizes, num_classes, filters, stride, padding, alpha, activation: Activation=None, last_layer=False):
         self.input_sizes = input_sizes
@@ -20,7 +18,8 @@ class Convolution(Layer):
         self.fh, self.fw, self.fin, self.fout = self.filter_sizes
         
         self.filters = filters
-        self.B = tf.Variable(tf.random_uniform(shape=[self.num_classes, self.h*self.w*self.fout]) * 2 * EPSILON - EPSILON)
+        sqrt_fan_out = math.sqrt(self.fout * self.h * self.w)
+        self.B = tf.Variable(tf.random_uniform(shape=[self.num_classes, self.h*self.w*self.fout], minval=-1.0/sqrt_fan_out, maxval=1.0/sqrt_fan_out))
         
         # TODO
         self.stride = stride
@@ -64,7 +63,7 @@ class Convolution(Layer):
     def dfa(self, AI: np.ndarray, AO: np.ndarray, DO: np.ndarray):
         # dropout_mask = tf.cast(tf.random_uniform(shape=tf.shape(DO)) > 0.25, tf.float32)
         # DO = DO * dropout_mask
-    
+
         DO = tf.matmul(DO, self.B)
         # DO = tf.reshape(DO, [self.batch_size, self.f, self.h, self.w])
         DO = tf.reshape(DO, [self.batch_size, self.h, self.w, self.fout])
