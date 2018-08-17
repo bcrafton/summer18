@@ -20,6 +20,6 @@ class ConvToFullyConnected(Layer):
         return tf.reshape(DO, [tf.shape(AIN)[0]] + self.shape)
 
     def dfa(self, AIN : np.ndarray, AOUT : np.ndarray, DO : np.ndarray):
-        pass
+        return None
 
 

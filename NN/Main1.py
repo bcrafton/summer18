@@ -21,7 +21,7 @@ mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
 
 ##############################################
 
-EPOCHS = 500
+EPOCHS = 1
 TRAIN_EXAMPLES = 50000
 TEST_EXAMPLES = 1000
 BATCH_SIZE = 32
@@ -34,25 +34,26 @@ X = tf.placeholder(tf.float32, [None, 28, 28, 1])
 Y = tf.placeholder(tf.float32, [None, 10])
 
 W0 = tf.Variable(tf.random_uniform(shape=[3, 3, 1, 32]) * (2 * 0.12) - 0.12)
-l0 = Convolution(input_sizes=[batch_size, 28, 28, 1], filter_sizes=[3, 3, 1, 32], filters=W0, stride=1, padding=1, alpha=ALPHA, activation=Relu(), last_layer=False)
+l0 = Convolution(input_sizes=[batch_size, 28, 28, 1], filter_sizes=[3, 3, 1, 32], num_classes=10, filters=W0, stride=1, padding=1, alpha=ALPHA, activation=Relu(), last_layer=False)
 
 W1 = tf.Variable(tf.random_uniform(shape=[3, 3, 32, 64]) * (2 * 0.12) - 0.12)
-l1 = Convolution(input_sizes=[batch_size, 28, 28, 32], filter_sizes=[3, 3, 32, 64], filters=W1, stride=1, padding=1, alpha=ALPHA, activation=Relu(), last_layer=False)
+l1 = Convolution(input_sizes=[batch_size, 28, 28, 32], filter_sizes=[3, 3, 32, 64], num_classes=10, filters=W1, stride=1, padding=1, alpha=ALPHA, activation=Relu(), last_layer=False)
 
 l2 = ConvToFullyConnected(shape=[28, 28, 64])
 
 W3 = tf.Variable(tf.random_uniform(shape=[28*28*64, 128]) * (2 * 0.12) - 0.12)
-l3 = FullyConnected(size=[28*28*64, 128], weights=W3, alpha=ALPHA, activation=Relu(), last_layer=False)
+l3 = FullyConnected(size=[28*28*64, 128], num_classes=10, weights=W3, alpha=ALPHA, activation=Relu(), last_layer=False)
 
 W4 = tf.Variable(tf.random_uniform(shape=[128, 10]) * (2 * 0.12) - 0.12)
-l4 = FullyConnected(size=[128, 10], weights=W4, alpha=ALPHA, activation=Relu(), last_layer=False)
+l4 = FullyConnected(size=[128, 10], num_classes=10, weights=W4, alpha=ALPHA, activation=Relu(), last_layer=True)
 
 model = Model(layers=[l0, l1, l2, l3, l4])
 
 ##############################################
 
-ret = model.train(X=X, Y=Y)
 predict = model.predict(X=X)
+
+ret = model.dfa(X=X, Y=Y)
 
 ##############################################
 

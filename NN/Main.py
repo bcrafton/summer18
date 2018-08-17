@@ -30,17 +30,19 @@ ALPHA = 1e-2
 ##############################################
 
 W1 = tf.Variable(tf.random_uniform(shape=[784, 100]) * (2 * 0.12) - 0.12)
-l1 = FullyConnected(size=[784, 100], weights=W1, alpha=ALPHA, activation=Sigmoid(), last_layer=False)
+l1 = FullyConnected(size=[784, 100], num_classes=10, weights=W1, alpha=ALPHA, activation=Sigmoid(), last_layer=False)
 
 W2 = tf.Variable(tf.random_uniform(shape=[100, 10]) * (2 * 0.12) - 0.12)
-l2 = FullyConnected(size=[100, 10], weights=W2, alpha=ALPHA, activation=Sigmoid(), last_layer=True)
+l2 = FullyConnected(size=[100, 10], num_classes=10, weights=W2, alpha=ALPHA, activation=Sigmoid(), last_layer=True)
 
 X = tf.placeholder(tf.float32, [None, 784])
 Y = tf.placeholder(tf.float32, [None, 10])
 
 model = Model(layers=[l1, l2])
-ret = model.train(X=X, Y=Y)
+
 predict = model.predict(X=X)
+
+ret = model.dfa(X=X, Y=Y)
 
 ##############################################
 

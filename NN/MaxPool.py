@@ -30,3 +30,6 @@ class MaxPool(Layer):
         # pool, argmax = tf.nn.max_pool_with_argmax(AIN, self.size, self.stride, padding="SAME")
         # return tf.multiply(tf.cast(pool > 0.0, dtype=tf.float32), 1.0)
         return grad
+        
+    def dfa(self, AI : np.ndarray, AO : np.ndarray, DO : np.ndarray):
+        return None
