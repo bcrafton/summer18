@@ -23,15 +23,19 @@ mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
 
 EPOCHS = 1
 TRAIN_EXAMPLES = 50000
-TEST_EXAMPLES = 1000
+TEST_EXAMPLES = 10000
 BATCH_SIZE = 32
 ALPHA = 1e-2
 
 ##############################################
 
 batch_size = tf.placeholder(tf.int32)
-X = tf.placeholder(tf.float32, [None, 28, 28, 1])
-Y = tf.placeholder(tf.float32, [None, 10])
+
+XTRAIN = tf.placeholder(tf.float32, [None, 28, 28, 1])
+YTRAIN = tf.placeholder(tf.float32, [None, 10])
+
+XTEST = tf.placeholder(tf.float32, [None, 28, 28, 1])
+YTEST = tf.placeholder(tf.float32, [None, 10])
 
 W0 = tf.Variable(tf.random_uniform(shape=[3, 3, 1, 32]) * (2 * 0.12) - 0.12)
 l0 = Convolution(input_sizes=[batch_size, 28, 28, 1], filter_sizes=[3, 3, 1, 32], num_classes=10, filters=W0, stride=1, padding=1, alpha=ALPHA, activation=Relu(), last_layer=False)
@@ -51,28 +55,25 @@ model = Model(layers=[l0, l1, l2, l3, l4])
 
 ##############################################
 
-predict = model.predict(X=X)
+predict = model.predict(X=XTEST)
 
-ret = model.dfa(X=X, Y=Y)
+ret = model.train(X=XTRAIN, Y=YTRAIN)
 
 ##############################################
 
 sess = tf.InteractiveSession()
 tf.global_variables_initializer().run()
 
-start = time.time()
 for ii in range(int(EPOCHS * TRAIN_EXAMPLES / BATCH_SIZE)):
     print (str(ii * BATCH_SIZE) + "/" + str(int(EPOCHS * TRAIN_EXAMPLES)))
     batch_xs, batch_ys = mnist.train.next_batch(BATCH_SIZE, shuffle=False)
     batch_xs = batch_xs.reshape(BATCH_SIZE, 28, 28, 1)
-    sess.run(ret, feed_dict={batch_size: BATCH_SIZE, X: batch_xs, Y: batch_ys})
-end = time.time()
+    sess.run(ret, feed_dict={batch_size: BATCH_SIZE, XTRAIN: batch_xs, YTRAIN: batch_ys})
 
-correct_prediction = tf.equal(tf.argmax(predict, 1), tf.argmax(Y, 1))
+correct_prediction = tf.equal(tf.argmax(predict, 1), tf.argmax(YTEST, 1))
 accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
-print(sess.run(accuracy, feed_dict={batch_size: TEST_EXAMPLES, X: mnist.test.images[0:TEST_EXAMPLES].reshape(TEST_EXAMPLES, 28, 28, 1), Y: mnist.test.labels[0:TEST_EXAMPLES]}))
-print("time taken: " + str(end - start))
+print(sess.run(accuracy, feed_dict={batch_size: TEST_EXAMPLES, XTEST: mnist.test.images.reshape(TEST_EXAMPLES, 28, 28, 1), YTEST: mnist.test.labels}))
 
 ##############################################
 
