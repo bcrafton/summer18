@@ -32,4 +32,15 @@ class Relu(Activation):
         return tf.nn.relu(x)
 
     def gradient(self, x):
-        return tf.multiply(tf.cast(x > 0.0, dtype=tf.float32), 1.0)
+        return tf.cast(x > 0.0, dtype=tf.float32)
+        
+class Tanh(Activation):
+
+    def __init__(self):
+        pass
+
+    def forward(self, x: np.ndarray):
+        return tf.tanh(x)
+
+    def gradient(self, x: np.ndarray):
+        return 1 - tf.pow(x, 2)

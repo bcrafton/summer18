@@ -23,7 +23,7 @@ class FullyConnected(Layer):
         self.weights = weights
         
         sqrt_fan_out = math.sqrt(self.output_size)
-        self.B = tf.Variable(tf.random_uniform(shape=[self.num_classes, self.output_size], minval=-1.0, maxval=1.0))
+        self.B = tf.Variable(tf.random_uniform(shape=[self.num_classes, self.output_size], minval=-1.0/sqrt_fan_out, maxval=1.0/sqrt_fan_out))
         
         # self.bias = np.zeros(self.output_size)
         self.bias = tf.Variable(tf.zeros(shape=[self.output_size]))        
@@ -61,8 +61,8 @@ class FullyConnected(Layer):
             DO = tf.matmul(DO, self.B)
             DO = tf.multiply(DO, self.activation.gradient(AO))
             
-        # dropout_mask = tf.cast(tf.random_uniform(shape=tf.shape(DO)) > 0.5, tf.float32)
-        # DO = tf.multiply(DO, dropout_mask)
+        dropout_mask = tf.cast(tf.random_uniform(shape=tf.shape(DO)) > 0.5, tf.float32)
+        DO = tf.multiply(DO, dropout_mask)
             
         DW = tf.matmul(tf.transpose(AI), DO)
         DB = tf.reduce_sum(DO, axis=0)

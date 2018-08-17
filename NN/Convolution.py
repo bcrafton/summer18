@@ -40,11 +40,13 @@ class Convolution(Layer):
     def forward(self, X : np.ndarray, dropout=False):
         Z = tf.nn.conv2d(X, self.filters, self.stride, self.padding)
         A = self.activation.forward(Z)
+        # A = tf.Print(A, [A], message="this is a: ")
         return A
         
-    def backward(self, AI: np.ndarray, AO: np.ndarray, DO: np.ndarray):
+    def backward(self, AI: np.ndarray, AO: np.ndarray, DO: np.ndarray):    
         # apply activation gradient
         DO = tf.multiply(DO, self.activation.gradient(AO))
+        # DO = tf.Print(DO, [tf.metrics.mean(DO)], message=": ")
         
         # send this back
         # DI = tf.nn.conv2d_backprop_input(input_sizes=[BATCH_SIZE, 28, 28, 1], filter=W, out_backprop=Y, strides=[1,1,1,1], padding="SAME")
@@ -61,14 +63,18 @@ class Convolution(Layer):
         return DI
 
     def dfa(self, AI: np.ndarray, AO: np.ndarray, DO: np.ndarray):
-        # dropout_mask = tf.cast(tf.random_uniform(shape=tf.shape(DO)) > 0.25, tf.float32)
-        # DO = DO * dropout_mask
 
         DO = tf.matmul(DO, self.B)
         # DO = tf.reshape(DO, [self.batch_size, self.f, self.h, self.w])
         DO = tf.reshape(DO, [self.batch_size, self.h, self.w, self.fout])
+        # DO = tf.Print(DO, [tf.metrics.mean(DO)], message="DO: ")
         DO = tf.multiply(DO, self.activation.gradient(AO))
+        
+        dropout_mask = tf.cast(tf.random_uniform(shape=tf.shape(DO)) > 0.5, tf.float32)
+        DO = DO * dropout_mask
+        
         DF = tf.nn.conv2d_backprop_filter(input=AI, filter_sizes=self.filter_sizes, out_backprop=DO, strides=self.stride, padding="SAME")
+        DF = tf.Print(DF, [tf.metrics.mean(DF)], message="DF: ")
         
         # update filters
         self.filters = self.filters.assign(tf.subtract(self.filters, tf.scalar_mul(self.alpha, DF)))
