@@ -1,8 +1,8 @@
 
 import os
 
-os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]=str(2)
+#os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
+#os.environ["CUDA_VISIBLE_DEVICES"]=str(2)
 
 import time
 import tensorflow as tf
@@ -29,7 +29,7 @@ cifar10 = tf.keras.datasets.cifar10.load_data()
 
 ##############################################
 
-EPOCHS = 1
+EPOCHS = 30
 TRAIN_EXAMPLES = 50000
 TEST_EXAMPLES = 10000
 BATCH_SIZE = 20
@@ -103,20 +103,23 @@ for ii in range(0, EPOCHS * TRAIN_EXAMPLES, BATCH_SIZE):
     sess.run([ret], feed_dict={batch_size: BATCH_SIZE, X: x_train[start:end], Y: y_train[start:end]})
 
 correct_prediction = tf.equal(tf.argmax(predict,1), tf.argmax(Y,1))
-accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+# accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+correct_prediction_sum = tf.reduce_sum(tf.cast(correct_prediction, tf.float32))
 
 count = 0
-total_acc = 0
+total_correct = 0
 
 for ii in range(0, TEST_EXAMPLES, BATCH_SIZE):
     start = ii % TEST_EXAMPLES
     end = ii % TEST_EXAMPLES + BATCH_SIZE
-    acc = sess.run(accuracy, feed_dict={batch_size: BATCH_SIZE, X: x_test[start:end], Y: y_test[start:end]})
+    correct = sess.run(correct_prediction_sum, feed_dict={batch_size: BATCH_SIZE, X: x_test[start:end], Y: y_test[start:end]})
 
-    count += 1
-    total_acc += acc
+    count += BATCH_SIZE
+    total_correct += correct
 
-
+print (count)
+print (total_correct)
+print (total_correct * 1.0 / count)
 
 
 
