@@ -16,7 +16,7 @@ class Layer:
     def backward(self, AI : np.ndarray, AO : np.ndarray, DO : np.ndarray):
         pass
 
-    def dfa(self, AI : np.ndarray, AO : np.ndarray, DO : np.ndarray):
+    def dfa(self, AI: np.ndarray, AO: np.ndarray, E: np.ndarray, DO: np.ndarray):
         pass
 
 

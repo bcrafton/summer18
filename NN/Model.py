@@ -51,11 +51,13 @@ class Model:
             
         for ii in range(self.num_layers-1, -1, -1):
             l = self.layers[ii]
-            
-            if (ii == 0):
-                l.dfa(X, A[ii], E)
+                
+            if (ii == self.num_layers-1):
+                D[ii] = l.dfa(A[ii-1], A[ii], E, E)
+            elif (ii == 0):
+                D[ii] = l.dfa(X, A[ii], E, D[ii+1])
             else:
-                l.dfa(A[ii-1], A[ii], E)
+                D[ii] = l.dfa(A[ii-1], A[ii], E, D[ii+1])
                 
         ret = []
         for ii in range(self.num_layers):

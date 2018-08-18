@@ -23,6 +23,6 @@ class Dropout(Layer):
     def backward(self, AI : np.ndarray, AO : np.ndarray, DO : np.ndarray):
         return DO * self.dropout_mask
 
-    def dfa(self, AI : np.ndarray, AO : np.ndarray, DO : np.ndarray):
-        return None
+    def dfa(self, AI: np.ndarray, AO: np.ndarray, E: np.ndarray, DO: np.ndarray):
+        return tf.ones(shape=(tf.shape(AI)))
 

@@ -30,7 +30,7 @@ cifar10 = tf.keras.datasets.cifar10.load_data()
 
 ##############################################
 
-EPOCHS = 1000
+EPOCHS = 100
 TRAIN_EXAMPLES = 50000
 TEST_EXAMPLES = 10000
 BATCH_SIZE = 25
@@ -81,6 +81,11 @@ predict = model.predict(X=XTEST)
 
 ret = model.dfa(X=XTRAIN, Y=YTRAIN)
 
+correct_prediction = tf.equal(tf.argmax(predict,1), tf.argmax(YTEST,1))
+correct_prediction_sum = tf.reduce_sum(tf.cast(correct_prediction, tf.float32))
+
+accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+
 ##############################################
 
 sess = tf.InteractiveSession()
@@ -102,9 +107,22 @@ for ii in range(0, EPOCHS * TRAIN_EXAMPLES, BATCH_SIZE):
     end = ii % TRAIN_EXAMPLES + BATCH_SIZE
     sess.run([ret], feed_dict={batch_size: BATCH_SIZE, XTRAIN: x_train[start:end], YTRAIN: y_train[start:end]})
 
-correct_prediction = tf.equal(tf.argmax(predict,1), tf.argmax(YTEST,1))
-accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-print(sess.run(accuracy, feed_dict={batch_size: TEST_EXAMPLES, XTEST: x_test, YTEST: y_test}))
+# print(sess.run(accuracy, feed_dict={batch_size: TEST_EXAMPLES, XTEST: x_test, YTEST: y_test}))
+
+count = 0
+total_correct = 0
+
+for ii in range(0, TEST_EXAMPLES, BATCH_SIZE):
+    start = ii % TEST_EXAMPLES
+    end = ii % TEST_EXAMPLES + BATCH_SIZE
+    correct = sess.run(correct_prediction_sum, feed_dict={batch_size: BATCH_SIZE, XTEST: x_test[start:end], YTEST: y_test[start:end]})
+
+    count += BATCH_SIZE
+    total_correct += correct
+
+    print (count)
+    print (total_correct)
+    print (total_correct * 1.0 / count)
 
 
 

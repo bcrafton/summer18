@@ -70,24 +70,22 @@ class Convolution(Layer):
         # return error wtr to input 
         return DI
 
-    def dfa(self, AI: np.ndarray, AO: np.ndarray, DO: np.ndarray):
+    def dfa(self, AI: np.ndarray, AO: np.ndarray, E: np.ndarray, DO: np.ndarray):
 
-        DO = tf.matmul(DO, self.B)
-        # DO = tf.reshape(DO, [self.batch_size, self.f, self.h, self.w])
-        DO = tf.reshape(DO, [self.batch_size, self.h, self.w, self.fout])
-        # DO = tf.Print(DO, [tf.metrics.mean(DO)], message="DO: ")
-        DO = tf.multiply(DO, self.activation.gradient(AO))
+        E = tf.matmul(E, self.B)
+        E = tf.reshape(E, [self.batch_size, self.h, self.w, self.fout])
+        E = tf.multiply(E, self.activation.gradient(AO))
+        E = tf.multiply(E, DO)
         
-        dropout_mask = tf.cast(tf.random_uniform(shape=tf.shape(DO)) > 0.5, tf.float32)
-        DO = DO * dropout_mask
+        dropout_mask = tf.cast(tf.random_uniform(shape=tf.shape(E)) > 0.5, tf.float32)
+        E = E * dropout_mask
         
-        DF = tf.nn.conv2d_backprop_filter(input=AI, filter_sizes=self.filter_sizes, out_backprop=DO, strides=self.stride, padding="SAME")
-        # DF = tf.Print(DF, [tf.metrics.mean(DF)], message="DF: ")
+        DF = tf.nn.conv2d_backprop_filter(input=AI, filter_sizes=self.filter_sizes, out_backprop=E, strides=self.stride, padding="SAME")
         
         # update filters
         self.filters = self.filters.assign(tf.subtract(self.filters, tf.scalar_mul(self.alpha, DF)))
         
-        return None
+        return tf.ones(shape=(tf.shape(AI)))
         
         
         
