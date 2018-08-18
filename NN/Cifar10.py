@@ -29,7 +29,7 @@ cifar10 = tf.keras.datasets.cifar10.load_data()
 
 ##############################################
 
-EPOCHS = 5
+EPOCHS = 100
 TRAIN_EXAMPLES = 50000
 TEST_EXAMPLES = 10000
 BATCH_SIZE = 20
@@ -37,7 +37,7 @@ ALPHA = 1e-3
 
 ##############################################
 
-EPSILON = 0.12
+EPSILON = 0.04
 
 tf.set_random_seed(0)
 tf.reset_default_graph()
@@ -52,19 +52,19 @@ YTEST = tf.placeholder(tf.float32, [None, 10])
 W0 = tf.Variable(tf.random_uniform(shape=[5, 5, 3, 96]) * 2 * EPSILON - EPSILON)
 l0 = Convolution(input_sizes=[batch_size, 32, 32, 3], filter_sizes=[5, 5, 3, 96], num_classes=10, filters=W0, stride=1, padding=1, alpha=ALPHA, activation=Relu(), last_layer=False)
 
-l1 = Dropout(rate=0.25)
+# l1 = Dropout(rate=0.25)
 
 W2 = tf.Variable(tf.random_uniform(shape=[5, 5, 96, 128]) * 2 * EPSILON - EPSILON)
 l2 = Convolution(input_sizes=[batch_size, 32, 32, 96], filter_sizes=[5, 5, 96, 128], num_classes=10, filters=W2, stride=1, padding=1, alpha=ALPHA, activation=Relu(), last_layer=False)
 
-l3 = Dropout(rate=0.25)
+# l3 = Dropout(rate=0.25)
 
 l4 = MaxPool(size=[batch_size, 32, 32, 128], stride=[1, 2, 2, 1])
 
 W5 = tf.Variable(tf.random_uniform(shape=[5, 5, 128, 256]) * 2 * EPSILON - EPSILON)
 l5 = Convolution(input_sizes=[batch_size, 16, 16, 128], filter_sizes=[5, 5, 128, 256], num_classes=10, filters=W5, stride=1, padding=1, alpha=ALPHA, activation=Relu(), last_layer=False)
 
-l6 = Dropout(rate=0.5)
+# l6 = Dropout(rate=0.5)
 
 l7 = MaxPool(size=[batch_size, 16, 16, 256], stride=[1, 2, 2, 1])
 
@@ -73,12 +73,12 @@ l8 = ConvToFullyConnected(shape=[8, 8, 256])
 W9 = tf.Variable(tf.random_uniform(shape=[8*8*256, 2048]) * 2 * EPSILON - EPSILON)
 l9 = FullyConnected(size=[8*8*256, 2048], num_classes=10, weights=W9, alpha=ALPHA, activation=Relu(), last_layer=False)
 
-l10 = Dropout(rate=0.5)
+# l10 = Dropout(rate=0.5)
 
 W11 = tf.Variable(tf.random_uniform(shape=[2048, 10]) * 2 * EPSILON - EPSILON)
-l11 = FullyConnected(size=[2048, 10], num_classes=10, weights=W11, alpha=ALPHA, activation=Relu(), last_layer=False)
+l11 = FullyConnected(size=[2048, 10], num_classes=10, weights=W11, alpha=ALPHA, activation=Sigmoid(), last_layer=False)
 
-model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11])
+model = Model(layers=[l0, l2, l4, l5, l7, l8, l9, l11])
 
 predict = model.predict(X=XTEST)
 
