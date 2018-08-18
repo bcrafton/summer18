@@ -74,7 +74,7 @@ class Convolution(Layer):
         DO = DO * dropout_mask
         
         DF = tf.nn.conv2d_backprop_filter(input=AI, filter_sizes=self.filter_sizes, out_backprop=DO, strides=self.stride, padding="SAME")
-        DF = tf.Print(DF, [tf.metrics.mean(DF)], message="DF: ")
+        # DF = tf.Print(DF, [tf.metrics.mean(DF)], message="DF: ")
         
         # update filters
         self.filters = self.filters.assign(tf.subtract(self.filters, tf.scalar_mul(self.alpha, DF)))

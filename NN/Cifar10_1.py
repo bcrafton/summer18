@@ -22,6 +22,7 @@ from Dropout import Dropout
 from Activation import Activation
 from Activation import Sigmoid
 from Activation import Relu
+from Activation import Tanh
 
 ##############################################
 
@@ -29,7 +30,7 @@ cifar10 = tf.keras.datasets.cifar10.load_data()
 
 ##############################################
 
-EPOCHS = 20
+EPOCHS = 1000
 TRAIN_EXAMPLES = 50000
 TEST_EXAMPLES = 10000
 BATCH_SIZE = 25
@@ -67,18 +68,18 @@ l5 = MaxPool(size=[batch_size, 8, 8, 64], stride=[1, 2, 2, 1])
 l6 = ConvToFullyConnected(shape=[4, 4, 64])
 
 W7 = tf.Variable(tf.random_uniform(shape=[4*4*64, 128]) * 2 * EPSILON - EPSILON)
-l7 = FullyConnected(size=[4*4*64, 128], num_classes=10, weights=W7, alpha=ALPHA, activation=Tanh(), last_layer=False)
+l7 = FullyConnected(size=[4*4*64, 128], num_classes=10, weights=W7, alpha=ALPHA, activation=Sigmoid(), last_layer=False)
 
 l8 = Dropout(rate=0.5)
 
 W9 = tf.Variable(tf.random_uniform(shape=[128, 10]) * 2 * EPSILON - EPSILON)
-l9 = FullyConnected(size=[128, 10], num_classes=10, weights=W9, alpha=ALPHA, activation=Tanh(), last_layer=True)
+l9 = FullyConnected(size=[128, 10], num_classes=10, weights=W9, alpha=ALPHA, activation=Sigmoid(), last_layer=True)
 
 model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9])
 
 predict = model.predict(X=XTEST)
 
-ret = model.train(X=XTRAIN, Y=YTRAIN)
+ret = model.dfa(X=XTRAIN, Y=YTRAIN)
 
 ##############################################
 
