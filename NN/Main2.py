@@ -29,7 +29,7 @@ mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
 
 ##############################################
 
-EPOCHS = 1000
+EPOCHS = 100
 TRAIN_EXAMPLES = 50000
 TEST_EXAMPLES = 10000
 BATCH_SIZE = 25

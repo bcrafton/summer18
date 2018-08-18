@@ -18,8 +18,16 @@ class Convolution(Layer):
         self.fh, self.fw, self.fin, self.fout = self.filter_sizes
         
         self.filters = filters
+        
+        
         sqrt_fan_out = math.sqrt(self.fout * self.h * self.w)
-        self.B = tf.Variable(tf.random_uniform(shape=[self.num_classes, self.h*self.w*self.fout], minval=-1.0/sqrt_fan_out, maxval=1.0/sqrt_fan_out))
+        # self.B = tf.Variable(tf.random_uniform(shape=[self.num_classes, self.fout * self.h * self.w], minval=-1.0/sqrt_fan_out, maxval=1.0/sqrt_fan_out))
+        b = np.zeros(shape=(self.fout * self.h * self.w, self.num_classes))
+        for ii in range(self.fout * self.h * self.w):
+            idx = int(np.random.randint(0, self.num_classes))
+            b[ii][idx] = np.random.uniform(-1.0/sqrt_fan_out, 1.0/sqrt_fan_out)
+        b = np.transpose(b)
+        self.B = tf.cast(tf.Variable(b), tf.float32)
         
         # TODO
         self.stride = stride

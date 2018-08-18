@@ -23,7 +23,13 @@ class FullyConnected(Layer):
         self.weights = weights
         
         sqrt_fan_out = math.sqrt(self.output_size)
-        self.B = tf.Variable(tf.random_uniform(shape=[self.num_classes, self.output_size], minval=-1.0/sqrt_fan_out, maxval=1.0/sqrt_fan_out))
+        # self.B = tf.Variable(tf.random_uniform(shape=[self.num_classes, self.output_size], minval=-1.0/sqrt_fan_out, maxval=1.0/sqrt_fan_out))
+        b = np.zeros(shape=(self.output_size, self.num_classes))
+        for ii in range(self.output_size):
+            idx = int(np.random.randint(0, self.num_classes))
+            b[ii][idx] = np.random.uniform(-1.0/sqrt_fan_out, 1.0/sqrt_fan_out)
+        b = np.transpose(b)
+        self.B = tf.cast(tf.Variable(b), tf.float32)
         
         # self.bias = np.zeros(self.output_size)
         self.bias = tf.Variable(tf.zeros(shape=[self.output_size]))        
