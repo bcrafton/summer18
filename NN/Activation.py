@@ -60,6 +60,9 @@ class Softmax(Activation):
 
     # this is gradient for A
     def gradient(self, x: np.ndarray):
+        # this is impossible and not bio plausible
+        assert(False)
+        
         flat = tf.reshape(x, [-1])
         diagflat = tf.diag(flat)
         dot = tf.matmul(flat, tf.transpose(flat))
