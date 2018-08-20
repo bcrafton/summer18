@@ -90,7 +90,17 @@ class SqrtRelu(Activation):
         # pretty sure this gradient works for A and Z
         return tf.cast(x > 0.0, dtype=tf.float32)
         
-        
+class Linear(Activation):
+
+    def __init__(self):
+        pass
+
+    def forward(self, x):
+        return x 
+
+    def gradient(self, x):
+        return tf.ones(shape=tf.shape(x))
+       
         
         
         

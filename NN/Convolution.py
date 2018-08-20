@@ -8,7 +8,7 @@ from Activation import Activation
 from Activation import Sigmoid
 
 class Convolution(Layer):
-    def __init__(self, input_sizes, filter_sizes, num_classes, filters, stride, padding, alpha, activation: Activation=None, last_layer=False):
+    def __init__(self, input_sizes, filter_sizes, num_classes, filters, stride, padding, alpha, activation: Activation=None, last_layer=False sparse=True):
         self.input_sizes = input_sizes
         self.filter_sizes = filter_sizes
         self.num_classes = num_classes
@@ -21,14 +21,16 @@ class Convolution(Layer):
         
         
         sqrt_fan_out = math.sqrt(self.fout * self.h * self.w)
-        # self.B = tf.Variable(tf.random_uniform(shape=[self.num_classes, self.fout * self.h * self.w], minval=-1.0/sqrt_fan_out, maxval=1.0/sqrt_fan_out))
-        b = np.zeros(shape=(self.fout * self.h * self.w, self.num_classes))
-        for ii in range(self.fout * self.h * self.w):
-            idx = int(np.random.randint(0, self.num_classes))
-            b[ii][idx] = np.random.uniform(-1.0/sqrt_fan_out, 1.0/sqrt_fan_out)
-        b = np.transpose(b)
-        self.B = tf.cast(tf.Variable(b), tf.float32)
-        
+        if sparse:
+            b = np.zeros(shape=(self.fout * self.h * self.w, self.num_classes))
+            for ii in range(self.fout * self.h * self.w):
+                idx = int(np.random.randint(0, self.num_classes))
+                b[ii][idx] = np.random.uniform(-1.0/sqrt_fan_out, 1.0/sqrt_fan_out)
+            b = np.transpose(b)
+            self.B = tf.cast(tf.Variable(b), tf.float32)
+        else:
+            self.B = tf.Variable(tf.random_uniform(shape=[self.num_classes, self.fout * self.h * self.w], minval=-1.0/sqrt_fan_out, maxval=1.0/sqrt_fan_out))
+
         # TODO
         self.stride = stride
         self.stride = [1,1,1,1]
