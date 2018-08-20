@@ -49,16 +49,16 @@ class FullyConnected(Layer):
         return A
             
     def backward(self, AI : np.ndarray, AO : np.ndarray, DO : np.ndarray):
-
         DO = tf.multiply(DO, self.activation.gradient(AO))
         DI = tf.matmul(DO, tf.transpose(self.weights))
-        DW = tf.matmul(tf.transpose(AI), DO)
-        DB = tf.reduce_sum(DO, axis=0)
-        self.weights = self.weights.assign(tf.subtract(self.weights, tf.scalar_mul(self.alpha, DW)))
-        self.bias = self.bias.assign(tf.subtract(self.bias, tf.scalar_mul(self.alpha, DB)))
-                
         return DI
         
+    def gv(self, AI : np.ndarray, AO : np.ndarray, DO : np.ndarray):
+        DO = tf.multiply(DO, self.activation.gradient(AO))
+        DW = tf.matmul(tf.transpose(AI), DO)
+        DB = tf.reduce_sum(DO, axis=0)
+        return [(DW, self.weights), (DB, self.bias)]
+    
     def dfa(self, AI: np.ndarray, AO: np.ndarray, E: np.ndarray, DO: np.ndarray):
                 
         if self.last_layer:

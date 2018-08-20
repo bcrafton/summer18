@@ -19,6 +19,9 @@ class ConvToFullyConnected(Layer):
     def backward(self, AIN : np.ndarray, AOUT : np.ndarray, DO : np.ndarray):
         return tf.reshape(DO, [tf.shape(AIN)[0]] + self.shape)
 
+    def gv(self, AIN : np.ndarray, AOUT : np.ndarray, DO : np.ndarray):
+        return []
+
     def dfa(self, AI: np.ndarray, AO: np.ndarray, E: np.ndarray, DO: np.ndarray):
         return tf.ones(shape=(tf.shape(AI)))
 

@@ -32,13 +32,13 @@ ALPHA = 1e-2
 ##############################################
 
 W1 = tf.Variable(tf.random_uniform(shape=[3072, 1024]) * (2 * 0.12) - 0.12)
-l1 = FullyConnected(size=[3072, 1024], weights=W1, alpha=ALPHA, activation=Sigmoid(), last_layer=False)
+l1 = FullyConnected(size=[3072, 1024], num_classes=10, weights=W1, alpha=ALPHA, activation=Sigmoid(), last_layer=False)
 
 W2 = tf.Variable(tf.random_uniform(shape=[1024, 128]) * (2 * 0.12) - 0.12)
-l2 = FullyConnected(size=[1024, 128], weights=W2, alpha=ALPHA, activation=Sigmoid(), last_layer=False)
+l2 = FullyConnected(size=[1024, 128], num_classes=10, weights=W2, alpha=ALPHA, activation=Sigmoid(), last_layer=False)
 
 W3 = tf.Variable(tf.random_uniform(shape=[128, 10]) * (2 * 0.12) - 0.12)
-l3 = FullyConnected(size=[128, 10], weights=W3, alpha=ALPHA, activation=Sigmoid(), last_layer=True)
+l3 = FullyConnected(size=[128, 10], num_classes=10, weights=W3, alpha=ALPHA, activation=Sigmoid(), last_layer=True)
 
 X = tf.placeholder(tf.float32, [None, 3072])
 Y = tf.placeholder(tf.float32, [None, 10])
@@ -47,7 +47,8 @@ model = Model(layers=[l1, l2, l3])
 
 predict = model.predict(X=X)
 
-ret = model.train(X=X, Y=Y)
+grads_and_vars = model.train(X=X, Y=Y)
+optimizer = tf.train.AdamOptimizer(learning_rate=ALPHA, beta1=0.9, beta2=0.999, epsilon=1.0).apply_gradients(grads_and_vars=grads_and_vars)
 
 ##############################################
 
@@ -69,7 +70,7 @@ start = time.time()
 for ii in range(0, EPOCHS * TRAIN_EXAMPLES, BATCH_SIZE):
     start = ii % TRAIN_EXAMPLES
     end = ii % TRAIN_EXAMPLES + BATCH_SIZE
-    sess.run([ret], feed_dict={X: x_train[start:end], Y: y_train[start:end]})
+    sess.run([grads_and_vars, optimizer], feed_dict={X: x_train[start:end], Y: y_train[start:end]})
 
 end = time.time()
 
