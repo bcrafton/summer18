@@ -30,7 +30,7 @@ cifar10 = tf.keras.datasets.cifar10.load_data()
 
 ##############################################
 
-EPOCHS = 10
+EPOCHS = 100
 TRAIN_EXAMPLES = 50000
 TEST_EXAMPLES = 10000
 BATCH_SIZE = 25
@@ -38,7 +38,7 @@ ALPHA = 1e-2
 
 ##############################################
 
-EPSILON = 0.12
+EPSILON = 0.04
 
 tf.set_random_seed(0)
 tf.reset_default_graph()
@@ -51,29 +51,29 @@ XTEST = tf.placeholder(tf.float32, [None, 32, 32, 3])
 YTEST = tf.placeholder(tf.float32, [None, 10])
 
 W0 = tf.Variable(tf.random_uniform(shape=[3, 3, 3, 32]) * 2 * EPSILON - EPSILON)
-l0 = Convolution(input_sizes=[batch_size, 32, 32, 3], filter_sizes=[3, 3, 3, 32], num_classes=10, filters=W0, stride=1, padding=1, alpha=ALPHA, activation=Tanh(), last_layer=False)
+l0 = Convolution(input_sizes=[batch_size, 32, 32, 3], filter_sizes=[3, 3, 3, 32], num_classes=10, filters=W0, stride=1, padding=1, alpha=ALPHA, activation=Relu(), last_layer=False)
 
 l1 = MaxPool(size=[batch_size, 32, 32, 32], stride=[1, 2, 2, 1])
 
 W2 = tf.Variable(tf.random_uniform(shape=[3, 3, 32, 32]) * 2 * EPSILON - EPSILON)
-l2 = Convolution(input_sizes=[batch_size, 16, 16, 32], filter_sizes=[3, 3, 32, 32], num_classes=10, filters=W2, stride=1, padding=1, alpha=ALPHA, activation=Tanh(), last_layer=False)
+l2 = Convolution(input_sizes=[batch_size, 16, 16, 32], filter_sizes=[3, 3, 32, 32], num_classes=10, filters=W2, stride=1, padding=1, alpha=ALPHA, activation=Relu(), last_layer=False)
 
 l3 = MaxPool(size=[batch_size, 16, 16, 32], stride=[1, 2, 2, 1])
 
 W4 = tf.Variable(tf.random_uniform(shape=[3, 3, 32, 64]) * 2 * EPSILON - EPSILON)
-l4 = Convolution(input_sizes=[batch_size, 8, 8, 32], filter_sizes=[3, 3, 32, 64], num_classes=10, filters=W4, stride=1, padding=1, alpha=ALPHA, activation=Tanh(), last_layer=False)
+l4 = Convolution(input_sizes=[batch_size, 8, 8, 32], filter_sizes=[3, 3, 32, 64], num_classes=10, filters=W4, stride=1, padding=1, alpha=ALPHA, activation=Relu(), last_layer=False)
 
 l5 = MaxPool(size=[batch_size, 8, 8, 64], stride=[1, 2, 2, 1])
 
 l6 = ConvToFullyConnected(shape=[4, 4, 64])
 
 W7 = tf.Variable(tf.random_uniform(shape=[4*4*64, 128]) * 2 * EPSILON - EPSILON)
-l7 = FullyConnected(size=[4*4*64, 128], num_classes=10, weights=W7, alpha=ALPHA, activation=Sigmoid(), last_layer=False)
+l7 = FullyConnected(size=[4*4*64, 128], num_classes=10, weights=W7, alpha=ALPHA, activation=Relu(), last_layer=False)
 
 l8 = Dropout(rate=0.5)
 
 W9 = tf.Variable(tf.random_uniform(shape=[128, 10]) * 2 * EPSILON - EPSILON)
-l9 = FullyConnected(size=[128, 10], num_classes=10, weights=W9, alpha=ALPHA, activation=Sigmoid(), last_layer=True)
+l9 = FullyConnected(size=[128, 10], num_classes=10, weights=W9, alpha=ALPHA, activation=Tanh(), last_layer=True)
 
 ##############################################
 
@@ -82,8 +82,8 @@ model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9])
 predict = model.predict(X=XTEST)
 
 grads_and_vars = model.train(X=XTRAIN, Y=YTRAIN)
-# optimizer = tf.train.AdamOptimizer(learning_rate=ALPHA, beta1=0.9, beta2=0.999).apply_gradients(grads_and_vars=grads_and_vars)
-optimizer = tf.train.GradientDescentOptimizer(learning_rate=ALPHA).apply_gradients(grads_and_vars=grads_and_vars)
+optimizer = tf.train.AdamOptimizer(learning_rate=ALPHA, beta1=0.9, beta2=0.999, epsilon=0.9).apply_gradients(grads_and_vars=grads_and_vars)
+#optimizer = tf.train.GradientDescentOptimizer(learning_rate=ALPHA).apply_gradients(grads_and_vars=grads_and_vars)
 
 correct_prediction = tf.equal(tf.argmax(predict,1), tf.argmax(YTEST,1))
 correct_prediction_sum = tf.reduce_sum(tf.cast(correct_prediction, tf.float32))
