@@ -52,23 +52,14 @@ class Convolution(Layer):
         return A
         
     def backward(self, AI: np.ndarray, AO: np.ndarray, DO: np.ndarray):    
-        # apply activation gradient
         DO = tf.multiply(DO, self.activation.gradient(AO))
-        # DO = tf.Print(DO, [tf.metrics.mean(DO)], message=": ")
-        
-        # send this back
-        # DI = tf.nn.conv2d_backprop_input(input_sizes=[BATCH_SIZE, 28, 28, 1], filter=W, out_backprop=Y, strides=[1,1,1,1], padding="SAME")
         DI = tf.nn.conv2d_backprop_input(input_sizes=self.input_sizes, filter=self.filters, out_backprop=DO, strides=self.stride, padding="SAME")
-        
-        # update with this
-        # DF = tf.nn.conv2d_backprop_filter(input=X, filter_sizes=[5, 5, 1, 16], out_backprop=Y, strides=[1,1,1,1], padding="SAME")        
-        DF = tf.nn.conv2d_backprop_filter(input=AI, filter_sizes=self.filter_sizes, out_backprop=DO, strides=self.stride, padding="SAME")
-        
-        # update filters
-        self.filters = self.filters.assign(tf.subtract(self.filters, tf.scalar_mul(self.alpha, DF)))
-        
-        # return error wtr to input 
         return DI
+
+    def gv(self, AI: np.ndarray, AO: np.ndarray, DO: np.ndarray):    
+        DO = tf.multiply(DO, self.activation.gradient(AO))
+        DF = tf.nn.conv2d_backprop_filter(input=AI, filter_sizes=self.filter_sizes, out_backprop=DO, strides=self.stride, padding="SAME")
+        return [(DF, self.filters)]
 
     def dfa(self, AI: np.ndarray, AO: np.ndarray, E: np.ndarray, DO: np.ndarray):
 

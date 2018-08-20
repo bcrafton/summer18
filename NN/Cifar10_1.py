@@ -34,7 +34,7 @@ EPOCHS = 100
 TRAIN_EXAMPLES = 50000
 TEST_EXAMPLES = 10000
 BATCH_SIZE = 25
-ALPHA = 1e-2
+ALPHA = 2e-2
 
 ##############################################
 
@@ -75,11 +75,14 @@ l8 = Dropout(rate=0.5)
 W9 = tf.Variable(tf.random_uniform(shape=[128, 10]) * 2 * EPSILON - EPSILON)
 l9 = FullyConnected(size=[128, 10], num_classes=10, weights=W9, alpha=ALPHA, activation=Sigmoid(), last_layer=True)
 
+##############################################
+
 model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9])
 
 predict = model.predict(X=XTEST)
 
-ret = model.dfa(X=XTRAIN, Y=YTRAIN)
+grads_and_vars = model.train(X=XTRAIN, Y=YTRAIN)
+optimizer = tf.train.AdamOptimizer(learning_rate=ALPHA, beta1=0.9, beta2=0.999, epsilon=1.0).apply_gradients(grads_and_vars=grads_and_vars)
 
 correct_prediction = tf.equal(tf.argmax(predict,1), tf.argmax(YTEST,1))
 correct_prediction_sum = tf.reduce_sum(tf.cast(correct_prediction, tf.float32))
@@ -105,7 +108,7 @@ y_test = keras.utils.to_categorical(y_test, 10)
 for ii in range(0, EPOCHS * TRAIN_EXAMPLES, BATCH_SIZE):
     start = ii % TRAIN_EXAMPLES
     end = ii % TRAIN_EXAMPLES + BATCH_SIZE
-    sess.run([ret], feed_dict={batch_size: BATCH_SIZE, XTRAIN: x_train[start:end], YTRAIN: y_train[start:end]})
+    sess.run([grads_and_vars, optimizer], feed_dict={batch_size: BATCH_SIZE, XTRAIN: x_train[start:end], YTRAIN: y_train[start:end]})
 
 # print(sess.run(accuracy, feed_dict={batch_size: TEST_EXAMPLES, XTEST: x_test, YTEST: y_test}))
 

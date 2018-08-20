@@ -31,6 +31,9 @@ class MaxPool(Layer):
         # return tf.multiply(tf.cast(pool > 0.0, dtype=tf.float32), 1.0)
         return grad
         
+    def gv(self, AIN : np.ndarray, AOUT : np.ndarray, DO : np.ndarray):
+        return []
+        
     def dfa(self, AI: np.ndarray, AO: np.ndarray, E: np.ndarray, DO: np.ndarray):
         grad = gen_nn_ops.max_pool_grad(grad=AO, orig_input=AI, orig_output=AO, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="SAME")
         return grad
