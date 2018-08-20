@@ -68,7 +68,16 @@ class Softmax(Activation):
         dot = tf.matmul(flat, tf.transpose(flat))
         return diagflag - dot
         
-        
+class LeakyRelu(Activation):
+    def __init__(self, leak=0.2):
+        self.leak=leak
+
+    def forward(self, x):
+        return tf.nn.leaky_relu(x, alpha=self.leak)
+
+    def gradient(self, x):
+        # pretty sure this gradient works for A and Z
+        return tf.add(tf.cast(x > 0.0, dtype=tf.float32), tf.cast(x < 0.0, dtype=tf.float32) * self.leak)
         
                 
         
