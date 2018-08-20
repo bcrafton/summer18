@@ -62,24 +62,19 @@ class Convolution(Layer):
         return [(DF, self.filters)]
 
     def dfa(self, AI: np.ndarray, AO: np.ndarray, E: np.ndarray, DO: np.ndarray):
-
+        return tf.ones(shape=(tf.shape(AI)))
+        
+    def dfa_gv(self, AI: np.ndarray, AO: np.ndarray, E: np.ndarray, DO: np.ndarray):
         E = tf.matmul(E, self.B)
         E = tf.reshape(E, [self.batch_size, self.h, self.w, self.fout])
         E = tf.multiply(E, self.activation.gradient(AO))
         E = tf.multiply(E, DO)
         
-        dropout_mask = tf.cast(tf.random_uniform(shape=tf.shape(E)) > 0.5, tf.float32)
-        E = E * dropout_mask
+        # dropout_mask = tf.cast(tf.random_uniform(shape=tf.shape(E)) > 0.5, tf.float32)
+        # E = E * dropout_mask
         
         DF = tf.nn.conv2d_backprop_filter(input=AI, filter_sizes=self.filter_sizes, out_backprop=E, strides=self.stride, padding="SAME")
-        
-        # update filters
-        self.filters = self.filters.assign(tf.subtract(self.filters, tf.scalar_mul(self.alpha, DF)))
-        
-        return tf.ones(shape=(tf.shape(AI)))
-        
-        
-        
+        return [(DF, self.filters)]
         
         
         

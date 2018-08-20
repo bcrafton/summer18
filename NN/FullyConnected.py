@@ -60,25 +60,22 @@ class FullyConnected(Layer):
         return [(DW, self.weights), (DB, self.bias)]
     
     def dfa(self, AI: np.ndarray, AO: np.ndarray, E: np.ndarray, DO: np.ndarray):
-                
+        return tf.ones(shape=(tf.shape(AI)))
+        
+    def dfa_gv(self, AI: np.ndarray, AO: np.ndarray, E: np.ndarray, DO: np.ndarray):
         if self.last_layer:
             E = tf.multiply(E, self.activation.gradient(AO))
         else:
             E = tf.matmul(E, self.B)
             E = tf.multiply(E, self.activation.gradient(AO))
             
-        dropout_mask = tf.cast(tf.random_uniform(shape=tf.shape(E)) > 0.5, tf.float32)
-        E = tf.multiply(E, dropout_mask)
+        # dropout_mask = tf.cast(tf.random_uniform(shape=tf.shape(E)) > 0.5, tf.float32)
+        # E = tf.multiply(E, dropout_mask)
             
         DW = tf.matmul(tf.transpose(AI), E)
         DB = tf.reduce_sum(E, axis=0)
         
-        self.weights = self.weights.assign(tf.subtract(self.weights, tf.scalar_mul(self.alpha, DW)))
-        self.bias = self.bias.assign(tf.subtract(self.bias, tf.scalar_mul(self.alpha, DB)))
-        
-        return tf.ones(shape=(tf.shape(AI)))
-        
-        
+        return [(DW, self.weights), (DB, self.bias)]
         
         
         

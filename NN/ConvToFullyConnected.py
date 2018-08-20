@@ -25,4 +25,5 @@ class ConvToFullyConnected(Layer):
     def dfa(self, AI: np.ndarray, AO: np.ndarray, E: np.ndarray, DO: np.ndarray):
         return tf.ones(shape=(tf.shape(AI)))
 
-
+    def dfa_gv(self, AI: np.ndarray, AO: np.ndarray, E: np.ndarray, DO: np.ndarray):
+        return []
