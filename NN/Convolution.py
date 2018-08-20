@@ -8,7 +8,7 @@ from Activation import Activation
 from Activation import Sigmoid
 
 class Convolution(Layer):
-    def __init__(self, input_sizes, filter_sizes, num_classes, filters, stride, padding, alpha, activation: Activation=None, last_layer=False sparse=True):
+    def __init__(self, input_sizes, filter_sizes, num_classes, filters, stride, padding, alpha, activation: Activation, last_layer, sparse):
         self.input_sizes = input_sizes
         self.filter_sizes = filter_sizes
         self.num_classes = num_classes
