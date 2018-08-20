@@ -7,6 +7,7 @@ os.environ["CUDA_VISIBLE_DEVICES"]=str(0)
 import time
 import tensorflow as tf
 import keras
+import math
 import numpy as np
 from tensorflow.examples.tutorials.mnist import input_data
 
@@ -51,20 +52,24 @@ YTRAIN = tf.placeholder(tf.float32, [None, 10])
 XTEST = tf.placeholder(tf.float32, [None, 32, 32, 3])
 YTEST = tf.placeholder(tf.float32, [None, 10])
 
-W0 = tf.Variable(tf.random_uniform(shape=[3, 3, 3, 32]) * 2 * EPSILON - EPSILON)
+sqrt_fan_in = math.sqrt(32 * 32 * 3)
+W0 = tf.Variable(tf.random_uniform(shape=[3, 3, 3, 32], minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
 l0 = Convolution(input_sizes=[batch_size, 32, 32, 3], filter_sizes=[3, 3, 3, 32], num_classes=10, filters=W0, stride=1, padding=1, alpha=ALPHA, activation=Tanh(), last_layer=False)
 
-W1 = tf.Variable(tf.random_uniform(shape=[3, 3, 32, 32]) * 2 * EPSILON - EPSILON)
+sqrt_fan_in = math.sqrt(32 * 32 * 32)
+W1 = tf.Variable(tf.random_uniform(shape=[3, 3, 32, 32], minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
 l1 = Convolution(input_sizes=[batch_size, 32, 32, 32], filter_sizes=[3, 3, 32, 32], num_classes=10, filters=W1, stride=1, padding=1, alpha=ALPHA, activation=Tanh(), last_layer=False)
 
 l2 = MaxPool(size=[batch_size, 32, 32, 32], stride=[1, 2, 2, 1])
 
 #l3 = Dropout(rate=0.25)
 
-W4 = tf.Variable(tf.random_uniform(shape=[3, 3, 32, 64]) * 2 * EPSILON - EPSILON)
+sqrt_fan_in = math.sqrt(16 * 16 * 32)
+W4 = tf.Variable(tf.random_uniform(shape=[3, 3, 32, 64], minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
 l4 = Convolution(input_sizes=[batch_size, 16, 16, 32], filter_sizes=[3, 3, 32, 64], num_classes=10, filters=W4, stride=1, padding=1, alpha=ALPHA, activation=Tanh(), last_layer=False)
 
-W5 = tf.Variable(tf.random_uniform(shape=[3, 3, 64, 64]) * 2 * EPSILON - EPSILON)
+sqrt_fan_in = math.sqrt(16 * 16 * 64)
+W5 = tf.Variable(tf.random_uniform(shape=[3, 3, 64, 64], minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
 l5 = Convolution(input_sizes=[batch_size, 16, 16, 64], filter_sizes=[3, 3, 64, 64], num_classes=10, filters=W5, stride=1, padding=1, alpha=ALPHA, activation=Tanh(), last_layer=False)
 
 l6 = MaxPool(size=[batch_size, 16, 16, 64], stride=[1, 2, 2, 1])
@@ -73,12 +78,14 @@ l6 = MaxPool(size=[batch_size, 16, 16, 64], stride=[1, 2, 2, 1])
 
 l8 = ConvToFullyConnected(shape=[8, 8, 64])
 
-W9 = tf.Variable(tf.random_uniform(shape=[8*8*64, 512]) * 2 * EPSILON - EPSILON)
+sqrt_fan_in = math.sqrt(8 * 8 * 64)
+W9 = tf.Variable(tf.random_uniform(shape=[8*8*64, 512], minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
 l9 = FullyConnected(size=[8*8*64, 512], num_classes=10, weights=W9, alpha=ALPHA, activation=Tanh(), last_layer=False)
 
 #l10 = Dropout(rate=0.5)
 
-W11 = tf.Variable(tf.random_uniform(shape=[512, 10]) * 2 * EPSILON - EPSILON)
+sqrt_fan_in = math.sqrt(512)
+W11 = tf.Variable(tf.random_uniform(shape=[512, 10], minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
 l11 = FullyConnected(size=[512, 10], num_classes=10, weights=W11, alpha=ALPHA, activation=Tanh(), last_layer=True)
 
 ##############################################
@@ -87,7 +94,7 @@ model = Model(layers=[l0, l1, l2, l4, l5, l6, l8, l9, l11])
 
 predict = model.predict(X=XTEST)
 
-grads_and_vars = model.train(X=XTRAIN, Y=YTRAIN)
+grads_and_vars = model.dfa(X=XTRAIN, Y=YTRAIN)
 optimizer = tf.train.AdamOptimizer(learning_rate=ALPHA, beta1=0.9, beta2=0.999, epsilon=0.1).apply_gradients(grads_and_vars=grads_and_vars)
 #optimizer = tf.train.GradientDescentOptimizer(learning_rate=ALPHA).apply_gradients(grads_and_vars=grads_and_vars)
 #optimizer = tf.train.MomentumOptimizer(learning_rate=ALPHA, momentum=0.99).apply_gradients(grads_and_vars=grads_and_vars)
