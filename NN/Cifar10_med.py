@@ -2,7 +2,7 @@
 import os
 
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]=str(3)
+os.environ["CUDA_VISIBLE_DEVICES"]=str(1)
 
 import time
 import tensorflow as tf
@@ -32,11 +32,11 @@ cifar10 = tf.keras.datasets.cifar10.load_data()
 
 ##############################################
 
-EPOCHS = 50
+EPOCHS = 2000
 TRAIN_EXAMPLES = 50000
 TEST_EXAMPLES = 10000
 BATCH_SIZE = 25
-ALPHA = 1e-4
+ALPHA = 5e-5
 
 ##############################################
 
@@ -48,9 +48,11 @@ tf.reset_default_graph()
 batch_size = tf.placeholder(tf.int32, shape=())
 XTRAIN = tf.placeholder(tf.float32, [None, 32, 32, 3])
 YTRAIN = tf.placeholder(tf.float32, [None, 10])
+XTRAIN = tf.map_fn(lambda frame: tf.image.per_image_standardization(frame), XTRAIN)
 
 XTEST = tf.placeholder(tf.float32, [None, 32, 32, 3])
 YTEST = tf.placeholder(tf.float32, [None, 10])
+XTEST = tf.map_fn(lambda frame1: tf.image.per_image_standardization(frame1), XTEST)
 
 sqrt_fan_in = math.sqrt(32 * 32 * 3)
 W0 = tf.Variable(tf.random_uniform(shape=[3, 3, 3, 32], minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
@@ -104,6 +106,7 @@ grads_and_vars = model.dfa(X=XTRAIN, Y=YTRAIN)
 optimizer = tf.train.AdamOptimizer(learning_rate=ALPHA, beta1=0.9, beta2=0.999, epsilon=0.1).apply_gradients(grads_and_vars=grads_and_vars)
 #optimizer = tf.train.GradientDescentOptimizer(learning_rate=ALPHA).apply_gradients(grads_and_vars=grads_and_vars)
 #optimizer = tf.train.MomentumOptimizer(learning_rate=ALPHA, momentum=0.99).apply_gradients(grads_and_vars=grads_and_vars)
+#optimizer = tf.train.RMSPropOptimizer(learning_rate=ALPHA, momentum=0.0, epsilon=0.1).apply_gradients(grads_and_vars=grads_and_vars)
 
 correct_prediction = tf.equal(tf.argmax(predict,1), tf.argmax(YTEST,1))
 correct_prediction_sum = tf.reduce_sum(tf.cast(correct_prediction, tf.float32))
@@ -119,11 +122,9 @@ tf.local_variables_initializer().run()
 (x_train, y_train), (x_test, y_test) = cifar10
 
 x_train = x_train.reshape(TRAIN_EXAMPLES, 32, 32, 3)
-x_train = x_train / 255.
 y_train = keras.utils.to_categorical(y_train, 10)
 
 x_test = x_test.reshape(TEST_EXAMPLES, 32, 32, 3)
-x_test = x_test / 255.
 y_test = keras.utils.to_categorical(y_test, 10)
 
 for ii in range(EPOCHS):
@@ -132,6 +133,21 @@ for ii in range(EPOCHS):
         start = jj % TRAIN_EXAMPLES
         end = jj % TRAIN_EXAMPLES + BATCH_SIZE
         sess.run([grads_and_vars, optimizer], feed_dict={batch_size: BATCH_SIZE, XTRAIN: x_train[start:end], YTRAIN: y_train[start:end]})
+    
+    count = 0
+    total_correct = 0
+    
+    for jj in range(0, TEST_EXAMPLES, BATCH_SIZE):
+        start = jj % TEST_EXAMPLES
+        end = jj % TEST_EXAMPLES + BATCH_SIZE
+        correct = sess.run(correct_prediction_sum, feed_dict={batch_size: BATCH_SIZE, XTEST: x_test[start:end], YTEST: y_test[start:end]})
+
+        count += BATCH_SIZE
+        total_correct += correct
+
+    # print (count)
+    # print (total_correct)
+    print (total_correct * 1.0 / count)
 
 # print(sess.run(accuracy, feed_dict={batch_size: TEST_EXAMPLES, XTEST: x_test, YTEST: y_test}))
 
