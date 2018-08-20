@@ -30,7 +30,7 @@ cifar10 = tf.keras.datasets.cifar10.load_data()
 
 ##############################################
 
-EPOCHS = 50
+EPOCHS = 10
 TRAIN_EXAMPLES = 50000
 TEST_EXAMPLES = 10000
 BATCH_SIZE = 20
@@ -88,7 +88,9 @@ model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l11, l12, l13])
 
 predict = model.predict(X=XTEST)
 
-ret = model.train(X=XTRAIN, Y=YTRAIN)
+# ret = model.train(X=XTRAIN, Y=YTRAIN)
+grads_and_vars = model.train(X=XTRAIN, Y=YTRAIN)
+optimizer = tf.train.AdamOptimizer(learning_rate=ALPHA, beta1=0.9, beta2=0.999, epsilon=0.1).apply_gradients(grads_and_vars=grads_and_vars)
 
 ##############################################
 
@@ -106,10 +108,12 @@ x_test = x_test.reshape(TEST_EXAMPLES, 32, 32, 3)
 x_test = x_test / 255.
 y_test = keras.utils.to_categorical(y_test, 10)
 
-for ii in range(0, EPOCHS * TRAIN_EXAMPLES, BATCH_SIZE):
-    start = ii % TRAIN_EXAMPLES
-    end = ii % TRAIN_EXAMPLES + BATCH_SIZE
-    sess.run([ret], feed_dict={batch_size: BATCH_SIZE, XTRAIN: x_train[start:end], YTRAIN: y_train[start:end]})
+for ii in range(EPOCHS):
+    print (ii)
+    for jj in range(0, TRAIN_EXAMPLES, BATCH_SIZE):
+        start = jj % TRAIN_EXAMPLES
+        end = jj % TRAIN_EXAMPLES + BATCH_SIZE
+        sess.run([grads_and_vars, optimizer], feed_dict={batch_size: BATCH_SIZE, XTRAIN: x_train[start:end], YTRAIN: y_train[start:end]})
 
 correct_prediction = tf.equal(tf.argmax(predict,1), tf.argmax(YTEST,1))
 accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
