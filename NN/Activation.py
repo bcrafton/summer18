@@ -79,7 +79,16 @@ class LeakyRelu(Activation):
         # pretty sure this gradient works for A and Z
         return tf.add(tf.cast(x > 0.0, dtype=tf.float32), tf.cast(x < 0.0, dtype=tf.float32) * self.leak)
         
-                
+class SqrtRelu(Activation):
+    def __init__(self):
+        pass
+
+    def forward(self, x):
+        return tf.sqrt(tf.nn.relu(x))
+
+    def gradient(self, x):
+        # pretty sure this gradient works for A and Z
+        return tf.cast(x > 0.0, dtype=tf.float32)
         
         
         
