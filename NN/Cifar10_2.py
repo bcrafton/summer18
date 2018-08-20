@@ -22,6 +22,7 @@ from Dropout import Dropout
 from Activation import Activation
 from Activation import Sigmoid
 from Activation import Relu
+from Activation import Softmax
 
 ##############################################
 
@@ -29,7 +30,7 @@ cifar10 = tf.keras.datasets.cifar10.load_data()
 
 ##############################################
 
-EPOCHS = 100
+EPOCHS = 250
 TRAIN_EXAMPLES = 50000
 TEST_EXAMPLES = 10000
 BATCH_SIZE = 20

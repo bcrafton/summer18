@@ -1,16 +1,22 @@
+
+import os
+
+os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"]=str(1)
+
 import tensorflow as tf
 import numpy as np
 import keras
 
 ###############################################
 
-learning_rate = 1e-1
+learning_rate = 1e-2
 
 batch_size = 64
 
 num_examples = 50000
 num_test = 10000
-num_epochs = 50
+num_epochs = 150
 
 cifar10 = tf.keras.datasets.cifar10.load_data()
 

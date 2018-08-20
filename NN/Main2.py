@@ -29,13 +29,15 @@ mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
 
 ##############################################
 
-EPOCHS = 100
+EPOCHS = 1000
 TRAIN_EXAMPLES = 50000
 TEST_EXAMPLES = 10000
 BATCH_SIZE = 25
 ALPHA = 1e-2
 
 ##############################################
+
+EPSILON = 0.12
 
 tf.set_random_seed(0)
 tf.reset_default_graph()
@@ -47,27 +49,27 @@ YTRAIN = tf.placeholder(tf.float32, [None, 10])
 XTEST = tf.placeholder(tf.float32, [None, 28, 28, 1])
 YTEST = tf.placeholder(tf.float32, [None, 10])
 
-W0 = tf.Variable(tf.random_uniform(shape=[3, 3, 1, 32]) * (2 * 0.12) - 0.12)
+W0 = tf.Variable(tf.random_uniform(shape=[3, 3, 1, 32]) * (2 * EPSILON) - EPSILON)
 l0 = Convolution(input_sizes=[batch_size, 28, 28, 1], filter_sizes=[3, 3, 1, 32], num_classes=10, filters=W0, stride=1, padding=1, alpha=ALPHA, activation=Tanh(), last_layer=False)
 
-W1 = tf.Variable(tf.random_uniform(shape=[3, 3, 32, 64]) * (2 * 0.12) - 0.12)
+W1 = tf.Variable(tf.random_uniform(shape=[3, 3, 32, 64]) * (2 * EPSILON) - EPSILON)
 l1 = Convolution(input_sizes=[batch_size, 28, 28, 32], filter_sizes=[3, 3, 32, 64], num_classes=10, filters=W1, stride=1, padding=1, alpha=ALPHA, activation=Tanh(), last_layer=False)
 
-# l2 = MaxPool(size=[batch_size, 28, 28, 64], stride=[1, 2, 2, 1])
+l2 = MaxPool(size=[batch_size, 28, 28, 64], stride=[1, 2, 2, 1])
 
 l3 = Dropout(rate=0.25)
 
-l4 = ConvToFullyConnected(shape=[28, 28, 64])
+l4 = ConvToFullyConnected(shape=[14, 14, 64])
 
-W5 = tf.Variable(tf.random_uniform(shape=[28*28*64, 128]) * (2 * 0.12) - 0.12)
-l5 = FullyConnected(size=[28*28*64, 128], num_classes=10, weights=W5, alpha=ALPHA, activation=Tanh(), last_layer=False)
+W5 = tf.Variable(tf.random_uniform(shape=[14*14*64, 128]) * (2 * EPSILON) - EPSILON)
+l5 = FullyConnected(size=[14*14*64, 128], num_classes=10, weights=W5, alpha=ALPHA, activation=Sigmoid(), last_layer=False)
 
 l6 = Dropout(rate=0.5)
 
-W7 = tf.Variable(tf.random_uniform(shape=[128, 10]) * (2 * 0.12) - 0.12)
-l7 = FullyConnected(size=[128, 10], num_classes=10, weights=W7, alpha=ALPHA, activation=Tanh(), last_layer=True)
+W7 = tf.Variable(tf.random_uniform(shape=[128, 10]) * (2 * EPSILON) - EPSILON)
+l7 = FullyConnected(size=[128, 10], num_classes=10, weights=W7, alpha=ALPHA, activation=Sigmoid(), last_layer=True)
 
-model = Model(layers=[l0, l1, l3, l4, l5, l6, l7])
+model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7])
 
 ##############################################
 
