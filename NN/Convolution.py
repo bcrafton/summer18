@@ -47,26 +47,26 @@ class Convolution(Layer):
     def get_weights(self):
         return self.filters
         
-    def forward(self, X : np.ndarray, dropout=False):
+    def forward(self, X, dropout=False):
         Z = tf.nn.conv2d(X, self.filters, self.stride, self.padding)
         A = self.activation.forward(Z)
         # A = tf.Print(A, [A], message="this is a: ")
         return A
         
-    def backward(self, AI: np.ndarray, AO: np.ndarray, DO: np.ndarray):    
+    def backward(self, AI, AO, DO):    
         DO = tf.multiply(DO, self.activation.gradient(AO))
         DI = tf.nn.conv2d_backprop_input(input_sizes=self.input_sizes, filter=self.filters, out_backprop=DO, strides=self.stride, padding="SAME")
         return DI
 
-    def gv(self, AI: np.ndarray, AO: np.ndarray, DO: np.ndarray):    
+    def gv(self, AI, AO, DO):    
         DO = tf.multiply(DO, self.activation.gradient(AO))
         DF = tf.nn.conv2d_backprop_filter(input=AI, filter_sizes=self.filter_sizes, out_backprop=DO, strides=self.stride, padding="SAME")
         return [(DF, self.filters)]
 
-    def dfa(self, AI: np.ndarray, AO: np.ndarray, E: np.ndarray, DO: np.ndarray):
+    def dfa(self, AI, AO, E, DO):
         return tf.ones(shape=(tf.shape(AI)))
         
-    def dfa_gv(self, AI: np.ndarray, AO: np.ndarray, E: np.ndarray, DO: np.ndarray):
+    def dfa_gv(self, AI, AO, E, DO):
         E = tf.matmul(E, self.B)
         E = tf.reshape(E, [self.batch_size, self.h, self.w, self.fout])
         E = tf.multiply(E, self.activation.gradient(AO))

@@ -3,24 +3,24 @@ import numpy as np
 import tensorflow as tf
 
 class Activation(object):
-    def forward(self, x: np.ndarray) -> np.ndarray:
+    def forward(self, x):
         pass
 
-    def gradient(self, x: np.ndarray) -> np.ndarray:
+    def gradient(self, x):
         pass
         
 class Sigmoid(Activation):
     def __init__(self):
         pass
 
-    def forward(self, x : np.ndarray):
+    def forward(self, x):
         return tf.sigmoid(x)
 
-    def sigmoid_gradient(self, x : np.ndarray):
+    def sigmoid_gradient(self, x):
         sig = tf.sigmoid(x)
         return tf.multiply(sig, tf.subtract(1.0, sig))
         
-    def gradient(self, x : np.ndarray):
+    def gradient(self, x):
         return tf.multiply(x, tf.subtract(1.0, x))
         
 class Relu(Activation):
@@ -41,10 +41,10 @@ class Tanh(Activation):
     def __init__(self):
         pass
 
-    def forward(self, x: np.ndarray):
+    def forward(self, x):
         return tf.tanh(x)
 
-    def gradient(self, x: np.ndarray):
+    def gradient(self, x):
         # this is gradient wtf A, not Z
         return 1 - tf.pow(x, 2)
         
@@ -55,11 +55,11 @@ class Softmax(Activation):
     def __init__(self):
         pass
 
-    def forward(self, x: np.ndarray):
+    def forward(self, x):
         return tf.softmax(x)
 
     # this is gradient for A
-    def gradient(self, x: np.ndarray):
+    def gradient(self, x):
         # this is impossible and not bio plausible
         assert(False)
         

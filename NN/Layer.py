@@ -10,19 +10,19 @@ class Layer:
     def get_weights(self):
         pass
 
-    def forward(self, X : np.ndarray, dropout=False):
+    def forward(self, X, dropout=False):
         pass
 
-    def backward(self, AI : np.ndarray, AO : np.ndarray, DO : np.ndarray):
+    def backward(self, AI, AO, DO):
         pass
         
-    def gv(self, AI : np.ndarray, AO : np.ndarray, DO : np.ndarray):
+    def gv(self, AI, AO, DO):
         pass
 
-    def dfa(self, AI: np.ndarray, AO: np.ndarray, E: np.ndarray, DO: np.ndarray):
+    def dfa(self, AI, AO, E, DO):
         pass
 
-    def dfa_gv(self, AI: np.ndarray, AO: np.ndarray, E: np.ndarray, DO: np.ndarray):
+    def dfa_gv(self, AI, AO, E, DO):
         pass
 
 

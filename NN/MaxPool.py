@@ -17,11 +17,11 @@ class MaxPool(Layer):
     def get_weights(self):
         return tf.random_uniform(shape=(1, 1))
 
-    def forward(self, X: np.ndarray, dropout=False):
+    def forward(self, X, dropout=False):
         # return tf.nn.max_pool(value=X, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="SAME")
         return tf.nn.max_pool(X, [1, 2, 2, 1], [1, 2, 2, 1], padding="SAME")
     
-    def backward(self, AI : np.ndarray, AO : np.ndarray, DO : np.ndarray):
+    def backward(self, AI, AO, DO):
         # think both of these would work
         
         # return tf.multiply(tf.cast(AOUT > 0.0, dtype=tf.float32), 1.0)
@@ -31,12 +31,12 @@ class MaxPool(Layer):
         # return tf.multiply(tf.cast(pool > 0.0, dtype=tf.float32), 1.0)
         return grad
         
-    def gv(self, AIN : np.ndarray, AOUT : np.ndarray, DO : np.ndarray):
+    def gv(self, AIN, AOUT, DO):
         return []
         
-    def dfa(self, AI: np.ndarray, AO: np.ndarray, E: np.ndarray, DO: np.ndarray):
+    def dfa(self, AI, AO, E, DO):
         grad = gen_nn_ops.max_pool_grad(grad=AO, orig_input=AI, orig_output=AO, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="SAME")
         return grad
         
-    def dfa_gv(self, AI: np.ndarray, AO: np.ndarray, E: np.ndarray, DO: np.ndarray):
+    def dfa_gv(self, AI, AO, E, DO):
         return []

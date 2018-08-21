@@ -7,7 +7,7 @@ class Model:
         self.num_layers = len(layers)
         self.layers = layers
         
-    def train(self, X : np.ndarray, Y : np.ndarray):
+    def train(self, X, Y):
         A = [None] * self.num_layers
         D = [None] * self.num_layers
         grads_and_vars = []
@@ -39,7 +39,7 @@ class Model:
                 
         return grads_and_vars
     
-    def dfa(self, X : np.ndarray, Y : np.ndarray):
+    def dfa(self, X, Y):
         A = [None] * self.num_layers
         D = [None] * self.num_layers
         grads_and_vars = []
@@ -71,7 +71,7 @@ class Model:
                 
         return grads_and_vars
     
-    def predict(self, X : np.ndarray):
+    def predict(self, X):
         A = [None] * self.num_layers
         
         for ii in range(self.num_layers):

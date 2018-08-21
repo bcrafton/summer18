@@ -1,9 +1,24 @@
 
+import argparse
 import os
 import sys
 
-os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]=str(1)
+##############################################
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--epochs', type=int, default=100)
+parser.add_argument('--batch_size', type=int, default=64)
+parser.add_argument('--alpha', type=float, default=5e-5)
+parser.add_argument('--gpu', type=int, default=-1)
+parser.add_argument('--dfa', type=int, default=0)
+parser.add_argument('--sparse', type=int, default=0)
+args = parser.parse_args()
+
+if args.gpu >= 0:
+    os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
+    os.environ["CUDA_VISIBLE_DEVICES"]=str(args.gpu)
+
+##############################################
 
 import time
 import tensorflow as tf
@@ -34,15 +49,15 @@ cifar10 = tf.keras.datasets.cifar10.load_data()
 
 ##############################################
 
-EPOCHS = 250
+EPOCHS = args.epochs
 TRAIN_EXAMPLES = 50000
 TEST_EXAMPLES = 10000
-BATCH_SIZE = 20
-ALPHA = 8e-5
+BATCH_SIZE = args.batch_size
+ALPHA = args.alpha
 
 ##############################################
 
-sparse = True
+sparse = args.sparse
 
 tf.set_random_seed(0)
 tf.reset_default_graph()
@@ -101,9 +116,16 @@ model = Model(layers=[l0, l2, l4, l5, l7, l8, l9, l11, l13])
 
 predict = model.predict(X=XTEST)
 
-# ret = model.train(X=XTRAIN, Y=YTRAIN)
-grads_and_vars = model.dfa(X=XTRAIN, Y=YTRAIN)
+if args.dfa:
+    grads_and_vars = model.dfa(X=XTRAIN, Y=YTRAIN)
+else:
+    grads_and_vars = model.train(X=XTRAIN, Y=YTRAIN)
+    
 optimizer = tf.train.AdamOptimizer(learning_rate=ALPHA, beta1=0.9, beta2=0.999, epsilon=1.0).apply_gradients(grads_and_vars=grads_and_vars)
+
+correct_prediction = tf.equal(tf.argmax(predict,1), tf.argmax(YTEST,1))
+correct_prediction_sum = tf.reduce_sum(tf.cast(correct_prediction, tf.float32))
+accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
 ##############################################
 
@@ -119,21 +141,26 @@ y_train = keras.utils.to_categorical(y_train, 10)
 x_test = x_test.reshape(TEST_EXAMPLES, 32, 32, 3)
 y_test = keras.utils.to_categorical(y_test, 10)
 
-correct_prediction = tf.equal(tf.argmax(predict,1), tf.argmax(YTEST,1))
-accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-correct_prediction_sum = tf.reduce_sum(tf.cast(correct_prediction, tf.float32))
+##############################################
+
+filename = "large_" + str(args.epochs) + "_" + str(args.batch_size) + "_" + str(args.alpha) + "_" + str(args.dfa) + "_" + str(args.sparse) + ".results"
+f = open(filename, "w")
+f.write(filename + "\n")
+f.close()
+
+##############################################
 
 for ii in range(EPOCHS):
     print (ii)
-    for jj in range(0, TRAIN_EXAMPLES, BATCH_SIZE):
+    for jj in range(0, int(TRAIN_EXAMPLES/BATCH_SIZE) * BATCH_SIZE, BATCH_SIZE):
         start = jj % TRAIN_EXAMPLES
         end = jj % TRAIN_EXAMPLES + BATCH_SIZE
         sess.run([grads_and_vars, optimizer], feed_dict={batch_size: BATCH_SIZE, XTRAIN: x_train[start:end], YTRAIN: y_train[start:end]})
-
+    
     count = 0
     total_correct = 0
-
-    for jj in range(0, TEST_EXAMPLES, BATCH_SIZE):
+    
+    for jj in range(0, int(TEST_EXAMPLES/BATCH_SIZE) * BATCH_SIZE, BATCH_SIZE):
         start = jj % TEST_EXAMPLES
         end = jj % TEST_EXAMPLES + BATCH_SIZE
         correct = sess.run(correct_prediction_sum, feed_dict={batch_size: BATCH_SIZE, XTEST: x_test[start:end], YTEST: y_test[start:end]})
@@ -141,23 +168,14 @@ for ii in range(EPOCHS):
         count += BATCH_SIZE
         total_correct += correct
 
-    # print (count)
-    # print (total_correct)
     print (total_correct * 1.0 / count)
     sys.stdout.flush()
+    
+    f = open(filename, "a")
+    f.write(str(total_correct * 1.0 / count) + "\n")
+    f.close()
 
-count = 0
-total_correct = 0
+##############################################
 
-for ii in range(0, TEST_EXAMPLES, BATCH_SIZE):
-    start = ii % TEST_EXAMPLES
-    end = ii % TEST_EXAMPLES + BATCH_SIZE
-    correct = sess.run(correct_prediction_sum, feed_dict={batch_size: BATCH_SIZE, XTEST: x_test[start:end], YTEST: y_test[start:end]})
-
-    count += BATCH_SIZE
-    total_correct += correct
-
-    print (count)
-    print (total_correct)
-    print (total_correct * 1.0 / count)
+f.close()
 

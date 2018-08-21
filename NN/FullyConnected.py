@@ -8,7 +8,7 @@ from Activation import Activation
 from Activation import Sigmoid
 
 class FullyConnected(Layer):
-    def __init__(self, size : tuple, num_classes : int, weights : np.ndarray, alpha : float, activation : Activation, last_layer : bool, sparse : bool):
+    def __init__(self, size : tuple, num_classes : int, weights, alpha : float, activation : Activation, last_layer : bool, sparse : bool):
         
         # TODO
         # check to make sure what we put in here is correct
@@ -45,26 +45,26 @@ class FullyConnected(Layer):
     def get_weights(self):
         return [self.weights, self.bias]
 
-    def forward(self, X : np.ndarray, dropout=False):
+    def forward(self, X, dropout=False):
         Z = tf.matmul(X, self.weights) + self.bias
         A = self.activation.forward(Z)
         return A
             
-    def backward(self, AI : np.ndarray, AO : np.ndarray, DO : np.ndarray):
+    def backward(self, AI, AO, DO):
         DO = tf.multiply(DO, self.activation.gradient(AO))
         DI = tf.matmul(DO, tf.transpose(self.weights))
         return DI
         
-    def gv(self, AI : np.ndarray, AO : np.ndarray, DO : np.ndarray):
+    def gv(self, AI, AO, DO):
         DO = tf.multiply(DO, self.activation.gradient(AO))
         DW = tf.matmul(tf.transpose(AI), DO)
         DB = tf.reduce_sum(DO, axis=0)
         return [(DW, self.weights), (DB, self.bias)]
     
-    def dfa(self, AI: np.ndarray, AO: np.ndarray, E: np.ndarray, DO: np.ndarray):
+    def dfa(self, AI, AO, E, DO):
         return tf.ones(shape=(tf.shape(AI)))
         
-    def dfa_gv(self, AI: np.ndarray, AO: np.ndarray, E: np.ndarray, DO: np.ndarray):
+    def dfa_gv(self, AI, AO, E, DO):
         if self.last_layer:
             E = tf.multiply(E, self.activation.gradient(AO))
         else:
