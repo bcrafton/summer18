@@ -1,8 +1,9 @@
 
 import os
+import sys
 
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]=str(3)
+os.environ["CUDA_VISIBLE_DEVICES"]=str(1)
 
 import time
 import tensorflow as tf
@@ -33,15 +34,15 @@ cifar10 = tf.keras.datasets.cifar10.load_data()
 
 ##############################################
 
-EPOCHS = 1000
+EPOCHS = 250
 TRAIN_EXAMPLES = 50000
 TEST_EXAMPLES = 10000
 BATCH_SIZE = 20
-ALPHA = 5e-5
+ALPHA = 8e-5
 
 ##############################################
 
-sparse = False
+sparse = True
 
 tf.set_random_seed(0)
 tf.reset_default_graph()
@@ -57,13 +58,13 @@ XTEST = tf.map_fn(lambda frame1: tf.image.per_image_standardization(frame1), XTE
 
 sqrt_fan_in = math.sqrt(32 * 32 * 3)
 W0 = tf.Variable(tf.random_uniform(shape=[5, 5, 3, 96], minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
-l0 = Convolution(input_sizes=[batch_size, 32, 32, 3], filter_sizes=[5, 5, 3, 96], num_classes=10, filters=W0, stride=1, padding=1, alpha=ALPHA, activation=LeakyRelu(), last_layer=False, sparse=sparse)
+l0 = Convolution(input_sizes=[batch_size, 32, 32, 3], filter_sizes=[5, 5, 3, 96], num_classes=10, filters=W0, stride=1, padding=1, alpha=ALPHA, activation=Tanh(), last_layer=False, sparse=sparse)
 
 #l1 = Dropout(rate=0.25)
 
 sqrt_fan_in = math.sqrt(32 * 32 * 96)
 W2 = tf.Variable(tf.random_uniform(shape=[5, 5, 96, 128], minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
-l2 = Convolution(input_sizes=[batch_size, 32, 32, 96], filter_sizes=[5, 5, 96, 128], num_classes=10, filters=W2, stride=1, padding=1, alpha=ALPHA, activation=LeakyRelu(), last_layer=False, sparse=sparse)
+l2 = Convolution(input_sizes=[batch_size, 32, 32, 96], filter_sizes=[5, 5, 96, 128], num_classes=10, filters=W2, stride=1, padding=1, alpha=ALPHA, activation=Tanh(), last_layer=False, sparse=sparse)
 
 #l3 = Dropout(rate=0.25)
 
@@ -71,7 +72,7 @@ l4 = MaxPool(size=[batch_size, 32, 32, 128], stride=[1, 2, 2, 1])
 
 sqrt_fan_in = math.sqrt(16 * 16 * 128)
 W5 = tf.Variable(tf.random_uniform(shape=[5, 5, 128, 256], minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
-l5 = Convolution(input_sizes=[batch_size, 16, 16, 128], filter_sizes=[5, 5, 128, 256], num_classes=10, filters=W5, stride=1, padding=1, alpha=ALPHA, activation=LeakyRelu(), last_layer=False, sparse=sparse)
+l5 = Convolution(input_sizes=[batch_size, 16, 16, 128], filter_sizes=[5, 5, 128, 256], num_classes=10, filters=W5, stride=1, padding=1, alpha=ALPHA, activation=Tanh(), last_layer=False, sparse=sparse)
 
 #l6 = Dropout(rate=0.5)
 
@@ -81,13 +82,13 @@ l8 = ConvToFullyConnected(shape=[8, 8, 256])
 
 sqrt_fan_in = math.sqrt(8 * 8 * 256)
 W9 = tf.Variable(tf.random_uniform(shape=[8*8*256, 2048], minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
-l9 = FullyConnected(size=[8*8*256, 2048], num_classes=10, weights=W9, alpha=ALPHA, activation=LeakyRelu(), last_layer=False, sparse=sparse)
+l9 = FullyConnected(size=[8*8*256, 2048], num_classes=10, weights=W9, alpha=ALPHA, activation=Tanh(), last_layer=False, sparse=sparse)
 
 #l10 = Dropout(rate=0.5)
 
 sqrt_fan_in = math.sqrt(2048)
 W11 = tf.Variable(tf.random_uniform(shape=[2048, 2048], minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
-l11 = FullyConnected(size=[2048, 2048], num_classes=10, weights=W11, alpha=ALPHA, activation=LeakyRelu(), last_layer=False, sparse=sparse)
+l11 = FullyConnected(size=[2048, 2048], num_classes=10, weights=W11, alpha=ALPHA, activation=Tanh(), last_layer=False, sparse=sparse)
 
 #l12 = Dropout(rate=0.5)
 
@@ -101,7 +102,7 @@ model = Model(layers=[l0, l2, l4, l5, l7, l8, l9, l11, l13])
 predict = model.predict(X=XTEST)
 
 # ret = model.train(X=XTRAIN, Y=YTRAIN)
-grads_and_vars = model.train(X=XTRAIN, Y=YTRAIN)
+grads_and_vars = model.dfa(X=XTRAIN, Y=YTRAIN)
 optimizer = tf.train.AdamOptimizer(learning_rate=ALPHA, beta1=0.9, beta2=0.999, epsilon=1.0).apply_gradients(grads_and_vars=grads_and_vars)
 
 ##############################################
@@ -143,6 +144,7 @@ for ii in range(EPOCHS):
     # print (count)
     # print (total_correct)
     print (total_correct * 1.0 / count)
+    sys.stdout.flush()
 
 count = 0
 total_correct = 0

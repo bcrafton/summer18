@@ -1,5 +1,6 @@
 
 import os
+import sys
 
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"]=str(1)
@@ -148,6 +149,7 @@ for ii in range(EPOCHS):
     # print (count)
     # print (total_correct)
     print (total_correct * 1.0 / count)
+    sys.stdout.flush()
 
 # print(sess.run(accuracy, feed_dict={batch_size: TEST_EXAMPLES, XTEST: x_test, YTEST: y_test}))
 
