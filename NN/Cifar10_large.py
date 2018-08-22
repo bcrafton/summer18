@@ -8,10 +8,10 @@ import sys
 parser = argparse.ArgumentParser()
 parser.add_argument('--epochs', type=int, default=10000)
 parser.add_argument('--batch_size', type=int, default=64)
-parser.add_argument('--alpha', type=float, default=10e-5)
+parser.add_argument('--alpha', type=float, default=5e-5)
 parser.add_argument('--gpu', type=int, default=3)
 parser.add_argument('--dfa', type=int, default=1)
-parser.add_argument('--sparse', type=int, default=1)
+parser.add_argument('--sparse', type=int, default=0)
 args = parser.parse_args()
 
 if args.gpu >= 0:
@@ -72,16 +72,16 @@ YTEST = tf.placeholder(tf.float32, [None, 10])
 XTEST = tf.map_fn(lambda frame1: tf.image.per_image_standardization(frame1), XTEST)
 
 sqrt_fan_in = math.sqrt(32 * 32 * 3)
-W0 = tf.Variable(tf.ones(shape=[5, 5, 3, 96]) * (1 / sqrt_fan_in / 10.0))
-#W0 = tf.Variable(tf.zeros(shape=[5, 5, 3, 96]))
+#W0 = tf.Variable(tf.ones(shape=[5, 5, 3, 96]) * (1 / sqrt_fan_in / 10.0))
+W0 = tf.Variable(tf.zeros(shape=[5, 5, 3, 96]))
 #W0 = tf.Variable(tf.random_uniform(shape=[5, 5, 3, 96], minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
 l0 = Convolution(input_sizes=[batch_size, 32, 32, 3], filter_sizes=[5, 5, 3, 96], num_classes=10, filters=W0, stride=1, padding=1, alpha=ALPHA, activation=Tanh(), last_layer=False, sparse=sparse)
 
 #l1 = Dropout(rate=0.25)
 
 sqrt_fan_in = math.sqrt(32 * 32 * 96)
-W2 = tf.Variable(tf.ones(shape=[5, 5, 96, 128]) * (1 / sqrt_fan_in / 10.0))
-#W2 = tf.Variable(tf.zeros(shape=[5, 5, 96, 128]))
+#W2 = tf.Variable(tf.ones(shape=[5, 5, 96, 128]) * (1 / sqrt_fan_in / 10.0))
+W2 = tf.Variable(tf.zeros(shape=[5, 5, 96, 128]))
 #W2 = tf.Variable(tf.random_uniform(shape=[5, 5, 96, 128], minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
 l2 = Convolution(input_sizes=[batch_size, 32, 32, 96], filter_sizes=[5, 5, 96, 128], num_classes=10, filters=W2, stride=1, padding=1, alpha=ALPHA, activation=Tanh(), last_layer=False, sparse=sparse)
 
@@ -90,8 +90,8 @@ l2 = Convolution(input_sizes=[batch_size, 32, 32, 96], filter_sizes=[5, 5, 96, 1
 l4 = MaxPool(size=[batch_size, 32, 32, 128], stride=[1, 2, 2, 1])
 
 sqrt_fan_in = math.sqrt(16 * 16 * 128)
-W5 = tf.Variable(tf.ones(shape=[5, 5, 128, 256]) * (1 / sqrt_fan_in / 10.0))
-#W5 = tf.Variable(tf.zeros(shape=[5, 5, 128, 256]))
+#W5 = tf.Variable(tf.ones(shape=[5, 5, 128, 256]) * (1 / sqrt_fan_in / 10.0))
+W5 = tf.Variable(tf.zeros(shape=[5, 5, 128, 256]))
 #W5 = tf.Variable(tf.random_uniform(shape=[5, 5, 128, 256], minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
 l5 = Convolution(input_sizes=[batch_size, 16, 16, 128], filter_sizes=[5, 5, 128, 256], num_classes=10, filters=W5, stride=1, padding=1, alpha=ALPHA, activation=Tanh(), last_layer=False, sparse=sparse)
 
@@ -102,24 +102,24 @@ l7 = MaxPool(size=[batch_size, 16, 16, 256], stride=[1, 2, 2, 1])
 l8 = ConvToFullyConnected(shape=[8, 8, 256])
 
 sqrt_fan_in = math.sqrt(8 * 8 * 256)
-W9 = tf.Variable(tf.ones(shape=[8*8*256, 2048]) * (1 / sqrt_fan_in / 10.0))
-#W9 = tf.Variable(tf.zeros(shape=[8*8*256, 2048]))
+#W9 = tf.Variable(tf.ones(shape=[8*8*256, 2048]) * (1 / sqrt_fan_in / 10.0))
+W9 = tf.Variable(tf.zeros(shape=[8*8*256, 2048]))
 #W9 = tf.Variable(tf.random_uniform(shape=[8*8*256, 2048], minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
 l9 = FullyConnected(size=[8*8*256, 2048], num_classes=10, weights=W9, alpha=ALPHA, activation=Tanh(), last_layer=False, sparse=sparse)
 
 #l10 = Dropout(rate=0.5)
 
 sqrt_fan_in = math.sqrt(2048)
-W11 = tf.Variable(tf.ones(shape=[2048, 2048]) * (1 / sqrt_fan_in / 10.0))
-#W11 = tf.Variable(tf.zeros(shape=[2048, 2048]))
+#W11 = tf.Variable(tf.ones(shape=[2048, 2048]) * (1 / sqrt_fan_in / 10.0))
+W11 = tf.Variable(tf.zeros(shape=[2048, 2048]))
 #W11 = tf.Variable(tf.random_uniform(shape=[2048, 2048], minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
 l11 = FullyConnected(size=[2048, 2048], num_classes=10, weights=W11, alpha=ALPHA, activation=Tanh(), last_layer=False, sparse=sparse)
 
 #l12 = Dropout(rate=0.5)
 
 sqrt_fan_in = math.sqrt(2048)
-W13 = tf.Variable(tf.ones(shape=[2048, 10]) * (1 / sqrt_fan_in / 10.0))
-#W13 = tf.Variable(tf.zeros(shape=[2048, 10]))
+#W13 = tf.Variable(tf.ones(shape=[2048, 10]) * (1 / sqrt_fan_in / 10.0))
+W13 = tf.Variable(tf.zeros(shape=[2048, 10]))
 #W13 = tf.Variable(tf.random_uniform(shape=[2048, 10], minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
 l13 = FullyConnected(size=[2048, 10], num_classes=10, weights=W13, alpha=ALPHA, activation=Tanh(), last_layer=True, sparse=sparse)
 
@@ -133,7 +133,8 @@ if args.dfa:
 else:
     grads_and_vars = model.train(X=XTRAIN, Y=YTRAIN)
     
-optimizer = tf.train.AdamOptimizer(learning_rate=ALPHA, beta1=0.9, beta2=0.999, epsilon=1.0).apply_gradients(grads_and_vars=grads_and_vars)
+# optimizer = tf.train.AdamOptimizer(learning_rate=ALPHA, beta1=0.9, beta2=0.999, epsilon=1.0).apply_gradients(grads_and_vars=grads_and_vars)
+optimizer = tf.train.RMSPropOptimizer(learning_rate=ALPHA, decay=1.0, momentum=0.0).apply_gradients(grads_and_vars=grads_and_vars)
 
 correct_prediction = tf.equal(tf.argmax(predict,1), tf.argmax(YTEST,1))
 correct_prediction_sum = tf.reduce_sum(tf.cast(correct_prediction, tf.float32))
