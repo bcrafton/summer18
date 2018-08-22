@@ -71,25 +71,28 @@ XTEST = tf.placeholder(tf.float32, [None, 32, 32, 3])
 YTEST = tf.placeholder(tf.float32, [None, 10])
 XTEST = tf.map_fn(lambda frame1: tf.image.per_image_standardization(frame1), XTEST)
 
-#W0 = tf.Variable(tf.zeros(shape=[5, 5, 3, 96]))
 sqrt_fan_in = math.sqrt(32 * 32 * 3)
-W0 = tf.Variable(tf.random_uniform(shape=[5, 5, 3, 96], minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
+W0 = tf.Variable(tf.ones(shape=[5, 5, 3, 96]) * (1 / sqrt_fan_in / 10.0))
+#W0 = tf.Variable(tf.zeros(shape=[5, 5, 3, 96]))
+#W0 = tf.Variable(tf.random_uniform(shape=[5, 5, 3, 96], minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
 l0 = Convolution(input_sizes=[batch_size, 32, 32, 3], filter_sizes=[5, 5, 3, 96], num_classes=10, filters=W0, stride=1, padding=1, alpha=ALPHA, activation=Tanh(), last_layer=False, sparse=sparse)
 
 #l1 = Dropout(rate=0.25)
 
-#W2 = tf.Variable(tf.zeros(shape=[5, 5, 96, 128]))
 sqrt_fan_in = math.sqrt(32 * 32 * 96)
-W2 = tf.Variable(tf.random_uniform(shape=[5, 5, 96, 128], minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
+W2 = tf.Variable(tf.ones(shape=[5, 5, 96, 128]) * (1 / sqrt_fan_in / 10.0))
+#W2 = tf.Variable(tf.zeros(shape=[5, 5, 96, 128]))
+#W2 = tf.Variable(tf.random_uniform(shape=[5, 5, 96, 128], minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
 l2 = Convolution(input_sizes=[batch_size, 32, 32, 96], filter_sizes=[5, 5, 96, 128], num_classes=10, filters=W2, stride=1, padding=1, alpha=ALPHA, activation=Tanh(), last_layer=False, sparse=sparse)
 
 #l3 = Dropout(rate=0.25)
 
 l4 = MaxPool(size=[batch_size, 32, 32, 128], stride=[1, 2, 2, 1])
 
-#W5 = tf.Variable(tf.zeros(shape=[5, 5, 128, 256]))
 sqrt_fan_in = math.sqrt(16 * 16 * 128)
-W5 = tf.Variable(tf.random_uniform(shape=[5, 5, 128, 256], minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
+W5 = tf.Variable(tf.ones(shape=[5, 5, 128, 256]) * (1 / sqrt_fan_in / 10.0))
+#W5 = tf.Variable(tf.zeros(shape=[5, 5, 128, 256]))
+#W5 = tf.Variable(tf.random_uniform(shape=[5, 5, 128, 256], minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
 l5 = Convolution(input_sizes=[batch_size, 16, 16, 128], filter_sizes=[5, 5, 128, 256], num_classes=10, filters=W5, stride=1, padding=1, alpha=ALPHA, activation=Tanh(), last_layer=False, sparse=sparse)
 
 #l6 = Dropout(rate=0.5)
@@ -98,23 +101,26 @@ l7 = MaxPool(size=[batch_size, 16, 16, 256], stride=[1, 2, 2, 1])
 
 l8 = ConvToFullyConnected(shape=[8, 8, 256])
 
-#W9 = tf.Variable(tf.zeros(shape=[8*8*256, 2048]))
 sqrt_fan_in = math.sqrt(8 * 8 * 256)
-W9 = tf.Variable(tf.random_uniform(shape=[8*8*256, 2048], minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
+W9 = tf.Variable(tf.ones(shape=[8*8*256, 2048]) * (1 / sqrt_fan_in / 10.0))
+#W9 = tf.Variable(tf.zeros(shape=[8*8*256, 2048]))
+#W9 = tf.Variable(tf.random_uniform(shape=[8*8*256, 2048], minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
 l9 = FullyConnected(size=[8*8*256, 2048], num_classes=10, weights=W9, alpha=ALPHA, activation=Tanh(), last_layer=False, sparse=sparse)
 
 #l10 = Dropout(rate=0.5)
 
-#W11 = tf.Variable(tf.zeros(shape=[2048, 2048]))
 sqrt_fan_in = math.sqrt(2048)
-W11 = tf.Variable(tf.random_uniform(shape=[2048, 2048], minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
+W11 = tf.Variable(tf.ones(shape=[2048, 2048]) * (1 / sqrt_fan_in / 10.0))
+#W11 = tf.Variable(tf.zeros(shape=[2048, 2048]))
+#W11 = tf.Variable(tf.random_uniform(shape=[2048, 2048], minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
 l11 = FullyConnected(size=[2048, 2048], num_classes=10, weights=W11, alpha=ALPHA, activation=Tanh(), last_layer=False, sparse=sparse)
 
 #l12 = Dropout(rate=0.5)
 
-#W13 = tf.Variable(tf.zeros(shape=[2048, 10]))
 sqrt_fan_in = math.sqrt(2048)
-W13 = tf.Variable(tf.random_uniform(shape=[2048, 10], minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
+W13 = tf.Variable(tf.ones(shape=[2048, 10]) * (1 / sqrt_fan_in / 10.0))
+#W13 = tf.Variable(tf.zeros(shape=[2048, 10]))
+#W13 = tf.Variable(tf.random_uniform(shape=[2048, 10], minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
 l13 = FullyConnected(size=[2048, 10], num_classes=10, weights=W13, alpha=ALPHA, activation=Tanh(), last_layer=True, sparse=sparse)
 
 #model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l11, l12, l13])
