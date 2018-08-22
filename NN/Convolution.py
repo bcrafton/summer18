@@ -18,7 +18,7 @@ class Convolution(Layer):
         self.fh, self.fw, self.fin, self.fout = self.filter_sizes
         
         self.filters = filters
-        
+        self.bias = tf.Variable(tf.zeros(shape=self.fout))
         
         sqrt_fan_out = math.sqrt(self.fout * self.h * self.w)
         if sparse:
@@ -48,9 +48,8 @@ class Convolution(Layer):
         return self.filters
         
     def forward(self, X, dropout=False):
-        Z = tf.nn.conv2d(X, self.filters, self.stride, self.padding)
+        Z = tf.add(tf.nn.conv2d(X, self.filters, self.stride, self.padding), tf.reshape(self.bias, [1, 1, self.fout]))
         A = self.activation.forward(Z)
-        # A = tf.Print(A, [A], message="this is a: ")
         return A
         
     def backward(self, AI, AO, DO):    
@@ -76,7 +75,9 @@ class Convolution(Layer):
         # E = E * dropout_mask
         
         DF = tf.nn.conv2d_backprop_filter(input=AI, filter_sizes=self.filter_sizes, out_backprop=E, strides=self.stride, padding="SAME")
-        return [(DF, self.filters)]
+        DB = tf.reduce_sum(E, axis=[0, 1, 2])
+        
+        return [(DF, self.filters), (DB, self.bias)]
         
         
         
