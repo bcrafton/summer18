@@ -24,6 +24,8 @@ class FullyConnected(Layer):
         elif init_weights == "sqrt_fan_in":
             sqrt_fan_in = math.sqrt(self.input_size)
             self.weights = tf.Variable(tf.random_uniform(shape=self.size, minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
+        elif init_weights == "epsilon":
+            self.weights = tf.Variable(tf.ones(shape=self.size) * 1e-9)
         else:
             assert(False)
         
