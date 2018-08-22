@@ -8,7 +8,7 @@ from Activation import Activation
 from Activation import Sigmoid
 
 class FullyConnected(Layer):
-    def __init__(self, size : tuple, num_classes : int, weights, alpha : float, activation : Activation, last_layer : bool, sparse : bool):
+    def __init__(self, size : tuple, num_classes : int, init_weights : str, alpha : float, activation : Activation, last_layer : bool, sparse : bool):
         
         # TODO
         # check to make sure what we put in here is correct
@@ -19,8 +19,13 @@ class FullyConnected(Layer):
         self.input_size, self.output_size = size
         self.num_classes = num_classes
         
-        # weights
-        self.weights = weights
+        if init_weights == "zero":
+            self.weights = tf.Variable(tf.zeros(shape=self.size))
+        elif init_weights == "sqrt_fan_in":
+            sqrt_fan_in = math.sqrt(self.input_size)
+            self.weights = tf.Variable(tf.random_uniform(shape=self.size, minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
+        else:
+            assert(False)
         
         sqrt_fan_out = math.sqrt(self.output_size)
         if sparse:

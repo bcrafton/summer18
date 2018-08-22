@@ -8,7 +8,7 @@ from Activation import Activation
 from Activation import Sigmoid
 
 class Convolution(Layer):
-    def __init__(self, input_sizes, filter_sizes, num_classes, filters, stride, padding, alpha, activation: Activation, last_layer, sparse):
+    def __init__(self, input_sizes, filter_sizes, num_classes, init_filters, stride, padding, alpha, activation: Activation, last_layer, sparse):
         self.input_sizes = input_sizes
         self.filter_sizes = filter_sizes
         self.num_classes = num_classes
@@ -17,7 +17,14 @@ class Convolution(Layer):
         self.batch_size, self.h, self.w, self.fin = self.input_sizes
         self.fh, self.fw, self.fin, self.fout = self.filter_sizes
         
-        self.filters = filters
+        if init_filters == "zero":
+            self.filters = tf.Variable(tf.zeros(shape=self.filter_sizes))
+        elif init_filters == "sqrt_fan_in":
+            sqrt_fan_in = math.sqrt(self.h*self.w*self.fin)
+            self.filters = tf.Variable(tf.random_uniform(shape=self.filter_sizes, minval=-1.0/sqrt_fan_in, maxval=1.0/sqrt_fan_in))
+        else:
+            assert(False)
+
         self.bias = tf.Variable(tf.zeros(shape=self.fout))
         
         sqrt_fan_out = math.sqrt(self.fout * self.h * self.w)
