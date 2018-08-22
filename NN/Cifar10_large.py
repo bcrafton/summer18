@@ -9,9 +9,11 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--epochs', type=int, default=10000)
 parser.add_argument('--batch_size', type=int, default=64)
 parser.add_argument('--alpha', type=float, default=5e-5)
-parser.add_argument('--gpu', type=int, default=3)
+parser.add_argument('--gpu', type=int, default=1)
 parser.add_argument('--dfa', type=int, default=1)
-parser.add_argument('--sparse', type=int, default=0)
+parser.add_argument('--sparse', type=int, default=1)
+parser.add_argument('--init', type=str, default="zero")
+parser.add_argument('--opt', type=str, default="adam")
 args = parser.parse_args()
 
 if args.gpu >= 0:
@@ -71,17 +73,17 @@ XTEST = tf.placeholder(tf.float32, [None, 32, 32, 3])
 YTEST = tf.placeholder(tf.float32, [None, 10])
 XTEST = tf.map_fn(lambda frame1: tf.image.per_image_standardization(frame1), XTEST)
 
-l0 = Convolution(input_sizes=[batch_size, 32, 32, 3], filter_sizes=[5, 5, 3, 96], num_classes=10, init_filters="zero", stride=1, padding=1, alpha=ALPHA, activation=Tanh(), last_layer=False, sparse=sparse)
+l0 = Convolution(input_sizes=[batch_size, 32, 32, 3], filter_sizes=[5, 5, 3, 96], num_classes=10, init_filters=args.init, stride=1, padding=1, alpha=ALPHA, activation=Tanh(), last_layer=False, sparse=sparse)
 
 #l1 = Dropout(rate=0.25)
 
-l2 = Convolution(input_sizes=[batch_size, 32, 32, 96], filter_sizes=[5, 5, 96, 128], num_classes=10, init_filters="zero", stride=1, padding=1, alpha=ALPHA, activation=Tanh(), last_layer=False, sparse=sparse)
+l2 = Convolution(input_sizes=[batch_size, 32, 32, 96], filter_sizes=[5, 5, 96, 128], num_classes=10, init_filters=args.init, stride=1, padding=1, alpha=ALPHA, activation=Tanh(), last_layer=False, sparse=sparse)
 
 #l3 = Dropout(rate=0.25)
 
 l4 = MaxPool(size=[batch_size, 32, 32, 128], stride=[1, 2, 2, 1])
 
-l5 = Convolution(input_sizes=[batch_size, 16, 16, 128], filter_sizes=[5, 5, 128, 256], num_classes=10, init_filters="zero", stride=1, padding=1, alpha=ALPHA, activation=Tanh(), last_layer=False, sparse=sparse)
+l5 = Convolution(input_sizes=[batch_size, 16, 16, 128], filter_sizes=[5, 5, 128, 256], num_classes=10, init_filters=args.init, stride=1, padding=1, alpha=ALPHA, activation=Tanh(), last_layer=False, sparse=sparse)
 
 #l6 = Dropout(rate=0.5)
 
@@ -89,15 +91,15 @@ l7 = MaxPool(size=[batch_size, 16, 16, 256], stride=[1, 2, 2, 1])
 
 l8 = ConvToFullyConnected(shape=[8, 8, 256])
 
-l9 = FullyConnected(size=[8*8*256, 2048], num_classes=10, init_weights="zero", alpha=ALPHA, activation=Tanh(), last_layer=False, sparse=sparse)
+l9 = FullyConnected(size=[8*8*256, 2048], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Tanh(), last_layer=False, sparse=sparse)
 
 #l10 = Dropout(rate=0.5)
 
-l11 = FullyConnected(size=[2048, 2048], num_classes=10, init_weights="zero", alpha=ALPHA, activation=Tanh(), last_layer=False, sparse=sparse)
+l11 = FullyConnected(size=[2048, 2048], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Tanh(), last_layer=False, sparse=sparse)
 
 #l12 = Dropout(rate=0.5)
 
-l13 = FullyConnected(size=[2048, 10], num_classes=10, init_weights="zero", alpha=ALPHA, activation=Tanh(), last_layer=True, sparse=sparse)
+l13 = FullyConnected(size=[2048, 10], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Tanh(), last_layer=True, sparse=sparse)
 
 #model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l11, l12, l13])
 model = Model(layers=[l0, l2, l4, l5, l7, l8, l9, l11, l13])
@@ -109,8 +111,12 @@ if args.dfa:
 else:
     grads_and_vars = model.train(X=XTRAIN, Y=YTRAIN)
     
-# optimizer = tf.train.AdamOptimizer(learning_rate=ALPHA, beta1=0.9, beta2=0.999, epsilon=1.0).apply_gradients(grads_and_vars=grads_and_vars)
-optimizer = tf.train.RMSPropOptimizer(learning_rate=ALPHA, decay=1.0, momentum=0.0).apply_gradients(grads_and_vars=grads_and_vars)
+if args.opt == "adam":
+    optimizer = tf.train.AdamOptimizer(learning_rate=ALPHA, beta1=0.9, beta2=0.999, epsilon=1.0).apply_gradients(grads_and_vars=grads_and_vars)
+elif args.opt == "rms":
+    optimizer = tf.train.RMSPropOptimizer(learning_rate=ALPHA, decay=1.0, momentum=0.0).apply_gradients(grads_and_vars=grads_and_vars)
+else:
+    assert(False)
 
 correct_prediction = tf.equal(tf.argmax(predict,1), tf.argmax(YTEST,1))
 correct_prediction_sum = tf.reduce_sum(tf.cast(correct_prediction, tf.float32))
@@ -132,7 +138,15 @@ y_test = keras.utils.to_categorical(y_test, 10)
 
 ##############################################
 
-filename = "large_" + str(args.epochs) + "_" + str(args.batch_size) + "_" + str(args.alpha) + "_" + str(args.dfa) + "_" + str(args.sparse) + "_" + str(args.gpu) + ".results"
+filename = "large_" + str(args.epochs) + "_" \
+                    + str(args.batch_size) + "_" \
+                    + str(args.alpha) + "_" \
+                    + str(args.dfa) + "_" \
+                    + str(args.sparse) + "_" \
+                    + str(args.gpu) + "_" \
+                    + args.init + "_" \
+                    + args.opt + ".results"
+
 f = open(filename, "w")
 f.write(filename + "\n")
 f.close()
