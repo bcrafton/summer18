@@ -7,6 +7,13 @@ class Model:
         self.num_layers = len(layers)
         self.layers = layers
         
+    def num_params(self):
+        param_sum = 0
+        for ii in range(self.num_layers):
+            l = self.layers[ii]
+            param_sum += l.num_params()
+        return param_sum
+        
     def train(self, X, Y):
         A = [None] * self.num_layers
         D = [None] * self.num_layers

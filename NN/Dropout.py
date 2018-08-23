@@ -10,8 +10,8 @@ class Dropout(Layer):
     def __init__(self, rate):
         self.rate = rate
 
-    def get_weights(self):
-        return tf.random_uniform(shape=(1, 1))
+    def num_params(self):
+        return 0
 
     def forward(self, X, dropout=False):
         if dropout:

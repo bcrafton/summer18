@@ -6,8 +6,8 @@ class Layer:
 
     def __init__(self):
         super().__init__()
-
-    def get_weights(self):
+        
+    def num_params(self):
         pass
 
     def forward(self, X, dropout=False):

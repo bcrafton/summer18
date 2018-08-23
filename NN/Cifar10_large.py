@@ -140,6 +140,7 @@ filename = "large_" + str(args.epochs) + "_" \
 
 f = open(filename, "w")
 f.write(filename + "\n")
+f.write("total params: " + str(model.num_params()) + "\n")
 f.close()
 
 ##############################################
@@ -170,6 +171,4 @@ for ii in range(EPOCHS):
     f.close()
 
 ##############################################
-
-f.close()
 

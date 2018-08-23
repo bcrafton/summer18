@@ -49,8 +49,8 @@ class FullyConnected(Layer):
         # activation function
         self.activation = activation
 
-    def get_weights(self):
-        return [self.weights, self.bias]
+    def num_params(self):
+        return self.input_size * self.output_size
 
     def forward(self, X, dropout=False):
         Z = tf.matmul(X, self.weights) + self.bias

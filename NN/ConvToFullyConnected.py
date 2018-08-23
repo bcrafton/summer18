@@ -10,8 +10,8 @@ class ConvToFullyConnected(Layer):
     def __init__(self, shape):
         self.shape = shape
         
-    def get_weights(self):
-        return tf.random_uniform(shape=(1, 1))
+    def num_params(self):
+        return 0
 
     def forward(self, X, dropout=False):
         return tf.reshape(X, [tf.shape(X)[0], -1])

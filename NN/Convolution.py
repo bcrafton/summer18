@@ -53,8 +53,8 @@ class Convolution(Layer):
         self.activation = activation
         self.last_layer = last_layer
         
-    def get_weights(self):
-        return self.filters
+    def num_params(self):
+        return self.fh * self.fw * self.fin * self.fout
         
     def forward(self, X, dropout=False):
         Z = tf.add(tf.nn.conv2d(X, self.filters, self.stride, self.padding), tf.reshape(self.bias, [1, 1, self.fout]))

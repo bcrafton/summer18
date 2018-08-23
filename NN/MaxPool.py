@@ -14,8 +14,8 @@ class MaxPool(Layer):
         self.size = size
         self.stride = stride
 
-    def get_weights(self):
-        return tf.random_uniform(shape=(1, 1))
+    def num_params(self):
+        return 0
 
     def forward(self, X, dropout=False):
         return tf.nn.max_pool(X, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="SAME")
