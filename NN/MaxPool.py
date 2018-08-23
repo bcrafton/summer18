@@ -18,24 +18,17 @@ class MaxPool(Layer):
         return tf.random_uniform(shape=(1, 1))
 
     def forward(self, X, dropout=False):
-        # return tf.nn.max_pool(value=X, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="SAME")
-        return tf.nn.max_pool(X, [1, 2, 2, 1], [1, 2, 2, 1], padding="SAME")
+        return tf.nn.max_pool(X, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="SAME")
     
     def backward(self, AI, AO, DO):
-        # think both of these would work
-        
-        # return tf.multiply(tf.cast(AOUT > 0.0, dtype=tf.float32), 1.0)
-        
-        grad = gen_nn_ops.max_pool_grad(grad=DO, orig_input=AI, orig_output=AO, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="SAME")
-        # pool, argmax = tf.nn.max_pool_with_argmax(AIN, self.size, self.stride, padding="SAME")
-        # return tf.multiply(tf.cast(pool > 0.0, dtype=tf.float32), 1.0)
+        grad = gen_nn_ops.max_pool_grad(grad=DO, orig_input=AI, orig_output=AO, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="SAME")
         return grad
         
     def gv(self, AIN, AOUT, DO):
         return []
         
     def dfa(self, AI, AO, E, DO):
-        grad = gen_nn_ops.max_pool_grad(grad=AO, orig_input=AI, orig_output=AO, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="SAME")
+        grad = gen_nn_ops.max_pool_grad(grad=AO, orig_input=AI, orig_output=AO, ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="SAME")
         return grad
         
     def dfa_gv(self, AI, AO, E, DO):

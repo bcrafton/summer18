@@ -75,34 +75,25 @@ XTEST = tf.map_fn(lambda frame1: tf.image.per_image_standardization(frame1), XTE
 
 l0 = Convolution(input_sizes=[batch_size, 32, 32, 3], filter_sizes=[5, 5, 3, 96], num_classes=10, init_filters=args.init, stride=1, padding=1, alpha=ALPHA, activation=Tanh(), last_layer=False, sparse=sparse)
 
-#l1 = Dropout(rate=0.25)
+l1 = MaxPool(size=[batch_size, 32, 32, 32], stride=[1, 2, 2, 1])
 
-l2 = Convolution(input_sizes=[batch_size, 32, 32, 96], filter_sizes=[5, 5, 96, 128], num_classes=10, init_filters=args.init, stride=1, padding=1, alpha=ALPHA, activation=Tanh(), last_layer=False, sparse=sparse)
+l2 = Convolution(input_sizes=[batch_size, 16, 16, 96], filter_sizes=[5, 5, 96, 128], num_classes=10, init_filters=args.init, stride=1, padding=1, alpha=ALPHA, activation=Tanh(), last_layer=False, sparse=sparse)
 
-#l3 = Dropout(rate=0.25)
+l4 = MaxPool(size=[batch_size, 16, 16, 128], stride=[1, 2, 2, 1])
 
-l4 = MaxPool(size=[batch_size, 32, 32, 128], stride=[1, 2, 2, 1])
+l5 = Convolution(input_sizes=[batch_size, 8, 8, 128], filter_sizes=[5, 5, 128, 256], num_classes=10, init_filters=args.init, stride=1, padding=1, alpha=ALPHA, activation=Tanh(), last_layer=False, sparse=sparse)
 
-l5 = Convolution(input_sizes=[batch_size, 16, 16, 128], filter_sizes=[5, 5, 128, 256], num_classes=10, init_filters=args.init, stride=1, padding=1, alpha=ALPHA, activation=Tanh(), last_layer=False, sparse=sparse)
+l7 = MaxPool(size=[batch_size, 8, 8, 256], stride=[1, 2, 2, 1])
 
-#l6 = Dropout(rate=0.5)
+l8 = ConvToFullyConnected(shape=[4, 4, 256])
 
-l7 = MaxPool(size=[batch_size, 16, 16, 256], stride=[1, 2, 2, 1])
-
-l8 = ConvToFullyConnected(shape=[8, 8, 256])
-
-l9 = FullyConnected(size=[8*8*256, 2048], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Tanh(), last_layer=False, sparse=sparse)
-
-#l10 = Dropout(rate=0.5)
+l9 = FullyConnected(size=[4*4*256, 2048], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Tanh(), last_layer=False, sparse=sparse)
 
 l11 = FullyConnected(size=[2048, 2048], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Tanh(), last_layer=False, sparse=sparse)
 
-#l12 = Dropout(rate=0.5)
-
 l13 = FullyConnected(size=[2048, 10], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Tanh(), last_layer=True, sparse=sparse)
 
-#model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l11, l12, l13])
-model = Model(layers=[l0, l2, l4, l5, l7, l8, l9, l11, l13])
+model = Model(layers=[l0, l1, l2, l4, l5, l7, l8, l9, l11, l13])
 
 predict = model.predict(X=XTEST)
 
