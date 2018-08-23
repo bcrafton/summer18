@@ -20,7 +20,9 @@ class MaxPool(Layer):
         return 0
 
     def forward(self, X, dropout=False):
-        return tf.nn.max_pool(X, ksize=self.ksize, strides=self.strides, padding=self.padding)
+        Z = tf.nn.max_pool(X, ksize=self.ksize, strides=self.strides, padding=self.padding)
+        # Z = tf.Print(Z, [Z], message="", summarize=1000)
+        return Z
     
     def backward(self, AI, AO, DO):
         grad = gen_nn_ops.max_pool_grad(grad=DO, orig_input=AI, orig_output=AO, ksize=self.ksize, strides=self.strides, padding=self.padding)
@@ -30,7 +32,8 @@ class MaxPool(Layer):
         return []
         
     def dfa(self, AI, AO, E, DO):
-        grad = gen_nn_ops.max_pool_grad(grad=AO, orig_input=AI, orig_output=AO, ksize=self.ksize, strides=self.strides, padding=self.padding)
+        grad = gen_nn_ops.max_pool_grad(grad=DO, orig_input=AI, orig_output=AO, ksize=self.ksize, strides=self.strides, padding=self.padding)
+        # grad = tf.Print(grad, [tf.shape(grad), tf.count_nonzero(tf.equal(grad, 1)), tf.count_nonzero(tf.equal(grad, 2)), tf.count_nonzero(tf.equal(grad, 3)), tf.count_nonzero(tf.equal(grad, 4)), tf.count_nonzero(tf.equal(grad, 5))], message="", summarize=1000)
         return grad
         
     def dfa_gv(self, AI, AO, E, DO):

@@ -28,17 +28,6 @@ class Convolution(Layer):
             assert(False)
 
         self.bias = tf.Variable(tf.zeros(shape=self.fout))
-        
-        sqrt_fan_out = math.sqrt(self.fout * self.h * self.w)
-        if sparse:
-            b = np.zeros(shape=(self.fout * self.h * self.w, self.num_classes))
-            for ii in range(self.fout * self.h * self.w):
-                idx = int(np.random.randint(0, self.num_classes))
-                b[ii][idx] = np.random.uniform(-1.0/sqrt_fan_out, 1.0/sqrt_fan_out)
-            b = np.transpose(b)
-            self.B = tf.cast(tf.Variable(b), tf.float32)
-        else:
-            self.B = tf.Variable(tf.random_uniform(shape=[self.num_classes, self.fout * self.h * self.w], minval=-1.0/sqrt_fan_out, maxval=1.0/sqrt_fan_out))
 
         self.strides = strides
         self.padding = padding
@@ -71,17 +60,9 @@ class Convolution(Layer):
         return tf.ones(shape=(tf.shape(AI)))
         
     def dfa_gv(self, AI, AO, E, DO):
-        E = tf.matmul(E, self.B)
-        E = tf.reshape(E, [self.batch_size, self.h, self.w, self.fout])
-        E = tf.multiply(E, self.activation.gradient(AO))
-        E = tf.multiply(E, DO)
-        
-        # dropout_mask = tf.cast(tf.random_uniform(shape=tf.shape(E)) > 0.5, tf.float32)
-        # E = E * dropout_mask
-        
-        DF = tf.nn.conv2d_backprop_filter(input=AI, filter_sizes=self.filter_sizes, out_backprop=E, strides=self.strides, padding=self.padding)
-        DB = tf.reduce_sum(E, axis=[0, 1, 2])
-        
+        DO = tf.multiply(DO, self.activation.gradient(AO))
+        DF = tf.nn.conv2d_backprop_filter(input=AI, filter_sizes=self.filter_sizes, out_backprop=DO, strides=self.strides, padding=self.padding)
+        DB = tf.reduce_sum(DO, axis=[0, 1, 2])
         return [(DF, self.filters), (DB, self.bias)]
         
         
