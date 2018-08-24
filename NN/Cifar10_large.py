@@ -58,10 +58,9 @@ TRAIN_EXAMPLES = 50000
 TEST_EXAMPLES = 10000
 BATCH_SIZE = args.batch_size
 ALPHA = args.alpha
+sparse = args.sparse
 
 ##############################################
-
-sparse = args.sparse
 
 tf.set_random_seed(0)
 tf.reset_default_graph()
@@ -97,6 +96,8 @@ l12 = FullyConnected(size=[2048, 10], num_classes=10, init_weights=args.init, al
 
 model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12])
 
+##############################################
+
 predict = model.predict(X=XTEST)
 
 if args.dfa:
@@ -131,14 +132,16 @@ y_test = keras.utils.to_categorical(y_test, 10)
 
 ##############################################
 
-filename = "large_" + str(args.epochs) + "_" \
-                    + str(args.batch_size) + "_" \
-                    + str(args.alpha) + "_" \
-                    + str(args.dfa) + "_" \
-                    + str(args.sparse) + "_" \
-                    + str(args.gpu) + "_" \
-                    + args.init + "_" \
-                    + args.opt + ".results"
+filename = "cifar10_" +                 \
+           str(args.epochs) + "_" +     \
+           str(args.batch_size) + "_" + \
+           str(args.alpha) + "_" +      \
+           str(args.dfa) + "_" +        \
+           str(args.sparse) + "_" +     \
+           str(args.gpu) + "_" +        \
+           args.init + "_" +            \
+           args.opt +                   \
+           ".results"
 
 f = open(filename, "w")
 f.write(filename + "\n")

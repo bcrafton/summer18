@@ -57,10 +57,9 @@ TRAIN_EXAMPLES = 50000
 TEST_EXAMPLES = 10000
 BATCH_SIZE = args.batch_size
 ALPHA = args.alpha
+sparse = args.sparse
 
 ##############################################
-
-sparse = args.sparse
 
 tf.set_random_seed(0)
 tf.reset_default_graph()
@@ -136,14 +135,16 @@ y_test = keras.utils.to_categorical(y_test, 100)
 
 ##############################################
 
-filename = "cifaf100" + str(args.epochs) + "_" \
-                      + str(args.batch_size) + "_" \
-                      + str(args.alpha) + "_" \
-                      + str(args.dfa) + "_" \
-                      + str(args.sparse) + "_" \
-                      + str(args.gpu) + "_" \
-                      + args.init + "_" \
-                      + args.opt + ".results"
+filename = "cifar100_" +                \
+           str(args.epochs) + "_" +     \
+           str(args.batch_size) + "_" + \
+           str(args.alpha) + "_" +      \
+           str(args.dfa) + "_" +        \
+           str(args.sparse) + "_" +     \
+           str(args.gpu) + "_" +        \
+           args.init + "_" +            \
+           args.opt +                   \
+           ".results"
 
 f = open(filename, "w")
 f.write(filename + "\n")
