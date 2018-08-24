@@ -75,18 +75,19 @@ YTEST = tf.placeholder(tf.float32, [None, 10])
 XTEST = tf.map_fn(lambda frame1: tf.image.per_image_standardization(frame1), XTEST)
 
 l0 = Convolution(input_sizes=[batch_size, 28, 28, 1], filter_sizes=[3, 3, 1, 32], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Tanh(), last_layer=False, sparse=sparse)
+l1 = Feedback(size=[batch_size, 28, 28, 32], num_classes=10, sparse=sparse)
 
-l1 = Convolution(input_sizes=[batch_size, 28, 28, 32], filter_sizes=[3, 3, 32, 64], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Tanh(), last_layer=False, sparse=sparse)
+l2 = Convolution(input_sizes=[batch_size, 28, 28, 32], filter_sizes=[3, 3, 32, 64], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Tanh(), last_layer=False, sparse=sparse)
+l3 = MaxPool(size=[batch_size, 28, 28, 64], ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="VALID")
+l4 = Feedback(size=[batch_size, 14, 14, 64], num_classes=10, sparse=sparse)
 
-l2 = MaxPool(size=[batch_size, 28, 28, 64], ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="VALID")
+l5 = ConvToFullyConnected(shape=[14, 14, 64])
 
-l3 = ConvToFullyConnected(shape=[14, 14, 64])
+l6 = FullyConnected(size=[14*14*64, 128], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Tanh(), last_layer=False, sparse=sparse)
 
-l4 = FullyConnected(size=[14*14*64, 128], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Tanh(), last_layer=False, sparse=sparse)
+l7 = FullyConnected(size=[128, 10], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Linear(), last_layer=True, sparse=sparse)
 
-l5 = FullyConnected(size=[128, 10], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Linear(), last_layer=True, sparse=sparse)
-
-model = Model(layers=[l0, l1, l2, l3, l4, l5])
+model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7])
 
 ##############################################
 
