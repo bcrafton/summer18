@@ -1,8 +1,7 @@
-#nohup python Cifar10.py > Cifar10_results &
-#nohup python Cifar10_1.py > Cifar10_1_results &
-#nohup python Cifar10_2.py > Cifar10_2_results &
-#nohup python Cifar10_3.py > Cifar10_3_results &
-#nohup python Cifar10_4.py > Cifar10_4_results &
-#nohup python Cifar10_5.py > Cifar10_5_results &
-#nohup python Main2.py > Main2_results &
-nohup python Cifar10_large.py > large_dfa_8e5 &
+python Cifar10_large.py --epochs 500 --alpha 0.00002 --gpu 0 --dfa 0 --sparse 0 --init sqrt_fan_in --opt adam &
+python Cifar10_large.py --epochs 500 --alpha 0.00002 --gpu 1 --dfa 1 --sparse 0 --init zero        --opt adam &
+python Cifar10_large.py --epochs 500 --alpha 0.00002 --gpu 2 --dfa 1 --sparse 1 --init zero        --opt adam &
+
+python Cifar100.py      --epochs 500 --alpha 0.00001 --gpu 3 --dfa 0 --sparse 0 --init sqrt_fan_in --opt adam &
+python Cifar100.py      --epochs 500 --alpha 0.00001 --gpu 0 --dfa 1 --sparse 0 --init zero        --opt adam &
+python Cifar100.py      --epochs 500 --alpha 0.00001 --gpu 1 --dfa 1 --sparse 1 --init zero        --opt adam &
