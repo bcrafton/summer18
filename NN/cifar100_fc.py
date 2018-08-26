@@ -45,6 +45,7 @@ from Activation import Relu
 from Activation import Tanh
 from Activation import Softmax
 from Activation import LeakyRelu
+from Activation import Linear
 
 ##############################################
 
@@ -65,18 +66,20 @@ tf.set_random_seed(0)
 tf.reset_default_graph()
 
 batch_size = tf.placeholder(tf.int32, shape=())
-XTRAIN = tf.placeholder(tf.float32, [None, 32, 32, 3])
+#XTRAIN = tf.placeholder(tf.float32, [None, 32, 32, 3])
 YTRAIN = tf.placeholder(tf.float32, [None, 100])
-XTRAIN = tf.map_fn(lambda frame: tf.image.per_image_standardization(frame), XTRAIN)
+#XTRAIN = tf.map_fn(lambda frame: tf.image.per_image_standardization(frame), XTRAIN)
+XTRAIN = tf.placeholder(tf.float32, [None, 3072])
 
-XTEST = tf.placeholder(tf.float32, [None, 32, 32, 3])
+#XTEST = tf.placeholder(tf.float32, [None, 32, 32, 3])
 YTEST = tf.placeholder(tf.float32, [None, 100])
-XTEST = tf.map_fn(lambda frame1: tf.image.per_image_standardization(frame1), XTEST)
+#XTEST = tf.map_fn(lambda frame1: tf.image.per_image_standardization(frame1), XTEST)
+XTEST = tf.placeholder(tf.float32, [None, 3072])
 
-l0 = FullyConnected(size=[3072, 2048], num_classes=100, init_weights=args.init, alpha=ALPHA, activation=Tanh(), last_layer=False, sparse=sparse)
-l1 = FullyConnected(size=[2048, 512], num_classes=100, init_weights=args.init, alpha=ALPHA, activation=Tanh(), last_layer=False, sparse=sparse)
-l2 = FullyConnected(size=[512, 128], num_classes=100, init_weights=args.init, alpha=ALPHA, activation=Tanh(), last_layer=False, sparse=sparse)
-l3 = FullyConnected(size=[128, 100], num_classes=100, init_weights=args.init, alpha=ALPHA, activation=Linear(), last_layer=True, sparse=sparse)
+l0 = FullyConnected(size=[3072, 1000], num_classes=100, init_weights=args.init, alpha=ALPHA, activation=Tanh(), last_layer=False, sparse=sparse)
+l1 = FullyConnected(size=[1000, 1000], num_classes=100, init_weights=args.init, alpha=ALPHA, activation=Tanh(), last_layer=False, sparse=sparse)
+l2 = FullyConnected(size=[1000, 1000], num_classes=100, init_weights=args.init, alpha=ALPHA, activation=Tanh(), last_layer=False, sparse=sparse)
+l3 = FullyConnected(size=[1000, 100], num_classes=100, init_weights=args.init, alpha=ALPHA, activation=Linear(), last_layer=True, sparse=sparse)
 
 model = Model(layers=[l0, l1, l2, l3])
 
@@ -106,15 +109,15 @@ tf.local_variables_initializer().run()
 
 (x_train, y_train), (x_test, y_test) = cifar100
 
-x_train = x_train.reshape(TRAIN_EXAMPLES, 32, 32, 3)
+x_train = x_train.reshape(TRAIN_EXAMPLES, 3072)
 y_train = keras.utils.to_categorical(y_train, 100)
 
-x_test = x_test.reshape(TEST_EXAMPLES, 32, 32, 3)
+x_test = x_test.reshape(TEST_EXAMPLES, 3072)
 y_test = keras.utils.to_categorical(y_test, 100)
 
 ##############################################
 
-filename = "cifar100_" +                \
+filename = "cifar100fc_" +              \
            str(args.epochs) + "_" +     \
            str(args.batch_size) + "_" + \
            str(args.alpha) + "_" +      \
