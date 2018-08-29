@@ -6,6 +6,8 @@ import time
 import pickle
 import argparse
 
+from sklearn.decomposition import PCA
+
 NUM_W = 25
 Ws = []
 
@@ -30,3 +32,8 @@ for ii in range(len(Ws)):
         mat = np.concatenate((mat, w), axis=1)
 
 print (np.shape(mat))   
+
+pca = PCA(.95)
+# transpose or not ?
+pca.fit(mat)
+pca.fit(np.transpose(mat))
