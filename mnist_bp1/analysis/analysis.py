@@ -10,10 +10,10 @@ NUM_W = 25
 Ws = []
 
 for ii in range(NUM_W):
-    W1_ii_0 = np.load("W1_" + str(ii) + "_0")
-    W1_ii_1 = np.load("W1_" + str(ii) + "_1")
-    W1_ii_2 = np.load("W1_" + str(ii) + "_2")
-    W1_ii_3 = np.load("W1_" + str(ii) + "_3")
+    W1_ii_0 = np.load("W1_" + str(ii+1) + "_0.npy")
+    W1_ii_1 = np.load("W1_" + str(ii+1) + "_1.npy")
+    W1_ii_2 = np.load("W1_" + str(ii+1) + "_2.npy")
+    W1_ii_3 = np.load("W1_" + str(ii+1) + "_3.npy")
 
     Ws.append(W1_ii_0)
     Ws.append(W1_ii_1)
@@ -28,4 +28,5 @@ for ii in range(len(Ws)):
         mat = w
     else:
         mat = np.concatenate((mat, w), axis=1)
-    
+
+print (np.shape(mat))   
