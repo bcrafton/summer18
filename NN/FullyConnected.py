@@ -29,6 +29,7 @@ class FullyConnected(Layer):
         else:
             assert(False)
         
+        # this should be fan-out for this layer ... becasue we want it to be output size of W... Where W=784, 100 ... B=10x100. We want sqrt(100)
         sqrt_fan_out = math.sqrt(self.output_size)
         if sparse:
             b = np.zeros(shape=(self.output_size, self.num_classes))
