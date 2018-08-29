@@ -6,7 +6,8 @@ import time
 import pickle
 import argparse
 
-from sklearn.decomposition import PCA
+#from sklearn.decomposition import PCA
+#from matplotlib.mlab import PCA
 
 NUM_W = 25
 Ws = []
@@ -33,7 +34,14 @@ for ii in range(len(Ws)):
 
 print (np.shape(mat))   
 
-pca = PCA(.95)
+# sklearn
+#pca = PCA(.95)
 # transpose or not ?
-pca.fit(mat)
-pca.fit(np.transpose(mat))
+#pca.fit(mat)
+#pca.fit(np.transpose(mat))
+
+# matplotlib
+#pca = PCA(mat)
+
+vals, vecs = np.linalg.eig( np.dot(np.transpose(mat), mat) )
+print (vals)
