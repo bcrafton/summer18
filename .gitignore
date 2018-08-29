@@ -2,3 +2,5 @@
 *~
 *.pyc
 */MNIST_data
+*.results
+nohup.out
