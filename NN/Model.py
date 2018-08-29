@@ -90,6 +90,18 @@ class Model:
                 
         return A[self.num_layers-1]
         
+    def up_to(self, X, N):
+        A = [None] * N
+        
+        for ii in range(N):
+            l = self.layers[ii]
+            if ii == 0:
+                A[ii] = l.forward(X, dropout=False)
+            else:
+                A[ii] = l.forward(A[ii-1], dropout=False)
+                
+        return A[N-1]
+        
         
         
         

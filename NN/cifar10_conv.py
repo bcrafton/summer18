@@ -14,6 +14,7 @@ parser.add_argument('--dfa', type=int, default=1)
 parser.add_argument('--sparse', type=int, default=1)
 parser.add_argument('--init', type=str, default="zero")
 parser.add_argument('--opt', type=str, default="adam")
+parser.add_argument('--imgs', type=int, default=0)
 args = parser.parse_args()
 
 if args.gpu >= 0:
@@ -28,6 +29,12 @@ import keras
 import math
 import numpy as np
 from tensorflow.examples.tutorials.mnist import input_data
+
+import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
+import numpy as np
+from PIL import Image
+import scipy.misc
 
 from Model import Model
 
@@ -115,6 +122,8 @@ else:
 correct_prediction = tf.equal(tf.argmax(predict,1), tf.argmax(YTEST,1))
 correct_prediction_sum = tf.reduce_sum(tf.cast(correct_prediction, tf.float32))
 accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+if args.imgs:
+    convolved_image = model.up_to(X=XTEST, 7)
 
 ##############################################
 
@@ -176,4 +185,23 @@ for ii in range(EPOCHS):
     f.close()
 
 ##############################################
+
+if args.imgs:
+    convolved_image = sess.run([convolved_image], feed_dict={batch_size: 1, XTEST: np.reshape(x_test[0], (1, 32, 32, 3)), YTEST: np.reshape(y_test[0], (1, 10))})
+    convolved_image = np.reshape(convolved_image, (32, 32, 96))
+    convolved_image = np.transpose(convolved_image)
+
+    for ii in range(96):
+        plt.imsave(str(ii) + ".png", convolved_image[ii])
+
+
+
+
+
+
+
+
+
+
+
 
