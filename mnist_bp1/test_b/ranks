@@ -1,0 +1,70 @@
+1
+epoch: 1/5
+epoch: 2/5
+epoch: 3/5
+epoch: 4/5
+epoch: 5/5
+accuracy: 0.8145
+2
+epoch: 1/5
+epoch: 2/5
+epoch: 3/5
+epoch: 4/5
+epoch: 5/5
+accuracy: 0.8742
+3
+epoch: 1/5
+epoch: 2/5
+epoch: 3/5
+epoch: 4/5
+epoch: 5/5
+accuracy: 0.8953
+4
+epoch: 1/5
+epoch: 2/5
+epoch: 3/5
+epoch: 4/5
+epoch: 5/5
+accuracy: 0.9065
+5
+epoch: 1/5
+epoch: 2/5
+epoch: 3/5
+epoch: 4/5
+epoch: 5/5
+accuracy: 0.9143
+6
+epoch: 1/5
+epoch: 2/5
+epoch: 3/5
+epoch: 4/5
+epoch: 5/5
+accuracy: 0.924
+7
+epoch: 1/5
+epoch: 2/5
+epoch: 3/5
+epoch: 4/5
+epoch: 5/5
+accuracy: 0.9288
+8
+epoch: 1/5
+epoch: 2/5
+epoch: 3/5
+epoch: 4/5
+epoch: 5/5
+accuracy: 0.9349
+9
+epoch: 1/5
+epoch: 2/5
+epoch: 3/5
+epoch: 4/5
+epoch: 5/5
+accuracy: 0.9381
+10
+epoch: 1/5
+epoch: 2/5
+epoch: 3/5
+epoch: 4/5
+epoch: 5/5
+accuracy: 0.9382
