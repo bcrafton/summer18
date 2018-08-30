@@ -7,21 +7,27 @@ from Layer import Layer
 from Activation import Activation
 from Activation import Sigmoid
 
-class Feedback(Layer):
-    def __init__(self, size, num_classes, sparse):
+class FeedbackConv(Layer):
+    def __init__(self, size : tuple, num_classes : int, sparse : bool, rank : int):
         self.size = size
         self.num_classes = num_classes
         self.sparse = sparse
+        self.rank = rank
         self.batch_size, self.h, self.w, self.f = self.size
 
         sqrt_fan_out = math.sqrt(self.f * self.h * self.w)
-        if self.sparse:
+
+        if self.rank > 0:
+            assert(False)
+            
+        elif self.sparse:
             b = np.zeros(shape=(self.f * self.h * self.w, self.num_classes))
             for ii in range(self.f * self.h * self.w):
                 idx = int(np.random.randint(0, self.num_classes))
                 b[ii][idx] = np.random.uniform(-1.0/sqrt_fan_out, 1.0/sqrt_fan_out)
             b = np.transpose(b)
             self.B = tf.cast(tf.Variable(b), tf.float32)
+            
         else:
             self.B = tf.Variable(tf.random_uniform(shape=[self.num_classes, self.f * self.h * self.w], minval=-1.0/sqrt_fan_out, maxval=1.0/sqrt_fan_out))
 

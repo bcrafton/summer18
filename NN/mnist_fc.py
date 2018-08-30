@@ -6,13 +6,14 @@ import sys
 ##############################################
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--epochs', type=int, default=300)
-parser.add_argument('--batch_size', type=int, default=64)
-parser.add_argument('--alpha', type=float, default=5e-5)
+parser.add_argument('--epochs', type=int, default=100)
+parser.add_argument('--batch_size', type=int, default=32)
+parser.add_argument('--alpha', type=float, default=1e-2)
 parser.add_argument('--gpu', type=int, default=0)
-parser.add_argument('--dfa', type=int, default=1)
-parser.add_argument('--sparse', type=int, default=1)
-parser.add_argument('--init', type=str, default="zero")
+parser.add_argument('--dfa', type=int, default=0)
+parser.add_argument('--sparse', type=int, default=0)
+parser.add_argument('--rank', type=int, default=0)
+parser.add_argument('--init', type=str, default="sqrt_fan_in")
 parser.add_argument('--opt', type=str, default="adam")
 args = parser.parse_args()
 
@@ -37,7 +38,7 @@ from FullyConnected import FullyConnected
 from Convolution import Convolution
 from MaxPool import MaxPool
 from Dropout import Dropout
-from Feedback import Feedback
+from FeedbackFC import FeedbackFC
 
 from Activation import Activation
 from Activation import Sigmoid
@@ -74,11 +75,12 @@ XTEST = tf.placeholder(tf.float32, [None, 784])
 YTEST = tf.placeholder(tf.float32, [None, 10])
 #XTEST = tf.map_fn(lambda frame1: tf.image.per_image_standardization(frame1), XTEST)
 
-l0 = FullyConnected(size=[784, 100], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Tanh(), last_layer=False, sparse=sparse)
+l0 = FullyConnected(size=[784, 100], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Tanh(), last_layer=False)
+l1 = FeedbackFC(size=[784, 100], num_classes=10, sparse=sparse, rank=args.rank)
 
-l1 = FullyConnected(size=[100, 10], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Linear(), last_layer=True, sparse=sparse)
+l2 = FullyConnected(size=[100, 10], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Linear(), last_layer=True)
 
-model = Model(layers=[l0, l1])
+model = Model(layers=[l0, l1, l2])
 
 ##############################################
 
