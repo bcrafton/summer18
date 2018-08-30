@@ -12,9 +12,9 @@ parser.add_argument('--alpha', type=float, default=5e-5)
 parser.add_argument('--gpu', type=int, default=0)
 parser.add_argument('--dfa', type=int, default=1)
 parser.add_argument('--sparse', type=int, default=1)
+parser.add_argument('--rank', type=int, default=0)
 parser.add_argument('--init', type=str, default="zero")
 parser.add_argument('--opt', type=str, default="adam")
-parser.add_argument('--imgs', type=int, default=0)
 args = parser.parse_args()
 
 if args.gpu >= 0:
@@ -44,7 +44,8 @@ from FullyConnected import FullyConnected
 from Convolution import Convolution
 from MaxPool import MaxPool
 from Dropout import Dropout
-from Feedback import Feedback
+from FeedbackFC import FeedbackFC
+from FeedbackConv import FeedbackConv
 
 from Activation import Activation
 from Activation import Sigmoid
@@ -81,19 +82,20 @@ XTEST = tf.placeholder(tf.float32, [None, 28, 28, 1])
 YTEST = tf.placeholder(tf.float32, [None, 10])
 XTEST = tf.map_fn(lambda frame1: tf.image.per_image_standardization(frame1), XTEST)
 
-l0 = Convolution(input_sizes=[batch_size, 28, 28, 1], filter_sizes=[3, 3, 1, 32], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Tanh(), last_layer=False, sparse=sparse)
-l1 = Feedback(size=[batch_size, 28, 28, 32], num_classes=10, sparse=sparse)
+l0 = Convolution(input_sizes=[batch_size, 28, 28, 1], filter_sizes=[3, 3, 1, 32], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Tanh(), last_layer=False)
+l1 = FeedbackConv(size=[batch_size, 28, 28, 32], num_classes=10, sparse=sparse, rank=args.rank)
 
-l2 = Convolution(input_sizes=[batch_size, 28, 28, 32], filter_sizes=[3, 3, 32, 64], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Tanh(), last_layer=False, sparse=sparse)
+l2 = Convolution(input_sizes=[batch_size, 28, 28, 32], filter_sizes=[3, 3, 32, 64], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Tanh(), last_layer=False)
 l3 = MaxPool(size=[batch_size, 28, 28, 64], ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="VALID")
-l4 = Feedback(size=[batch_size, 14, 14, 64], num_classes=10, sparse=sparse)
+l4 = FeedbackConv(size=[batch_size, 14, 14, 64], num_classes=10, sparse=sparse, rank=args.rank)
 
 l5 = ConvToFullyConnected(shape=[14, 14, 64])
-l6 = FullyConnected(size=[14*14*64, 128], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Tanh(), last_layer=False, sparse=sparse)
+l6 = FullyConnected(size=[14*14*64, 128], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Tanh(), last_layer=False)
+l7 = FeedbackFC(size=[14*14*64, 128], num_classes=10, sparse=sparse, rank=args.rank)
 
-l7 = FullyConnected(size=[128, 10], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Linear(), last_layer=True, sparse=sparse)
+l8 = FullyConnected(size=[128, 10], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Linear(), last_layer=True)
 
-model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7])
+model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8])
 
 ##############################################
 
@@ -114,8 +116,6 @@ else:
 correct_prediction = tf.equal(tf.argmax(predict,1), tf.argmax(YTEST,1))
 correct_prediction_sum = tf.reduce_sum(tf.cast(correct_prediction, tf.float32))
 accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
-if args.imgs:
-    convolved_image = model.layers[0].forward(X=XTEST)
 
 ##############################################
 
@@ -170,15 +170,4 @@ for ii in range(EPOCHS):
     f.close()
 
 ##############################################
-
-if args.imgs:
-    batch_xs, batch_ys = mnist.test.next_batch(1, shuffle=False)
-    batch_xs = batch_xs.reshape(1, 28, 28, 1)
-
-    convolved_image = sess.run([convolved_image], feed_dict={batch_size: 1, XTEST: batch_xs, YTEST: batch_ys})
-    convolved_image = np.reshape(convolved_image, (28, 28, 32))
-    convolved_image = np.transpose(convolved_image)
-
-    for ii in range(32):
-        plt.imsave(str(ii) + ".png", convolved_image[ii])
 
