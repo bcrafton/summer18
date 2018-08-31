@@ -71,13 +71,10 @@ weights1 = np.random.uniform(-sqrt_fan_in1, sqrt_fan_in1, size=(LAYER1 + 1, LAYE
 sqrt_fan_in2 = 1.0 / np.sqrt(LAYER2)
 weights2 = np.random.uniform(-sqrt_fan_in2, sqrt_fan_in2, size=(LAYER2 + 1, LAYER3))
 
-sqrt_fan_out = 1.0 / np.sqrt(LAYER2)
+sqrt_fan_out = np.sqrt(LAYER2)
 
-#lo = -3.16227766017
-#hi = 3.16227766017
-
-lo = -np.sqrt(sqrt_fan_out)
-hi = np.sqrt(sqrt_fan_out)
+lo = -1.0/np.sqrt(sqrt_fan_out)
+hi = 1.0/np.sqrt(sqrt_fan_out)
 
 b2 = np.zeros(shape=(LAYER2 + 1, LAYER3))
 for ii in range(args.rank):
