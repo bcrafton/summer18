@@ -15,39 +15,26 @@ class FeedbackFC(Layer):
         self.rank = rank
         self.input_size, self.output_size = self.size
 
-        #### CREATE THE SPARSE MASK ####
-        if self.sparse:
-            self.mask = np.zeros(shape=(self.output_size, self.num_classes))
-            for ii in range(self.output_size):
-                idx = int(np.random.randint(0, self.num_classes))
-                self.mask[ii][idx] = 1.0
-            self.mask = np.transpose(self.mask)
-        else:
-            self.mask = np.ones(shape=(self.num_classes, self.output_size))
-        
-        #### IF MATRIX HAS USER-SPECIFIED RANK ####
-        sqrt_fan_out = np.sqrt(self.output_size)
-        
+        sqrt_fan_out = math.sqrt(self.output_size)
         if self.rank > 0:
-            lo = -1.0/np.sqrt(sqrt_fan_out)
-            hi = 1.0/np.sqrt(sqrt_fan_out)
-            
             b = np.zeros(shape=(self.output_size, self.num_classes))
             for ii in range(self.rank):
-                tmp1 = np.random.uniform(lo, hi, size=(self.output_size, 1))
-                tmp2 = np.random.uniform(lo, hi, size=(1, self.num_classes))
+                tmp1 = np.random.uniform(-np.sqrt(sqrt_fan_out), np.sqrt(sqrt_fan_out), size=(self.output_size, 1))
+                tmp2 = np.random.uniform(-np.sqrt(sqrt_fan_out), np.sqrt(sqrt_fan_out), size=(1, self.num_classes))
                 b = b + (1.0 / self.rank) * np.dot(tmp1, tmp2)
-                
             b = np.transpose(b)
-            b = b * self.mask
             self.B = tf.cast(tf.Variable(b), tf.float32)
+            
+        elif sparse:
+            b = np.zeros(shape=(self.output_size, self.num_classes))
+            for ii in range(self.output_size):
+                idx = int(np.random.randint(0, self.num_classes))
+                b[ii][idx] = np.random.uniform(-1.0/sqrt_fan_out, 1.0/sqrt_fan_out)
+            b = np.transpose(b)
+            self.B = tf.cast(tf.Variable(b), tf.float32)
+              
         else:
-            lo = -1.0/sqrt_fan_out
-            hi = 1.0/sqrt_fan_out
-        
-            b = np.random.uniform(lo, hi, size=(self.num_classes, self.output_size))
-            b = b * self.mask
-            self.B = tf.cast(tf.Variable(b), tf.float32)
+            self.B = tf.Variable(tf.random_uniform(shape=[self.num_classes, self.output_size], minval=-1.0/sqrt_fan_out, maxval=1.0/sqrt_fan_out))
 
     def num_params(self):
         return 0
@@ -75,3 +62,4 @@ class FeedbackFC(Layer):
         
         
         
+

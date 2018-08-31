@@ -73,18 +73,24 @@ weights2 = np.random.uniform(-sqrt_fan_in2, sqrt_fan_in2, size=(LAYER2 + 1, LAYE
 
 sqrt_fan_out = 1.0 / np.sqrt(LAYER2)
 
+#lo = -3.16227766017
+#hi = 3.16227766017
+
+lo = -np.sqrt(sqrt_fan_out)
+hi = np.sqrt(sqrt_fan_out)
+
 b2 = np.zeros(shape=(LAYER2 + 1, LAYER3))
 for ii in range(args.rank):
-    tmp1 = np.random.uniform(-np.sqrt(sqrt_fan_out), np.sqrt(sqrt_fan_out), size=(LAYER2 + 1, 1))
-    tmp2 = np.random.uniform(-np.sqrt(sqrt_fan_out), np.sqrt(sqrt_fan_out), size=(1, LAYER3))
+    tmp1 = np.random.uniform(lo, hi, size=(LAYER2 + 1, 1))
+    tmp2 = np.random.uniform(lo, hi, size=(1, LAYER3))
     b2 = b2 + (1.0 / args.rank) * np.dot(tmp1, tmp2)
 
 print np.linalg.matrix_rank(b2, tol=1e-3)
-# print np.average(b2), np.std(b2)
+print np.average(b2), np.std(b2)
 
 #######################################
 
-NUM_TRAIN_EPOCHS = 100
+NUM_TRAIN_EPOCHS = 25
 NUM_TRAIN_EXAMPLES = 50000
 NUM_TEST_EXAMPLES = 10000
 
