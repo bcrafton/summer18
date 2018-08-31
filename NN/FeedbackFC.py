@@ -44,6 +44,8 @@ class FeedbackFC(Layer):
                 
             b = np.transpose(b)
             b = b * self.mask
+            assert(np.linalg.matrix_rank(b) == self.rank)
+            
             self.B = tf.cast(tf.Variable(b), tf.float32)
         else:
             lo = -1.0/sqrt_fan_out
