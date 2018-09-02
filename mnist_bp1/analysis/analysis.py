@@ -9,8 +9,9 @@ import argparse
 from sklearn.decomposition import PCA
 # from matplotlib.mlab import PCA
 
-NUM_W = 250
-Ws = []
+NUM_W = 2500
+W1s = []
+W2s = []
 
 for ii in range(NUM_W):
     W1_ii_0 = np.load("./weights/W1_" + str(ii+1) + "_0.npy")
@@ -18,14 +19,29 @@ for ii in range(NUM_W):
     W1_ii_2 = np.load("./weights/W1_" + str(ii+1) + "_2.npy")
     W1_ii_3 = np.load("./weights/W1_" + str(ii+1) + "_3.npy")
 
-    Ws.append(W1_ii_0)
-    Ws.append(W1_ii_1)
-    Ws.append(W1_ii_2)
-    Ws.append(W1_ii_3)
+    W1s.append(W1_ii_0)
+    W1s.append(W1_ii_1)
+    W1s.append(W1_ii_2)
+    W1s.append(W1_ii_3)
+    
+    W2_ii_0 = np.load("./weights/W2_" + str(ii+1) + "_0.npy")
+    W2_ii_1 = np.load("./weights/W2_" + str(ii+1) + "_1.npy")
+    W2_ii_2 = np.load("./weights/W2_" + str(ii+1) + "_2.npy")
+    W2_ii_3 = np.load("./weights/W2_" + str(ii+1) + "_3.npy")
+    
+    W2s.append(W2_ii_0)
+    W2s.append(W2_ii_1)
+    W2s.append(W2_ii_2)
+    W2s.append(W2_ii_3)
 
-for ii in range(len(Ws)):
-    w = Ws[ii]
-    w = w.reshape(-1, 1)
+for ii in range(len(W1s)):
+    w1 = W1s[ii]
+    w1 = w1.reshape(-1, 1)
+    
+    w2 = W2s[ii]
+    w2 = w2.reshape(-1, 1)
+    
+    w = np.concatenate((w1, w2), axis=0)
     
     if ii==0:
         mat = w
