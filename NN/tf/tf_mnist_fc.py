@@ -1,25 +1,37 @@
-'''Trains a simple deep NN on the MNIST dataset.
-Gets to 98.40% test accuracy after 20 epochs
-(there is *a lot* of margin for parameter tuning).
-2 seconds per epoch on a K520 GPU.
-'''
-
 from __future__ import print_function
+
+import argparse
+import os
+import sys
+
+##############################################
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--epochs', type=int, default=25)
+parser.add_argument('--alpha', type=float, default=1e-2)
+parser.add_argument('--gpu', type=int, default=0)
+args = parser.parse_args()
+
+if args.gpu >= 0:
+    os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
+    os.environ["CUDA_VISIBLE_DEVICES"]=str(args.gpu)
+
+##############################################
 
 import keras
 from keras.datasets import mnist
 from keras.models import Sequential
-from keras.layers import Dense, Dropout
-from keras.optimizers import RMSprop
-
+from keras.layers import Dense, Dropout, Flatten
+from keras.layers import Conv2D, MaxPooling2D
+from keras import backend as K
 import tensorflow as tf
 
 BATCH_SIZE = 32
 NUM_CLASSES = 10
-EPOCHS = 100
+EPOCHS = args.epochs
 TRAINING_EXAMPLES = 60000
 TESTING_EXAMPLES = 10000
-learning_rate = 1e-2
+learning_rate = args.alpha
 
 (x_train, y_train), (x_test, y_test) = mnist.load_data()
 

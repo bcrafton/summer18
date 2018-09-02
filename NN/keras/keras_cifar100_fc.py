@@ -1,5 +1,23 @@
-
 from __future__ import print_function
+
+import argparse
+import os
+import sys
+
+##############################################
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--epochs', type=int, default=25)
+parser.add_argument('--alpha', type=float, default=1e-2)
+parser.add_argument('--gpu', type=int, default=0)
+args = parser.parse_args()
+
+if args.gpu >= 0:
+    os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
+    os.environ["CUDA_VISIBLE_DEVICES"]=str(args.gpu)
+
+##############################################
+
 import keras
 from keras.datasets import mnist
 from keras.models import Sequential
@@ -10,10 +28,10 @@ import tensorflow as tf
 
 BATCH_SIZE = 32
 NUM_CLASSES = 100
-EPOCHS = 100
+EPOCHS = args.epochs
 TRAINING_EXAMPLES = 50000
 TESTING_EXAMPLES = 10000
-learning_rate = 5e-3
+learning_rate = args.alpha
 
 cifar100 = tf.keras.datasets.cifar100.load_data()
 
