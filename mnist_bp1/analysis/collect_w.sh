@@ -1,5 +1,5 @@
 #!/bin/bash
-for i in {1..25}
+for i in {1..2500}
 do
    python mnist.py --gpu 0 --num $i &
    python mnist.py --gpu 1 --num $i &

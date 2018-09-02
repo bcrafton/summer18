@@ -22,8 +22,8 @@ def add_bias(x):
   return tf.concat([x, tf.ones([tf.shape(x)[0], 1])], axis=1)
 
 ##############################################
-W1 = tf.Variable(tf.random_uniform(shape=[785, 100]) * (2 * 0.12) - 0.12)
-W2 = tf.Variable(tf.random_uniform(shape=[101, 10]) * (2 * 0.12) - 0.12)
+W1 = tf.Variable(tf.random_uniform(shape=[785, 25]) * (2 * 0.12) - 0.12)
+W2 = tf.Variable(tf.random_uniform(shape=[26, 10]) * (2 * 0.12) - 0.12)
 ##############################################
 # FEED FORWARD
 ##############################################
@@ -54,7 +54,7 @@ sess = tf.InteractiveSession(config=config)
 tf.global_variables_initializer().run()
 
 TRAIN_EXAMPLES = 50000
-EPOCHS = 15
+EPOCHS = 25
 BATCH_SIZE = 32
 
 for ii in range(int(TRAIN_EXAMPLES * EPOCHS / BATCH_SIZE)):
@@ -69,7 +69,7 @@ acc, W1, W2 = sess.run([accuracy, W1, W2], feed_dict={X: mnist.test.images, ANS:
 np.save("W1_" + str(args.num) + "_" + str(args.gpu), W1)
 np.save("W2_" + str(args.num) + "_" + str(args.gpu), W2)
 
-#print ("accuracy: " + str(acc))
+print ("accuracy: " + str(acc))
 #print ("rank W1: " + str(np.linalg.matrix_rank(W1)))
 #print ("rank W2: " + str(np.linalg.matrix_rank(W2)))
 
