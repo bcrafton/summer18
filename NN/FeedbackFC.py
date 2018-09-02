@@ -15,14 +15,17 @@ class FeedbackFC(Layer):
         self.rank = rank
         self.input_size, self.output_size = self.size
 
+        if self.rank and self.sparse:
+            assert(self.rank >= self.sparse)
+
         #### CREATE THE SPARSE MASK ####
         if self.sparse:
             self.mask = np.zeros(shape=(self.output_size, self.num_classes))
             for ii in range(self.output_size):
                 if self.rank > 0:
-                    idx = int(np.random.randint(0, self.rank))
+                    idx = np.random.randint(0, self.rank, size=self.sparse)
                 else:
-                    idx = int(np.random.randint(0, self.num_classes))
+                    idx = np.random.randint(0, self.num_classes, size=self.sparse)
                 self.mask[ii][idx] = 1.0
                 
             self.mask = np.transpose(self.mask)

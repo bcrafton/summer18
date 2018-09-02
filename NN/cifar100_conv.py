@@ -12,6 +12,7 @@ parser.add_argument('--alpha', type=float, default=5e-5)
 parser.add_argument('--gpu', type=int, default=0)
 parser.add_argument('--dfa', type=int, default=1)
 parser.add_argument('--sparse', type=int, default=1)
+parser.add_argument('--rank', type=int, default=0)
 parser.add_argument('--init', type=str, default="zero")
 parser.add_argument('--opt', type=str, default="adam")
 args = parser.parse_args()
@@ -37,7 +38,8 @@ from FullyConnected import FullyConnected
 from Convolution import Convolution
 from MaxPool import MaxPool
 from Dropout import Dropout
-from Feedback import Feedback
+from FeedbackFC import FeedbackFC
+from FeedbackConv import FeedbackConv
 
 from Activation import Activation
 from Activation import Sigmoid
@@ -58,6 +60,7 @@ TEST_EXAMPLES = 10000
 BATCH_SIZE = args.batch_size
 ALPHA = args.alpha
 sparse = args.sparse
+rank = args.rank
 
 ##############################################
 
@@ -73,33 +76,28 @@ XTEST = tf.placeholder(tf.float32, [None, 32, 32, 3])
 YTEST = tf.placeholder(tf.float32, [None, 100])
 XTEST = tf.map_fn(lambda frame1: tf.image.per_image_standardization(frame1), XTEST)
 
-l0 = Convolution(input_sizes=[batch_size, 32, 32, 3], filter_sizes=[5, 5, 3, 96], num_classes=100, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Tanh(), last_layer=False, sparse=sparse)
-
+l0 = Convolution(input_sizes=[batch_size, 32, 32, 3], filter_sizes=[5, 5, 3, 96], num_classes=100, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Tanh(), last_layer=False)
 l1 = MaxPool(size=[batch_size, 32, 32, 96], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="SAME")
+l2 = FeedbackConv(size=[batch_size, 16, 16, 96], num_classes=100, sparse=sparse, rank=rank)
 
-l2 = Feedback(size=[batch_size, 16, 16, 96], num_classes=100, sparse=False)
-
-l3 = Convolution(input_sizes=[batch_size, 16, 16, 96], filter_sizes=[5, 5, 96, 128], num_classes=100, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Tanh(), last_layer=False, sparse=sparse)
-
+l3 = Convolution(input_sizes=[batch_size, 16, 16, 96], filter_sizes=[5, 5, 96, 128], num_classes=100, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Tanh(), last_layer=False)
 l4 = MaxPool(size=[batch_size, 16, 16, 128], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="SAME")
+l5 = FeedbackConv(size=[batch_size, 8, 8, 128], num_classes=100, sparse=sparse, rank=rank)
 
-l5 = Feedback(size=[batch_size, 8, 8, 128], num_classes=100, sparse=False)
-
-l6 = Convolution(input_sizes=[batch_size, 8, 8, 128], filter_sizes=[5, 5, 128, 256], num_classes=100, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Tanh(), last_layer=False, sparse=sparse)
-
+l6 = Convolution(input_sizes=[batch_size, 8, 8, 128], filter_sizes=[5, 5, 128, 256], num_classes=100, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Tanh(), last_layer=False)
 l7 = MaxPool(size=[batch_size, 8, 8, 256], ksize=[1, 3, 3, 1], strides=[1, 2, 2, 1], padding="SAME")
-
-l8 = Feedback(size=[batch_size, 4, 4, 256], num_classes=100, sparse=False)
+l8 = FeedbackConv(size=[batch_size, 4, 4, 256], num_classes=100, sparse=sparse, rank=rank)
 
 l9 = ConvToFullyConnected(shape=[4, 4, 256])
+l10 = FullyConnected(size=[4*4*256, 2048], num_classes=100, init_weights=args.init, alpha=ALPHA, activation=Tanh(), last_layer=False)
+l11 = FeedbackFC(size=[4*4*256, 2048], num_classes=100, sparse=sparse, rank=rank)
 
-l10 = FullyConnected(size=[4*4*256, 2048], num_classes=100, init_weights=args.init, alpha=ALPHA, activation=Tanh(), last_layer=False, sparse=sparse)
+l12 = FullyConnected(size=[2048, 2048], num_classes=100, init_weights=args.init, alpha=ALPHA, activation=Tanh(), last_layer=False)
+l13 = FeedbackFC(size=[2048, 2048], num_classes=100, sparse=sparse, rank=rank)
 
-l11 = FullyConnected(size=[2048, 2048], num_classes=100, init_weights=args.init, alpha=ALPHA, activation=Tanh(), last_layer=False, sparse=sparse)
+l14 = FullyConnected(size=[2048, 100], num_classes=100, init_weights=args.init, alpha=ALPHA, activation=Tanh(), last_layer=True)
 
-l12 = FullyConnected(size=[2048, 100], num_classes=100, init_weights=args.init, alpha=ALPHA, activation=Tanh(), last_layer=True, sparse=sparse)
-
-model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12])
+model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14])
 
 predict = model.predict(X=XTEST)
 

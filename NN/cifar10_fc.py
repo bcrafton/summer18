@@ -8,10 +8,11 @@ import sys
 parser = argparse.ArgumentParser()
 parser.add_argument('--epochs', type=int, default=300)
 parser.add_argument('--batch_size', type=int, default=64)
-parser.add_argument('--alpha', type=float, default=5e-5)
+parser.add_argument('--alpha', type=float, default=1e-3)
 parser.add_argument('--gpu', type=int, default=0)
 parser.add_argument('--dfa', type=int, default=1)
 parser.add_argument('--sparse', type=int, default=1)
+parser.add_argument('--rank', type=int, default=0)
 parser.add_argument('--init', type=str, default="zero")
 parser.add_argument('--opt', type=str, default="adam")
 args = parser.parse_args()
@@ -37,7 +38,8 @@ from FullyConnected import FullyConnected
 from Convolution import Convolution
 from MaxPool import MaxPool
 from Dropout import Dropout
-from Feedback import Feedback
+from FeedbackFC import FeedbackFC
+from FeedbackConv import FeedbackConv
 
 from Activation import Activation
 from Activation import Sigmoid
@@ -59,6 +61,7 @@ TEST_EXAMPLES = 10000
 BATCH_SIZE = args.batch_size
 ALPHA = args.alpha
 sparse = args.sparse
+rank = args.rank
 
 ##############################################
 
@@ -78,12 +81,18 @@ YTEST = tf.placeholder(tf.float32, [None, 10])
 #XTEST = tf.reshape(XTEST, [batch_size, 3072])
 XTEST = tf.placeholder(tf.float32, [None, 3072])
 
-l0 = FullyConnected(size=[3072, 1000], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Tanh(), last_layer=False, sparse=sparse)
-l1 = FullyConnected(size=[1000, 1000], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Tanh(), last_layer=False, sparse=sparse)
-l2 = FullyConnected(size=[1000, 1000], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Tanh(), last_layer=False, sparse=sparse)
-l3 = FullyConnected(size=[1000, 10], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Linear(), last_layer=True, sparse=sparse)
+l0 = FullyConnected(size=[3072, 1000], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Tanh(), last_layer=False)
+l1 = FeedbackFC(size=[3072, 1000], num_classes=10, sparse=sparse, rank=rank)
 
-model = Model(layers=[l0, l1, l2, l3])
+l2 = FullyConnected(size=[1000, 1000], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Tanh(), last_layer=False)
+l3 = FeedbackFC(size=[1000, 1000], num_classes=10, sparse=sparse, rank=rank)
+
+l4 = FullyConnected(size=[1000, 1000], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Tanh(), last_layer=False)
+l5 = FeedbackFC(size=[1000, 1000], num_classes=10, sparse=sparse, rank=rank)
+
+l6 = FullyConnected(size=[1000, 10], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Linear(), last_layer=True)
+
+model = Model(layers=[l0, l1, l2, l3, l4, l5, l6])
 
 ##############################################
 
