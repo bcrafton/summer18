@@ -57,7 +57,7 @@ model.fit(x_train,
           y_train,
           batch_size=BATCH_SIZE,
           epochs=EPOCHS,
-          verbose=1,
+          verbose=0,
           validation_data=(x_test, y_test))
 score = model.evaluate(x_test, y_test, verbose=0)
 print('Test loss:', score[0])
