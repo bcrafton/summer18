@@ -8,7 +8,7 @@ import sys
 parser = argparse.ArgumentParser()
 parser.add_argument('--epochs', type=int, default=25)
 parser.add_argument('--batch_size', type=int, default=32)
-parser.add_argument('--alpha', type=float, default=1e-2)
+parser.add_argument('--alpha', type=float, default=5e-3)
 parser.add_argument('--gpu', type=int, default=0)
 parser.add_argument('--dfa', type=int, default=0)
 parser.add_argument('--sparse', type=int, default=0)
@@ -98,7 +98,7 @@ l5 = ConvToFullyConnected(shape=[14, 14, 64])
 l6 = FullyConnected(size=[14*14*64, 128], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Tanh(), last_layer=False)
 l7 = FeedbackFC(size=[14*14*64, 128], num_classes=10, sparse=sparse, rank=args.rank)
 
-l8 = FullyConnected(size=[128, 10], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Sigmoid(), last_layer=True)
+l8 = FullyConnected(size=[128, 10], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Linear(), last_layer=True)
 
 model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8])
 

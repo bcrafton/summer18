@@ -8,7 +8,7 @@ import sys
 parser = argparse.ArgumentParser()
 parser.add_argument('--epochs', type=int, default=100)
 parser.add_argument('--batch_size', type=int, default=64)
-parser.add_argument('--alpha', type=float, default=1e-2)
+parser.add_argument('--alpha', type=float, default=7e-5)
 parser.add_argument('--gpu', type=int, default=0)
 parser.add_argument('--dfa', type=int, default=0)
 parser.add_argument('--sparse', type=int, default=0)
@@ -47,6 +47,7 @@ from Activation import Relu
 from Activation import Tanh
 from Activation import Softmax
 from Activation import LeakyRelu
+from Activation import Linear
 
 ##############################################
 
@@ -95,7 +96,8 @@ l11 = FeedbackFC(size=[4*4*256, 2048], num_classes=100, sparse=sparse, rank=rank
 l12 = FullyConnected(size=[2048, 2048], num_classes=100, init_weights=args.init, alpha=ALPHA, activation=Tanh(), last_layer=False)
 l13 = FeedbackFC(size=[2048, 2048], num_classes=100, sparse=sparse, rank=rank)
 
-l14 = FullyConnected(size=[2048, 100], num_classes=100, init_weights=args.init, alpha=ALPHA, activation=Sigmoid(), last_layer=True)
+# have to adjust lr if using sigmoid
+l14 = FullyConnected(size=[2048, 100], num_classes=100, init_weights=args.init, alpha=ALPHA, activation=Linear(), last_layer=True)
 
 model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14])
 
