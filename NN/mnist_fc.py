@@ -7,12 +7,12 @@ import sys
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--epochs', type=int, default=25)
-parser.add_argument('--batch_size', type=int, default=1)
+parser.add_argument('--batch_size', type=int, default=32)
 parser.add_argument('--alpha', type=float, default=1e-2)
 parser.add_argument('--gpu', type=int, default=0)
-parser.add_argument('--dfa', type=int, default=1)
+parser.add_argument('--dfa', type=int, default=0)
 parser.add_argument('--sparse', type=int, default=0)
-parser.add_argument('--rank', type=int, default=1)
+parser.add_argument('--rank', type=int, default=0)
 parser.add_argument('--init', type=str, default="sqrt_fan_in")
 parser.add_argument('--opt', type=str, default="adam")
 args = parser.parse_args()
@@ -26,9 +26,9 @@ if args.gpu >= 0:
 import time
 import tensorflow as tf
 import keras
+from keras.datasets import mnist
 import math
 import numpy as np
-from tensorflow.examples.tutorials.mnist import input_data
 
 from Model import Model
 
@@ -50,16 +50,27 @@ from Activation import Linear
 
 ##############################################
 
-mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
-
-##############################################
-
 EPOCHS = args.epochs
-TRAIN_EXAMPLES = 50000
+TRAIN_EXAMPLES = 60000
 TEST_EXAMPLES = 10000
+NUM_CLASSES = 10
 BATCH_SIZE = args.batch_size
 ALPHA = args.alpha
 sparse = args.sparse
+
+##############################################
+
+(x_train, y_train), (x_test, y_test) = mnist.load_data()
+
+x_train = x_train.reshape(TRAIN_EXAMPLES, 784)
+x_test = x_test.reshape(TEST_EXAMPLES, 784)
+x_train = x_train.astype('float32')
+x_test = x_test.astype('float32')
+x_train /= 255
+x_test /= 255
+
+y_train = keras.utils.to_categorical(y_train, NUM_CLASSES)
+y_test = keras.utils.to_categorical(y_test, NUM_CLASSES)
 
 ##############################################
 
@@ -78,7 +89,7 @@ YTEST = tf.placeholder(tf.float32, [None, 10])
 l0 = FullyConnected(size=[784, 100], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Tanh(), last_layer=False)
 l1 = FeedbackFC(size=[784, 100], num_classes=10, sparse=sparse, rank=args.rank)
 
-l2 = FullyConnected(size=[100, 10], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Linear(), last_layer=True)
+l2 = FullyConnected(size=[100, 10], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Sigmoid(), last_layer=True)
 
 model = Model(layers=[l0, l1, l2])
 
@@ -98,14 +109,12 @@ elif args.opt == "rms":
 else:
     optimizer = tf.train.GradientDescentOptimizer(learning_rate=ALPHA).apply_gradients(grads_and_vars=grads_and_vars)
 
-correct_prediction = tf.equal(tf.argmax(predict,1), tf.argmax(YTEST,1))
-correct_prediction_sum = tf.reduce_sum(tf.cast(correct_prediction, tf.float32))
-accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+correct = tf.equal(tf.argmax(predict,1), tf.argmax(YTEST,1))
+total_correct = tf.reduce_sum(tf.cast(correct, tf.float32))
 
 ##############################################
 
 sess = tf.InteractiveSession()
-tf.local_variables_initializer().run()
 tf.global_variables_initializer().run()
 
 ##############################################
@@ -129,27 +138,25 @@ f.close()
 ##############################################
 
 for ii in range(EPOCHS):
-    print (ii)
     for jj in range(int(TRAIN_EXAMPLES / BATCH_SIZE)):
-        batch_xs, batch_ys = mnist.train.next_batch(BATCH_SIZE, shuffle=False)
+        xs = x_train[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
+        ys = y_train[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
+        sess.run([optimizer], feed_dict={batch_size: BATCH_SIZE, XTRAIN: xs, YTRAIN: ys})
         
-        sess.run([grads_and_vars, optimizer], feed_dict={batch_size: BATCH_SIZE, XTRAIN: batch_xs, YTRAIN: batch_ys})
+    total_correct_examples = 0.0
+    total_examples = 0.0
 
-    count = 0
-    total_correct = 0
-    
-    for jj in range(0, int(TEST_EXAMPLES/BATCH_SIZE) * BATCH_SIZE, BATCH_SIZE):
-        batch_xs, batch_ys = mnist.test.next_batch(BATCH_SIZE, shuffle=False)
-        
-        correct = sess.run(correct_prediction_sum, feed_dict={batch_size: BATCH_SIZE, XTEST: batch_xs, YTEST: batch_ys})
-        count += BATCH_SIZE
-        total_correct += correct
-
-    print (total_correct * 1.0 / count)
-    sys.stdout.flush()
+    for jj in range(int(TEST_EXAMPLES / BATCH_SIZE)):
+        xs = x_test[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
+        ys = y_test[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
+        tmp = sess.run(total_correct, feed_dict={batch_size: BATCH_SIZE, XTEST: xs, YTEST: ys})
+        total_correct_examples += tmp
+        total_examples += BATCH_SIZE
+            
+    print ("acc: " + str(total_correct_examples / total_examples))
     
     f = open(filename, "a")
-    f.write(str(total_correct * 1.0 / count) + "\n")
+    f.write(str(total_correct_examples * 1.0 / total_examples) + "\n")
     f.close()
 
 ##############################################
