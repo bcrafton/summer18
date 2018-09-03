@@ -6,14 +6,14 @@ import sys
 ##############################################
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--epochs', type=int, default=300)
+parser.add_argument('--epochs', type=int, default=100)
 parser.add_argument('--batch_size', type=int, default=64)
 parser.add_argument('--alpha', type=float, default=1e-3)
 parser.add_argument('--gpu', type=int, default=0)
-parser.add_argument('--dfa', type=int, default=1)
-parser.add_argument('--sparse', type=int, default=1)
+parser.add_argument('--dfa', type=int, default=0)
+parser.add_argument('--sparse', type=int, default=0)
 parser.add_argument('--rank', type=int, default=0)
-parser.add_argument('--init', type=str, default="zero")
+parser.add_argument('--init', type=str, default="sqrt_fan_in")
 parser.add_argument('--opt', type=str, default="adam")
 args = parser.parse_args()
 
@@ -90,7 +90,7 @@ l3 = FeedbackFC(size=[1000, 1000], num_classes=10, sparse=sparse, rank=rank)
 l4 = FullyConnected(size=[1000, 1000], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Tanh(), last_layer=False)
 l5 = FeedbackFC(size=[1000, 1000], num_classes=10, sparse=sparse, rank=rank)
 
-l6 = FullyConnected(size=[1000, 10], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Linear(), last_layer=True)
+l6 = FullyConnected(size=[1000, 10], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Sigmoid(), last_layer=True)
 
 model = Model(layers=[l0, l1, l2, l3, l4, l5, l6])
 
