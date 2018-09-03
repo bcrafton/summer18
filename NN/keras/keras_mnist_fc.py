@@ -10,6 +10,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--epochs', type=int, default=25)
 parser.add_argument('--alpha', type=float, default=1e-2)
 parser.add_argument('--gpu', type=int, default=0)
+parser.add_argument('--verbose', type=int, default=0)
 args = parser.parse_args()
 
 if args.gpu >= 0:
@@ -46,8 +47,8 @@ y_train = keras.utils.to_categorical(y_train, NUM_CLASSES)
 y_test = keras.utils.to_categorical(y_test, NUM_CLASSES)
 
 model = Sequential()
-model.add(Dense(100, activation='relu', input_shape=(784,)))
-model.add(Dense(NUM_CLASSES, activation='softmax'))
+model.add(Dense(100, activation='tanh', input_shape=(784,)))
+model.add(Dense(NUM_CLASSES, activation='sigmoid'))
 
 model.compile(loss=keras.losses.categorical_crossentropy,
               optimizer=keras.optimizers.Adadelta(),
@@ -57,7 +58,7 @@ model.fit(x_train,
           y_train,
           batch_size=BATCH_SIZE,
           epochs=EPOCHS,
-          verbose=0,
+          verbose=args.verbose,
           validation_data=(x_test, y_test))
 score = model.evaluate(x_test, y_test, verbose=0)
 print('Test loss:', score[0])

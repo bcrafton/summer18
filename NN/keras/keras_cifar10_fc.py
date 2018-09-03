@@ -10,6 +10,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--epochs', type=int, default=25)
 parser.add_argument('--alpha', type=float, default=1e-2)
 parser.add_argument('--gpu', type=int, default=0)
+parser.add_argument('--verbose', type=int, default=0)
 args = parser.parse_args()
 
 if args.gpu >= 0:
@@ -59,7 +60,7 @@ model.fit(x_train,
           y_train,
           batch_size=BATCH_SIZE,
           epochs=EPOCHS,
-          verbose=0,
+          verbose=args.verbose,
           validation_data=(x_test, y_test))
 score = model.evaluate(x_test, y_test, verbose=0)
 print('Test loss:', score[0])

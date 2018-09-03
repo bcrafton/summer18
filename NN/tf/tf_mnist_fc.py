@@ -50,12 +50,14 @@ y_test = keras.utils.to_categorical(y_test, NUM_CLASSES)
 x = tf.placeholder(tf.float32, [None, 784])
 y = tf.placeholder(tf.float32, [None, 10])
 
-l1 = tf.layers.dense(x, 100, activation=tf.nn.relu)
+l1 = tf.layers.dense(x, 100, activation=tf.nn.tanh)
 l2 = tf.layers.dense(l1, 10)
 
 predict = tf.argmax(l2, axis=1)
 
 loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=l2, labels=y))
+# loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=l2, labels=y))
+
 correct = tf.equal(predict, tf.argmax(y, 1))
 total_correct = tf.reduce_sum(tf.cast(correct, tf.float32))
 
