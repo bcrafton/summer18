@@ -14,7 +14,6 @@ if args.gpu >= 0:
 import tensorflow as tf
 import numpy as np
 from tensorflow.examples.tutorials.mnist import input_data
-#import matplotlib.pyplot as plt
 
 mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
 
@@ -26,11 +25,17 @@ def tanh(x):
     
 def dtanh(x):
     return 1 - tf.pow(x, 2)
+    
+def sigmoid(x):
+    return tf.sigmoid(x)
+
+def dsigmoid(x):
+    return tf.multiply(x, tf.subtract(1.0, x))
 
 ##############################################
-W1 = tf.Variable(tf.random_uniform(shape=[785, 100]) * (2 * 0.12) - 0.12)
-W2 = tf.Variable(tf.random_uniform(shape=[101, 10]) * (2 * 0.12) - 0.12)
-B = tf.Variable(tf.random_uniform(shape=[101, 10]) * (2 * 0.12) - 0.12)
+W1 = tf.Variable(tf.random_uniform(shape=[785, 25]) * (2 * 0.12) - 0.12)
+W2 = tf.Variable(tf.random_uniform(shape=[26, 10]) * (2 * 0.12) - 0.12)
+B = tf.Variable(tf.random_uniform(shape=[26, 10]) * (2 * 0.12) - 0.12)
 ##############################################
 # FEED FORWARD
 ##############################################
@@ -38,16 +43,16 @@ X = tf.placeholder(tf.float32, [None, 784])
 A1 = add_bias(X)
 
 Y2 = tf.matmul(A1, W1)
-A2 = add_bias(tanh(Y2))
+A2 = add_bias(sigmoid(Y2))
 
 Y3 = tf.matmul(A2, W2)
-A3 = tanh(Y3)
+A3 = tf.sigmoid(Y3)
 ##############################################
 # BACK PROP
 ##############################################
 ANS = tf.placeholder(tf.float32, [None, 10])
 D3 = tf.subtract(A3, ANS)
-D2 = tf.multiply(tf.matmul(D3, tf.transpose(W2)), dtanh(A2))
+D2 = tf.multiply(tf.matmul(D3, tf.transpose(B)), dsigmoid(A2))
 
 G2 = tf.matmul(tf.transpose(A2), D3)
 G1 = tf.matmul(tf.transpose(A1), D2[:, :-1])
@@ -77,13 +82,6 @@ np.save("W1_" + str(args.num) + "_" + str(args.gpu), W1)
 np.save("W2_" + str(args.num) + "_" + str(args.gpu), W2)
 
 print ("accuracy: " + str(acc))
-#print ("rank W1: " + str(np.linalg.matrix_rank(W1)))
-#print ("rank W2: " + str(np.linalg.matrix_rank(W2)))
-
-#val, vec = np.linalg.eig(np.dot(np.transpose(W1), W1))
-
-#plt.plot(val)
-#plt.show()
 
 ##############################################
 

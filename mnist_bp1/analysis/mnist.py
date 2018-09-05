@@ -70,16 +70,6 @@ np.save("W1_" + str(args.num) + "_" + str(args.gpu), W1)
 np.save("W2_" + str(args.num) + "_" + str(args.gpu), W2)
 
 print ("accuracy: " + str(acc))
-#print ("rank W1: " + str(np.linalg.matrix_rank(W1)))
-#print ("rank W2: " + str(np.linalg.matrix_rank(W2)))
-
-#val, vec = np.linalg.eig(np.dot(np.transpose(W1), W1))
-
-#plt.plot(val)
-#plt.show()
-
-##############################################
-
 
 
 
