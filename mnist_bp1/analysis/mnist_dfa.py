@@ -61,8 +61,7 @@ W2 = W2.assign(tf.subtract(W2, tf.scalar_mul(1e-2, G2)))
 W1 = W1.assign(tf.subtract(W1, tf.scalar_mul(1e-2, G1)))
 ##############################################
 
-config = tf.ConfigProto()
-sess = tf.InteractiveSession(config=config)
+sess = tf.InteractiveSession()
 tf.global_variables_initializer().run()
 
 TRAIN_EXAMPLES = 50000
