@@ -58,6 +58,7 @@ NUM_CLASSES = 10
 BATCH_SIZE = args.batch_size
 ALPHA = args.alpha
 sparse = args.sparse
+rank = args.rank
 
 ##############################################
 
@@ -88,19 +89,27 @@ YTEST = tf.placeholder(tf.float32, [None, 10])
 XTEST = tf.map_fn(lambda frame1: tf.image.per_image_standardization(frame1), XTEST)
 
 l0 = Convolution(input_sizes=[batch_size, 28, 28, 1], filter_sizes=[3, 3, 1, 32], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Tanh(), last_layer=False)
-l1 = FeedbackConv(size=[batch_size, 28, 28, 32], num_classes=10, sparse=sparse, rank=args.rank)
+l1 = MaxPool(size=[batch_size, 28, 28, 32], ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="SAME")
+l2 = FeedbackConv(size=[batch_size, 14, 14, 32], num_classes=10, sparse=sparse, rank=rank)
 
-l2 = Convolution(input_sizes=[batch_size, 28, 28, 32], filter_sizes=[3, 3, 32, 64], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Tanh(), last_layer=False)
-l3 = MaxPool(size=[batch_size, 28, 28, 64], ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="VALID")
-l4 = FeedbackConv(size=[batch_size, 14, 14, 64], num_classes=10, sparse=sparse, rank=args.rank)
+l3 = Convolution(input_sizes=[batch_size, 14, 14, 32], filter_sizes=[3, 3, 32, 64], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Tanh(), last_layer=False)
+l4 = MaxPool(size=[batch_size, 14, 14, 64], ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="SAME")
+l5 = FeedbackConv(size=[batch_size, 7, 7, 64], num_classes=10, sparse=sparse, rank=rank)
 
-l5 = ConvToFullyConnected(shape=[14, 14, 64])
-l6 = FullyConnected(size=[14*14*64, 128], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Tanh(), last_layer=False)
-l7 = FeedbackFC(size=[14*14*64, 128], num_classes=10, sparse=sparse, rank=args.rank)
+l6 = Convolution(input_sizes=[batch_size, 7, 7, 64], filter_sizes=[3, 3, 64, 64], num_classes=10, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Tanh(), last_layer=False)
+l7 = MaxPool(size=[batch_size, 7, 7, 64], ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="SAME")
+l8 = FeedbackConv(size=[batch_size, 4, 4, 64], num_classes=10, sparse=sparse, rank=rank)
 
-l8 = FullyConnected(size=[128, 10], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Linear(), last_layer=True)
+l9 = ConvToFullyConnected(shape=[4, 4, 64])
+l10 = FullyConnected(size=[4*4*64, 512], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Tanh(), last_layer=False)
+l11 = FeedbackFC(size=[4*4*64, 512], num_classes=10, sparse=sparse, rank=rank)
 
-model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8])
+l12 = FullyConnected(size=[512, 128], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Tanh(), last_layer=False)
+l13 = FeedbackFC(size=[512, 128], num_classes=10, sparse=sparse, rank=rank)
+
+l14 = FullyConnected(size=[128, 10], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Sigmoid(), last_layer=True)
+
+model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14])
 
 ##############################################
 
