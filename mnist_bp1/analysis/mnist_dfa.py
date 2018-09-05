@@ -35,7 +35,7 @@ def dsigmoid(x):
 ##############################################
 W1 = tf.Variable(tf.random_uniform(shape=[785, 25]) * (2 * 0.12) - 0.12)
 W2 = tf.Variable(tf.random_uniform(shape=[26, 10]) * (2 * 0.12) - 0.12)
-B = tf.Variable(tf.random_uniform(shape=[26, 10]) * (2 * 0.12) - 0.12)
+B = tf.Variable(np.load("B.npy"), dtype=tf.float32)
 ##############################################
 # FEED FORWARD
 ##############################################
