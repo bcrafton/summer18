@@ -15,6 +15,7 @@ parser.add_argument('--sparse', type=int, default=0)
 parser.add_argument('--rank', type=int, default=0)
 parser.add_argument('--init', type=str, default="sqrt_fan_in")
 parser.add_argument('--opt', type=str, default="adam")
+parser.add_argument('--name', type=str, default=None)
 args = parser.parse_args()
 
 if args.gpu >= 0:
@@ -137,6 +138,8 @@ f.close()
 
 ##############################################
 
+accs = []
+
 for ii in range(EPOCHS):
     for jj in range(int(TRAIN_EXAMPLES / BATCH_SIZE)):
         xs = x_train[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
@@ -154,6 +157,7 @@ for ii in range(EPOCHS):
         total_examples += BATCH_SIZE
             
     print ("acc: " + str(total_correct_examples / total_examples))
+    accs.append(total_correct_examples / total_examples)    
     
     f = open(filename, "a")
     f.write(str(total_correct_examples * 1.0 / total_examples) + "\n")
@@ -161,4 +165,9 @@ for ii in range(EPOCHS):
 
 ##############################################
 
-
+if args.name is not None:
+    np.save(args.name, np.array(accs))
+    
+    
+    
+    
