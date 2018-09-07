@@ -90,7 +90,7 @@ l3 = FeedbackFC(size=[1000, 1000], num_classes=10, sparse=sparse, rank=rank)
 l4 = FullyConnected(size=[1000, 1000], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Tanh(), last_layer=False)
 l5 = FeedbackFC(size=[1000, 1000], num_classes=10, sparse=sparse, rank=rank)
 
-l6 = FullyConnected(size=[1000, 10], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Sigmoid(), last_layer=True)
+l6 = FullyConnected(size=[1000, 10], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Linear(), last_layer=True)
 
 model = Model(layers=[l0, l1, l2, l3, l4, l5, l6])
 
