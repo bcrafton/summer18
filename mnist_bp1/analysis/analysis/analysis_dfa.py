@@ -13,6 +13,7 @@ NUM_W = 250
 W1s = []
 W2s = []
 
+'''
 def reorder(W1, W2):
     order = np.argsort(np.transpose(W2)[0][:-1])
 
@@ -29,6 +30,7 @@ def reorder(W1, W2):
     W1 = np.transpose(W1)
 
     return W1, W2
+'''
 
 '''
 def reorder(W1_ref, W1, W2_ref, W2):
@@ -72,7 +74,7 @@ def reorder(W1_ref, W1, W2_ref, W2):
     return W1, W2
     
 '''
-'''
+
 def reorder(W1, W2):
     total = np.zeros(25)
     
@@ -91,37 +93,23 @@ def reorder(W1, W2):
     W1 = np.transpose(W1)
         
     return W1, W2
-'''     
+        
 
-W1_ref = W1_ii_0 = np.load("../weights/W1_1_0.npy")
-W2_ref = W2_ii_0 = np.load("../weights/W2_1_0.npy")
+W1_ref = W1_ii_0 = np.load("../weights_dfa/W1_1_0.npy")
+W2_ref = W2_ii_0 = np.load("../weights_dfa/W2_1_0.npy")
 
 for ii in range(NUM_W):
     print (ii)
 
     W1_ii_0 = np.load("../weights/W1_" + str(ii+1) + "_0.npy")
-    W1_ii_0 = W1_ii_0 - np.average(W1_ii_0)
-    
     W1_ii_1 = np.load("../weights/W1_" + str(ii+1) + "_1.npy")
-    W1_ii_1 = W1_ii_1 - np.average(W1_ii_1)
-    
     W1_ii_2 = np.load("../weights/W1_" + str(ii+1) + "_2.npy")
-    W1_ii_2 = W1_ii_2 - np.average(W1_ii_2)
-    
     W1_ii_3 = np.load("../weights/W1_" + str(ii+1) + "_3.npy")    
-    W1_ii_3 = W1_ii_3 - np.average(W1_ii_3)
 
     W2_ii_0 = np.load("../weights/W2_" + str(ii+1) + "_0.npy")
-    W2_ii_0 = W2_ii_0 - np.average(W2_ii_0)
-    
     W2_ii_1 = np.load("../weights/W2_" + str(ii+1) + "_1.npy")
-    W2_ii_1 = W2_ii_1 - np.average(W2_ii_1)
-    
     W2_ii_2 = np.load("../weights/W2_" + str(ii+1) + "_2.npy")
-    W2_ii_2 = W2_ii_2 - np.average(W2_ii_2)
-    
     W2_ii_3 = np.load("../weights/W2_" + str(ii+1) + "_3.npy")
-    W2_ii_3 = W2_ii_3 - np.average(W2_ii_3)
     
     '''
     W1_ii_0, W2_ii_0 = reorder(W1_ref, W1_ii_0, W2_ref, W2_ii_0)
@@ -172,11 +160,7 @@ pca = PCA(.95)
 # pca.fit(mat)
 # print pca.n_components_
 
-mat = np.transpose(mat)
-# mean, std = np.average(mat), np.std(mat)
-# mat = np.random.normal(loc=mean, scale=std, size=(np.shape(mat)))
-
-pca.fit(mat)
+pca.fit(np.transpose(mat))
 print pca.n_components_
 
 # matplotlib
