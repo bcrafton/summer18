@@ -66,10 +66,8 @@ for epoch in range(EPOCHS):
         
         ### FORWARD ###
         A2 = np.zeros(shape=(LAYER2))
-        for ii in range(LAYER1):
-            x = x_train[ex][ii]
-            for jj in range(LAYER2):
-                A2[jj] = cores[jj].forward(x)
+        for ii in range(LAYER2):
+            A2[ii] = cores[ii].forward(x_train[ex])
     
         Z3 = np.dot(A2, weights2)
         A3 = relu(Z3)  
@@ -82,23 +80,20 @@ for epoch in range(EPOCHS):
         
         D3 = A3 - ANS
         DW2 = np.dot(A2.reshape(LAYER2, 1), D3.reshape(1, LAYER3))        
-        weights2 -= ALPHA * DW2
         
         E = np.dot(D3, np.transpose(weights2)) * ALPHA
-        for ii in range(LAYER1):
-            x = x_train[ex][ii]
-            for jj in range(LAYER2):
-                e = E[jj]
-                A2[jj] = cores[jj].backward(x, e)
+        for ii in range(LAYER2):
+            e = E[ii]
+            A2[ii] = cores[ii].backward(x_train[ex], e)
+
+        weights2 -= ALPHA * DW2
         
 correct = 0
 for ex in range(TEST_EXAMPLES):
 
     A2 = np.zeros(shape=(LAYER2))
-    for ii in range(LAYER1):
-        x = x_train[ex][ii]
-        for jj in range(LAYER2):
-            A2[jj] = cores[jj].forward(x)
+    for ii in range(LAYER2):
+        A2[ii] = cores[ii].forward(x_test[ex])
 
     Z3 = np.dot(A2, weights2)
     A3 = relu(Z3)  

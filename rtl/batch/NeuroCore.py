@@ -20,29 +20,12 @@ class NeuroCore:
         self.y = 0.0
         self.dy = 0.0
 
-        self.forward_step = 0
-        self.backward_step = 0
-
     def forward(self, x):
-        assert(self.backward_step == 0 or self.backward_step == self.size)
-        self.backward_step = 0
-    
-        self.y += self.w[self.forward_step] * x
-        self.forward_step += 1
-        
-        if self.forward_step == self.size:
-            self.y = relu(self.y)
-            self.dy = drelu(self.y)
-            
+        self.y = np.sum(self.w * x)
+        self.y = relu(self.y)
+        self.dy = drelu(self.y)
         return self.y
     
     def backward(self, x, e):
-        assert(self.forward_step == 0 or self.forward_step == self.size)
-        self.forward_step = 0
-    
         dw = x * e * self.dy
-        self.w[self.backward_step] += dw
-        
-        self.backward_step += 1
-        
-                
+        self.w -= dw        
