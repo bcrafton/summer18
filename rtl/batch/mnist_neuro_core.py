@@ -48,12 +48,17 @@ y_test = keras.utils.to_categorical(y_test, NUM_CLASSES)
 
 #######################################
 
-weights2 = np.random.uniform(0.0, 1.0, size=(LAYER2, LAYER3)) * 2 * EPSILON - EPSILON
-
-cores = [None] * LAYER2
+cores1 = [None] * LAYER2
 for ii in range(LAYER2):
-    core = NeuroCore(size=LAYER1)
-    cores[ii] = core
+    core = NeuroCore(size=LAYER1, last=False)
+    cores1[ii] = core
+
+cores2 = [None] * LAYER3
+for ii in range(LAYER3):
+    core = NeuroCore(size=LAYER2, last=True)
+    cores2[ii] = core
+
+B = np.random.uniform(0.0, 1.0, size=(LAYER2, LAYER3)) * 2 * EPSILON - EPSILON
 
 #######################################
 
@@ -67,36 +72,36 @@ for epoch in range(EPOCHS):
         ### FORWARD ###
         A2 = np.zeros(shape=(LAYER2))
         for ii in range(LAYER2):
-            A2[ii] = cores[ii].forward(x_train[ex])
+            A2[ii] = cores1[ii].forward(x_train[ex])
     
-        Z3 = np.dot(A2, weights2)
-        A3 = relu(Z3)  
+        A3 = np.zeros(shape=(LAYER3))
+        for ii in range(LAYER3):
+            A3[ii] = cores2[ii].forward(A2)
         
         ### COMPUTE ERROR ###
-        
         ANS = y_train[ex]
         
         ### BACKWARD ###
+        E2 = A3 - ANS # do not multiply by ALPHA!
+        for ii in range(LAYER3):
+            e = E2[ii] * ALPHA
+            cores2[ii].backward(A2, e)
         
-        D3 = A3 - ANS
-        DW2 = np.dot(A2.reshape(LAYER2, 1), D3.reshape(1, LAYER3))        
-        
-        E = np.dot(D3, np.transpose(weights2)) * ALPHA
+        E1 = np.dot(E2, np.transpose(B)) # do not multiply by ALPHA!
         for ii in range(LAYER2):
-            e = E[ii]
-            A2[ii] = cores[ii].backward(x_train[ex], e)
-
-        weights2 -= ALPHA * DW2
+            e = E1[ii] * ALPHA
+            cores1[ii].backward(x_train[ex], e)
         
 correct = 0
 for ex in range(TEST_EXAMPLES):
 
     A2 = np.zeros(shape=(LAYER2))
     for ii in range(LAYER2):
-        A2[ii] = cores[ii].forward(x_test[ex])
+        A2[ii] = cores1[ii].forward(x_test[ex])
 
-    Z3 = np.dot(A2, weights2)
-    A3 = relu(Z3)  
+    A3 = np.zeros(shape=(LAYER3))
+    for ii in range(LAYER3):
+        A3[ii] = cores2[ii].forward(A2)
     
     if (np.argmax(A3) == np.argmax(y_test[ex])):
         correct += 1

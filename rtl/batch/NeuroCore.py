@@ -14,8 +14,9 @@ so there are 2 ways you can do this and one way is clearly better
 '''
 
 class NeuroCore:
-    def __init__(self, size):
+    def __init__(self, size, last):
         self.size = size
+        self.last = last
         self.w =  np.random.uniform(0.0, 1.0, size=(self.size)) * 2 * 0.12 - 0.12
         self.y = 0.0
         self.dy = 0.0
@@ -23,7 +24,12 @@ class NeuroCore:
     def forward(self, x):
         self.y = np.sum(self.w * x)
         self.y = relu(self.y)
-        self.dy = drelu(self.y)
+        
+        if self.last:
+            self.dy = 1.0
+        else:
+            self.dy = drelu(self.y)
+            
         return self.y
     
     def backward(self, x, e):

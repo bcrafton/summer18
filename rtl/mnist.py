@@ -51,6 +51,8 @@ y_test = keras.utils.to_categorical(y_test, NUM_CLASSES)
 weights1 = np.random.uniform(0.0, 1.0, size=(LAYER1, LAYER2)) * 2 * EPSILON - EPSILON
 weights2 = np.random.uniform(0.0, 1.0, size=(LAYER2, LAYER3)) * 2 * EPSILON - EPSILON
 
+B = np.random.uniform(0.0, 1.0, size=(LAYER2, LAYER3)) * 2 * EPSILON - EPSILON
+
 #######################################
 
 for epoch in range(EPOCHS):
@@ -66,7 +68,7 @@ for epoch in range(EPOCHS):
         ANS = y_train[ex]
         
         D3 = A3 - ANS
-        D2 = np.dot(D3, np.transpose(weights2)) * drelu(A2)
+        D2 = np.dot(D3, np.transpose(B)) * drelu(A2)
 
         DW2 = np.dot(A2.reshape(LAYER2, 1), D3.reshape(1, LAYER3))        
         DW1 = np.dot(A1.reshape(LAYER1, 1), D2.reshape(1, LAYER2))
