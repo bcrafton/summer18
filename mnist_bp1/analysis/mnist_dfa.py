@@ -16,13 +16,12 @@ import numpy as np
 import keras
 from keras.datasets import mnist
 
-
 ##############################################
 
 TRAIN_EXAMPLES = 60000
 TEST_EXAMPLES = 10000
 NUM_CLASSES = 10
-EPOCHS = 25
+EPOCHS = 50
 BATCH_SIZE = 32
 
 ##############################################
@@ -42,13 +41,19 @@ y_test = keras.utils.to_categorical(y_test, NUM_CLASSES)
 ##############################################
 
 def add_bias(x):
-  return tf.concat([x, tf.ones([tf.shape(x)[0], 1])], axis=1)
+    return tf.concat([x, tf.ones([tf.shape(x)[0], 1])], axis=1)
   
 def relu(x):
     return tf.nn.relu(x)
 
 def drelu(x):
     return tf.cast(x > 0.0, dtype=tf.float32)
+    
+def sigmoid(x):
+    return tf.sigmoid(x)
+
+def dsigmoid(x):
+    return tf.multiply(x, tf.subtract(1.0, x))
 
 ##############################################
 high = 1.0 / np.sqrt(785)
@@ -68,16 +73,16 @@ X = tf.placeholder(tf.float32, [None, 784])
 A1 = add_bias(X)
 
 Y2 = tf.matmul(A1, W1)
-A2 = add_bias(relu(Y2))
+A2 = add_bias(sigmoid(Y2))
 
 Y3 = tf.matmul(A2, W2)
-A3 = relu(Y3)
+A3 = sigmoid(Y3)
 ##############################################
 # BACK PROP
 ##############################################
 ANS = tf.placeholder(tf.float32, [None, 10])
 D3 = tf.subtract(A3, ANS)
-D2 = tf.multiply(tf.matmul(D3, tf.transpose(W2)), drelu(A2))
+D2 = tf.multiply(tf.matmul(D3, tf.transpose(B)), dsigmoid(A2))
 
 G2 = tf.matmul(tf.transpose(A2), D3)
 G1 = tf.matmul(tf.transpose(A1), D2[:, :-1])
@@ -106,10 +111,10 @@ for ii in range(EPOCHS):
 
     acc, w1, w2 = sess.run([accuracy, W1, W2], feed_dict={ALPHA: 0.00, X: x_test, ANS: y_test})
     
-    print (np.sum(np.absolute(prev1 - w1)))
-    print (np.sum(np.absolute(prev2 - w2)))
-    prev1 = w1
-    prev2 = w2
+    # print (np.sum(np.absolute(prev1 - w1)))
+    # print (np.sum(np.absolute(prev2 - w2)))
+    # prev1 = w1
+    # prev2 = w2
     
     print ("acc: " + str(acc))
 

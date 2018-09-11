@@ -3,7 +3,7 @@ import numpy as np
 
 high = 1.0 / np.sqrt(26)
 low = -high
-B = np.random.uniform(low=low, high=high, size=(26, 10)) * 2 * 0.12 - 0.12
+B = np.random.uniform(low=low, high=high, size=(26, 10))
 np.save("B", B)
 
 high = 1.0 / np.sqrt(np.sqrt(26))
