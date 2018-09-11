@@ -1,13 +1,15 @@
 
 import numpy as np
 
-B = np.random.uniform(low=0.0, high=1.0, size=(26, 10)) * 2 * 0.12 - 0.12
-print np.average(B)
+high = 1.0 / np.sqrt(26)
+low = -high
+B = np.random.uniform(low=low, high=high, size=(26, 10)) * 2 * 0.12 - 0.12
+np.save("B", B)
 
-tmp1 = np.random.uniform(low=0.0, high=1.0, size=(26, 1))
-tmp2 = np.random.uniform(low=0.0, high=1.0, size=(1, 10))
+high = 1.0 / np.sqrt(np.sqrt(26))
+low = -high
+tmp1 = np.random.uniform(low=low, high=high, size=(26, 1))
+tmp2 = np.random.uniform(low=low, high=high, size=(1, 10))
 B = np.dot(tmp1, tmp2)
 B = B - np.average(B)
-print np.average(B)
-
 np.save("BAD_B", B)
