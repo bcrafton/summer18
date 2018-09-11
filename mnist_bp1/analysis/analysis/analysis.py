@@ -154,7 +154,8 @@ for ii in range(len(W1s)):
     w2 = W2s[ii]
     w2 = w2.reshape(-1, 1)
     
-    w = np.concatenate((w1, w2), axis=0)
+    # w = np.concatenate((w1, w2), axis=0)
+    w = w2
     
     if ii==0:
         mat = w

@@ -142,29 +142,29 @@ for ii in range(len(W1s)):
     w2 = W2s[ii]
     w2 = w2.reshape(-1, 1)
     
-    w = np.concatenate((w1, w2), axis=0)
+    # w = np.concatenate((w1, w2), axis=0)
+    w = w2
     
     if ii==0:
         mat = w
     else:
         mat = np.concatenate((mat, w), axis=1)
 
+mat = np.transpose(mat)
 print (np.shape(mat))
 
-# X : array-like, shape (n_samples, n_features)
-# Training data, where n_samples in the number of samples and n_features is the number of features.
-
-# sklearn
 pca = PCA(.95)
-
-# pca.fit(mat)
-# print pca.n_components_
-
-pca.fit(np.transpose(mat))
+pca.fit(mat)
 print pca.n_components_
+print pca.singular_values_
 
-# matplotlib
-#pca = PCA(mat)
+singular_matrix = np.dot(np.transpose(mat), mat)
+val, vec = np.linalg.eig(singular_matrix)
+# print (vec)
+print (np.shape(vec))
 
-#vals, vecs = np.linalg.eig( np.dot(np.transpose(mat), mat) )
-#print (vals)
+B = np.load("../B.npy")
+B = np.reshape(B, (-1, 1))
+print np.average(np.dot(vec, B))
+
+

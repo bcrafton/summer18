@@ -20,6 +20,7 @@ if args.gpu >= 0:
 ##############################################
 
 import keras
+import numpy as np
 from keras.datasets import mnist
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Flatten
@@ -63,3 +64,8 @@ model.fit(x_train,
 score = model.evaluate(x_test, y_test, verbose=0)
 print('Test loss:', score[0])
 print('Test accuracy:', score[1])
+
+W1, B1, W2, B2 = model.get_weights()
+# print (np.shape(W1), np.shape(B1), np.shape(W2), np.shape(B2))
+
+
