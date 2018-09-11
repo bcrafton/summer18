@@ -75,8 +75,8 @@ y_test = keras.utils.to_categorical(y_test, NUM_CLASSES)
 
 ##############################################
 
-tf.set_random_seed(0)
-tf.reset_default_graph()
+#tf.set_random_seed(0)
+#tf.reset_default_graph()
 
 batch_size = tf.placeholder(tf.int32, shape=())
 XTRAIN = tf.placeholder(tf.float32, [None, 784])
