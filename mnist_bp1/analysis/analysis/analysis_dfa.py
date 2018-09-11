@@ -101,15 +101,15 @@ W2_ref = W2_ii_0 = np.load("../weights_dfa/W2_1_0.npy")
 for ii in range(NUM_W):
     print (ii)
 
-    W1_ii_0 = np.load("../weights/W1_" + str(ii+1) + "_0.npy")
-    W1_ii_1 = np.load("../weights/W1_" + str(ii+1) + "_1.npy")
-    W1_ii_2 = np.load("../weights/W1_" + str(ii+1) + "_2.npy")
-    W1_ii_3 = np.load("../weights/W1_" + str(ii+1) + "_3.npy")    
+    W1_ii_0 = np.load("../weights_dfa/W1_" + str(ii+1) + "_0.npy")
+    W1_ii_1 = np.load("../weights_dfa/W1_" + str(ii+1) + "_1.npy")
+    W1_ii_2 = np.load("../weights_dfa/W1_" + str(ii+1) + "_2.npy")
+    W1_ii_3 = np.load("../weights_dfa/W1_" + str(ii+1) + "_3.npy")    
 
-    W2_ii_0 = np.load("../weights/W2_" + str(ii+1) + "_0.npy")
-    W2_ii_1 = np.load("../weights/W2_" + str(ii+1) + "_1.npy")
-    W2_ii_2 = np.load("../weights/W2_" + str(ii+1) + "_2.npy")
-    W2_ii_3 = np.load("../weights/W2_" + str(ii+1) + "_3.npy")
+    W2_ii_0 = np.load("../weights_dfa/W2_" + str(ii+1) + "_0.npy")
+    W2_ii_1 = np.load("../weights_dfa/W2_" + str(ii+1) + "_1.npy")
+    W2_ii_2 = np.load("../weights_dfa/W2_" + str(ii+1) + "_2.npy")
+    W2_ii_3 = np.load("../weights_dfa/W2_" + str(ii+1) + "_3.npy")
     
     '''
     W1_ii_0, W2_ii_0 = reorder(W1_ref, W1_ii_0, W2_ref, W2_ii_0)
@@ -142,8 +142,8 @@ for ii in range(len(W1s)):
     w2 = W2s[ii]
     w2 = w2.reshape(-1, 1)
     
-    # w = np.concatenate((w1, w2), axis=0)
-    w = w2
+    w = np.concatenate((w1, w2), axis=0)
+    # w = w2
     
     if ii==0:
         mat = w
@@ -155,7 +155,9 @@ print (np.shape(mat))
 
 pca = PCA(.95)
 pca.fit(mat)
-print pca.n_components_
+print (pca.n_components_)
+
+'''
 print pca.singular_values_
 
 singular_matrix = np.dot(np.transpose(mat), mat)
@@ -166,5 +168,5 @@ print (np.shape(vec))
 B = np.load("../B.npy")
 B = np.reshape(B, (-1, 1))
 print np.average(np.dot(vec, B))
-
+'''
 
