@@ -9,7 +9,12 @@ do
             fname+=rank$j
             fname+=Itr$k
             # echo $fname
-            python mnist_fc.py --epochs 500 --batch_size 32 --alpha 0.005 --dfa 1 --sparse $i --rank $j --init zero --opt adam --gpu 0 --name $fname &
+            
+            gpu=$(($k%4))
+            # echo $gpu
+            
+            # echo python mnist_fc.py --epochs 500 --batch_size 32 --alpha 0.005 --dfa 1 --sparse $i --rank $j --init zero --opt adam --gpu $gpu --name $fname &
+            python mnist_fc.py --epochs 500 --batch_size 32 --alpha 0.005 --dfa 1 --sparse $i --rank $j --init zero --opt adam --gpu $gpu --name $fname &
         done
         wait
     done
