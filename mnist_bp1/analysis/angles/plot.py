@@ -32,7 +32,7 @@ B = np.load("../B.npy")
 B = B[0:25]
 B = np.reshape(B, (-1))
 
-for ii in range(95):
+for ii in range(250):
     print (ii)
     
     W2_ii_0 = np.load("../dfa/W2_" + str(ii+1) + "_0.npy")
@@ -71,7 +71,7 @@ B = np.load("../BAD_B.npy")
 B = B[0:25]
 B = np.reshape(B, (-1))
 
-for ii in range(95):  
+for ii in range(250):  
     print (ii)
 
     W2_ii_0 = np.load("../bad_dfa/BAD_W2_" + str(ii+1) + "_0.npy")
@@ -110,7 +110,7 @@ B = np.load("../B.npy")
 B = B[0:25]
 B = np.reshape(B, (-1))
 
-for ii in range(95):
+for ii in range(250):
     print (ii)
     
     W2_ii_0 = np.load("../weights/W2_" + str(ii+1) + "_0.npy")
@@ -145,10 +145,11 @@ for ii in range(95):
 
 bins = np.linspace(0, 100, 100 * 10)
 
-good_angles = np.reshape(good_angles, (380))
-bad_angles = np.reshape(bad_angles, (380))
-arb_angles = np.reshape(arb_angles, (380))
+good_angles = np.reshape(good_angles, (-1))
+bad_angles = np.reshape(bad_angles, (-1))
+arb_angles = np.reshape(arb_angles, (-1))
 
+plt.rcParams.update({'font.size': 18})
 plt.hist(good_angles, alpha=0.5, bins=bins, label="Full Rank FB")
 plt.hist(bad_angles, alpha=0.5, bins=bins, label="Rank-1 FB")
 plt.hist(arb_angles, alpha=0.5, bins=bins, label="Full Rank FB with BP weights")
