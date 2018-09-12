@@ -7,6 +7,7 @@ import sys
 ##############################################
 
 parser = argparse.ArgumentParser()
+parser.add_argument('--num', type=int, default=0)
 parser.add_argument('--epochs', type=int, default=25)
 parser.add_argument('--alpha', type=float, default=1e-2)
 parser.add_argument('--gpu', type=int, default=0)
@@ -67,5 +68,13 @@ print('Test accuracy:', score[1])
 
 W1, B1, W2, B2 = model.get_weights()
 # print (np.shape(W1), np.shape(B1), np.shape(W2), np.shape(B2))
+np.save("W1_" + str(args.num) + "_" + str(args.gpu), W1)
+np.save("B1_" + str(args.num) + "_" + str(args.gpu), B1)
+np.save("W2_" + str(args.num) + "_" + str(args.gpu), W2)
+np.save("B2_" + str(args.num) + "_" + str(args.gpu), B2)
+
+
+
+
 
 

@@ -9,7 +9,7 @@ import argparse
 from sklearn.decomposition import PCA
 # from matplotlib.mlab import PCA
 
-NUM_W = 450
+NUM_W = 250
 W1s = []
 W2s = []
 
@@ -154,34 +154,22 @@ for ii in range(len(W1s)):
     w2 = W2s[ii]
     w2 = w2.reshape(-1, 1)
     
-    # w = np.concatenate((w1, w2), axis=0)
-    w = w2
+    w = np.concatenate((w1, w2), axis=0)
+    # w = w2
     
     if ii==0:
         mat = w
     else:
         mat = np.concatenate((mat, w), axis=1)
 
-print (np.shape(mat))
-
 # X : array-like, shape (n_samples, n_features)
 # Training data, where n_samples in the number of samples and n_features is the number of features.
 
-# sklearn
-pca = PCA(.95)
-
-# pca.fit(mat)
-# print pca.n_components_
-
 mat = np.transpose(mat)
-# mean, std = np.average(mat), np.std(mat)
-# mat = np.random.normal(loc=mean, scale=std, size=(np.shape(mat)))
+print (np.shape(mat))
 
+pca = PCA(.95)
 pca.fit(mat)
-print pca.n_components_
+print (pca.n_components_)
 
-# matplotlib
-#pca = PCA(mat)
 
-#vals, vecs = np.linalg.eig( np.dot(np.transpose(mat), mat) )
-#print (vals)

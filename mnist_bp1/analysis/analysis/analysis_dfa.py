@@ -13,7 +13,6 @@ NUM_W = 250
 W1s = []
 W2s = []
 
-'''
 def reorder(W1, W2):
     order = np.argsort(np.transpose(W2)[0][:-1])
 
@@ -30,7 +29,6 @@ def reorder(W1, W2):
     W1 = np.transpose(W1)
 
     return W1, W2
-'''
 
 '''
 def reorder(W1_ref, W1, W2_ref, W2):
@@ -75,6 +73,7 @@ def reorder(W1_ref, W1, W2_ref, W2):
     
 '''
 
+'''
 def reorder(W1, W2):
     total = np.zeros(25)
     
@@ -93,7 +92,7 @@ def reorder(W1, W2):
     W1 = np.transpose(W1)
         
     return W1, W2
-        
+'''     
 
 W1_ref = W1_ii_0 = np.load("../weights_dfa/W1_1_0.npy")
 W2_ref = W2_ii_0 = np.load("../weights_dfa/W2_1_0.npy")
@@ -118,10 +117,10 @@ for ii in range(NUM_W):
     W1_ii_3, W2_ii_3 = reorder(W1_ref, W1_ii_3, W2_ref, W2_ii_3)
     '''
     
-    W1_ii_0, W2_ii_0 = reorder(W1_ii_0, W2_ii_0)
-    W1_ii_1, W2_ii_1 = reorder(W1_ii_1, W2_ii_1)
-    W1_ii_2, W2_ii_2 = reorder(W1_ii_2, W2_ii_2)
-    W1_ii_3, W2_ii_3 = reorder(W1_ii_3, W2_ii_3)
+    #W1_ii_0, W2_ii_0 = reorder(W1_ii_0, W2_ii_0)
+    #W1_ii_1, W2_ii_1 = reorder(W1_ii_1, W2_ii_1)
+    #W1_ii_2, W2_ii_2 = reorder(W1_ii_2, W2_ii_2)
+    #W1_ii_3, W2_ii_3 = reorder(W1_ii_3, W2_ii_3)
     
     W1s.append(W1_ii_0)
     W1s.append(W1_ii_1)

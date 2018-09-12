@@ -52,8 +52,15 @@ scaler.fit(training_set)
 training_set = scaler.transform(training_set)
 testing_set = scaler.transform(testing_set)
 
+for ii in range(50000):
+    perm = np.random.permutation(784)
+    training_set[ii][:] = training_set[ii][perm]
+
 pca = PCA(.95)
 pca.fit(training_set)
+
+# print np.shape(training_set)
+print pca.n_components_
 
 training_set = pca.transform(training_set)
 testing_set = pca.transform(testing_set)
@@ -63,6 +70,15 @@ logisticRegr.fit(training_set, training_labels)
 
 score = logisticRegr.score(testing_set, testing_labels)
 print(score)
+
+mat = np.random.uniform(low=-1.0, high=1.0, size=(10000, 785*25 + 26*10))
+pca.fit(mat)
+print pca.n_components_
+
+
+
+
+
 
 
 
