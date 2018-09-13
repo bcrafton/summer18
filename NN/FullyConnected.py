@@ -37,6 +37,9 @@ class FullyConnected(Layer):
         
         # activation function
         self.activation = activation
+        
+    def get_weights(self):
+        return tf.concat((self.weights, tf.reshape(self.bias, (1, -1))), axis=0)
 
     def num_params(self):
         weights_size = self.input_size * self.output_size

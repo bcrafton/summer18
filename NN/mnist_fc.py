@@ -16,6 +16,7 @@ parser.add_argument('--rank', type=int, default=0)
 parser.add_argument('--init', type=str, default="sqrt_fan_in")
 parser.add_argument('--opt', type=str, default="adam")
 parser.add_argument('--name', type=str, default=None)
+parser.add_argument('--save', type=int, default=0)
 args = parser.parse_args()
 
 if args.gpu >= 0:
@@ -98,6 +99,9 @@ model = Model(layers=[l0, l1, l2])
 
 predict = model.predict(X=XTEST)
 
+W1 = l0.get_weights()
+W2 = l2.get_weights()
+
 if args.dfa:
     grads_and_vars = model.dfa(X=XTRAIN, Y=YTRAIN)
 else:
@@ -167,6 +171,11 @@ for ii in range(EPOCHS):
 
 if args.name is not None:
     np.save(args.name, np.array(accs))
+    
+if args.save:
+    w1, w2 = sess.run([W1, W2])
+    np.save("W1", w1)
+    np.save("W2", w2)
     
     
     
