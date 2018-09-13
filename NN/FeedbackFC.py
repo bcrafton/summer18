@@ -8,7 +8,7 @@ from Activation import Activation
 from Activation import Sigmoid
 
 class FeedbackFC(Layer):
-    def __init__(self, size : tuple, num_classes : int, sparse : bool, rank : int):
+    def __init__(self, size : tuple, num_classes : int, sparse : bool, rank : int, load):
         self.size = size
         self.num_classes = num_classes
         self.sparse = sparse
@@ -57,6 +57,10 @@ class FeedbackFC(Layer):
             b = np.random.uniform(lo, hi, size=(self.num_classes, self.output_size))
             b = b * self.mask
             self.B = tf.cast(tf.Variable(b), tf.float32)
+        
+        if (load is not None):
+            self.B = tf.Variable(np.load(load), tf.float32)
+            
 
     def num_params(self):
         return 0
