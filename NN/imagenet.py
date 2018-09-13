@@ -1,5 +1,24 @@
 
-from __future__ import print_function
+import argparse
+import os
+import sys
+
+##############################################
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--epochs', type=int, default=100)
+parser.add_argument('--batch_size', type=int, default=128)
+parser.add_argument('--alpha', type=float, default=1e-2)
+parser.add_argument('--gpu', type=int, default=0)
+parser.add_argument('--dfa', type=int, default=0)
+parser.add_argument('--sparse', type=int, default=0)
+parser.add_argument('--rank', type=int, default=0)
+parser.add_argument('--init', type=str, default="sqrt_fan_in")
+parser.add_argument('--opt', type=str, default="adam")
+args = parser.parse_args()
+
+##############################################
+
 import keras
 from keras.datasets import cifar10
 from keras.preprocessing.image import ImageDataGenerator, array_to_img, img_to_array, load_img
@@ -17,6 +36,8 @@ import numpy as np
 import time
 from PIL import Image
 
+##############################################
+
 batch_size = 128
 num_classes = 1000
 epochs = 50
@@ -26,6 +47,8 @@ label_counter = 0
 
 training_images = []
 training_labels = []
+
+##############################################
 
 def parse_function(filename, label):
     image_string = tf.read_file(filename)
@@ -49,6 +72,8 @@ def train_preprocess(image, label):
     # image = tf.clip_by_value(image, 0.0, 1.0)
 
     return image, label
+
+##############################################
 
 print ("building dataset")
 
@@ -86,12 +111,9 @@ features, labels = iterator.get_next()
 features = tf.reshape(features, (-1, 256, 256, 3))
 labels = tf.one_hot(labels, depth=num_classes)
 
-# features = tf.Print(features, [tf.shape(features)], message="")
-# labels = tf.Print(labels, [tf.shape(labels)], message="")
+###############################################################
 
-#x = tf.placeholder(tf.float32, [None, 256, 256, 3])
-#y = tf.placeholder(tf.float32, [None, num_classes])
-
+'''
 conv1 = tf.layers.conv2d(inputs=features, filters=16, kernel_size=[3, 3], padding="same", activation=tf.nn.relu)
 conv1_pool = tf.layers.max_pooling2d(inputs=conv1, pool_size=[2, 2], strides=2, padding='same')
 
@@ -108,9 +130,7 @@ conv5 = tf.layers.conv2d(inputs=conv4_pool, filters=32, kernel_size=[3, 3], padd
 conv5_pool = tf.layers.max_pooling2d(inputs=conv5, pool_size=[2,2], strides=2, padding='same')
 
 flat = tf.contrib.layers.flatten(conv5_pool)
-#flat = tf.Print(flat, [tf.shape(flat)], message="")
 
-#spec = tf.layers.InputSpec(dtype=tf.float32, shape=(128, 2048), ndim=2, max_ndim=2, min_ndim=2)
 fc1 = tf.layers.dense(inputs=flat, units=2048, activation=tf.nn.relu)
 fc2 = tf.layers.dense(inputs=fc1, units=2048, activation=tf.nn.relu)
 fc3 = tf.layers.dense(inputs=fc2, units=num_classes)
@@ -122,6 +142,58 @@ correct = tf.equal(predict, tf.argmax(labels, 1))
 total_correct = tf.reduce_sum(tf.cast(correct, tf.float32))
 
 optimizer = tf.train.AdamOptimizer(learning_rate=0.01, beta1=0.9, beta2=0.999, epsilon=1).minimize(loss)
+'''
+
+###############################################################
+
+l0 = Convolution(input_sizes=[batch_size, 256, 256, 3], filter_sizes=[3, 3, 3, 16], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Tanh(), last_layer=False)
+l1 = MaxPool(size=[batch_size, 256, 256, 16], ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="SAME")
+l2 = FeedbackConv(size=[batch_size, 128, 128, 16], num_classes=num_classes, sparse=sparse, rank=rank)
+
+l3 = Convolution(input_sizes=[batch_size, 128, 128, 16], filter_sizes=[3, 3, 16, 16], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Tanh(), last_layer=False)
+l4 = MaxPool(size=[batch_size, 128, 128, 16], ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="SAME")
+l5 = FeedbackConv(size=[batch_size, 64, 64, 16], num_classes=num_classes, sparse=sparse, rank=rank)
+
+l6 = Convolution(input_sizes=[batch_size, 64, 64, 16], filter_sizes=[3, 3, 16, 32], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Tanh(), last_layer=False)
+l7 = MaxPool(size=[batch_size, 64, 64, 32], ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="SAME")
+l8 = FeedbackConv(size=[batch_size, 32, 32, 32], num_classes=num_classes, sparse=sparse, rank=rank)
+
+l9 = Convolution(input_sizes=[batch_size, 32, 32, 32], filter_sizes=[3, 3, 32, 32], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Tanh(), last_layer=False)
+l10 = MaxPool(size=[batch_size, 32, 32, 32], ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="SAME")
+l11 = FeedbackConv(size=[batch_size, 16, 16, 32], num_classes=num_classes, sparse=sparse, rank=rank)
+
+l12 = Convolution(input_sizes=[batch_size, 16, 16, 32], filter_sizes=[3, 3, 32, 32], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Tanh(), last_layer=False)
+l13 = MaxPool(size=[batch_size, 16, 16, 32], ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="SAME")
+l14 = FeedbackConv(size=[batch_size, 8, 8, 32], num_classes=num_classes, sparse=sparse, rank=rank)
+
+l15 = ConvToFullyConnected(shape=[8, 8, 32])
+l16 = FullyConnected(size=[8*8*32, 2048], num_classes=num_classes, init_weights=args.init, alpha=ALPHA, activation=Tanh(), last_layer=False)
+l17 = FeedbackFC(size=[8*8*32, 2048], num_classes=num_classes, sparse=sparse, rank=rank)
+
+l18 = FullyConnected(size=[2048, 2048], num_classes=num_classes, init_weights=args.init, alpha=ALPHA, activation=Tanh(), last_layer=False)
+l19 = FeedbackFC(size=[2048, 2048], num_classes=num_classes, sparse=sparse, rank=rank)
+
+l20 = FullyConnected(size=[2048, num_classes], num_classes=num_classes, init_weights=args.init, alpha=ALPHA, activation=Linear(), last_layer=True)
+
+predict = model.predict(X=features)
+
+if args.dfa:
+    grads_and_vars = model.dfa(X=features, Y=labels)
+else:
+    grads_and_vars = model.train(X=features, Y=labels)
+    
+if args.opt == "adam":
+    optimizer = tf.train.AdamOptimizer(learning_rate=ALPHA, beta1=0.9, beta2=0.999, epsilon=1.0).apply_gradients(grads_and_vars=grads_and_vars)
+elif args.opt == "rms":
+    optimizer = tf.train.RMSPropOptimizer(learning_rate=ALPHA, decay=1.0, momentum=0.0).apply_gradients(grads_and_vars=grads_and_vars)
+else:
+    optimizer = tf.train.GradientDescentOptimizer(learning_rate=ALPHA).apply_gradients(grads_and_vars=grads_and_vars)
+
+correct_prediction = tf.equal(tf.argmax(predict,1), tf.argmax(labels,1))
+correct_prediction_sum = tf.reduce_sum(tf.cast(correct_prediction, tf.float32))
+accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+
+###############################################################
 
 config = tf.ConfigProto()
 config.gpu_options.allow_growth=True
