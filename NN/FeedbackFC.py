@@ -59,7 +59,7 @@ class FeedbackFC(Layer):
             self.B = tf.cast(tf.Variable(b), tf.float32)
         
         if (load is not None):
-            self.B = tf.Variable(np.load(load), tf.float32)
+            self.B = tf.cast(tf.Variable(np.load(load)), tf.float32)
             
 
     def num_params(self):

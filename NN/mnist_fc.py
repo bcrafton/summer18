@@ -18,7 +18,6 @@ parser.add_argument('--opt', type=str, default="adam")
 parser.add_argument('--name', type=str, default=None)
 parser.add_argument('--save', type=int, default=0)
 parser.add_argument('--num', type=int, default=0)
-parser.add_argument('--load', type=str, default=None)
 args = parser.parse_args()
 
 if args.gpu >= 0:
@@ -91,7 +90,7 @@ YTEST = tf.placeholder(tf.float32, [None, 10])
 #XTEST = tf.map_fn(lambda frame1: tf.image.per_image_standardization(frame1), XTEST)
 
 l0 = FullyConnected(size=[784, 100], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Tanh(), last_layer=False)
-l1 = FeedbackFC(size=[784, 100], num_classes=10, sparse=sparse, rank=args.rank, load=args.load)
+l1 = FeedbackFC(size=[784, 100], num_classes=10, sparse=sparse, rank=args.rank, load="SPARSE_B.npy")
 
 l2 = FullyConnected(size=[100, 10], num_classes=10, init_weights=args.init, alpha=ALPHA, activation=Sigmoid(), last_layer=True)
 
