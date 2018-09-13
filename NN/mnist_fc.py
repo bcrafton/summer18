@@ -17,6 +17,7 @@ parser.add_argument('--init', type=str, default="sqrt_fan_in")
 parser.add_argument('--opt', type=str, default="adam")
 parser.add_argument('--name', type=str, default=None)
 parser.add_argument('--save', type=int, default=0)
+parser.add_argument('--num', type=int, default=0)
 args = parser.parse_args()
 
 if args.gpu >= 0:
@@ -174,8 +175,12 @@ if args.name is not None:
     
 if args.save:
     w1, w2 = sess.run([W1, W2])
-    np.save("W1", w1)
-    np.save("W2", w2)
+    
+    w1_name = "W1_" + str(args.num) + "_" + str(args.gpu)
+    np.save(w1_name, w1)
+    
+    w2_name = "W2_" + str(args.num) + "_" + str(args.gpu)
+    np.save(w2_name, w2)
     
     
     
