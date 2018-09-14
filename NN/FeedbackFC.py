@@ -8,7 +8,7 @@ from Activation import Activation
 from Activation import Sigmoid
 
 class FeedbackFC(Layer):
-    def __init__(self, size : tuple, num_classes : int, sparse : bool, rank : int, load):
+    def __init__(self, size : tuple, num_classes : int, sparse : bool, rank : int, load=None):
         self.size = size
         self.num_classes = num_classes
         self.sparse = sparse

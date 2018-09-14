@@ -9,13 +9,17 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--epochs', type=int, default=100)
 parser.add_argument('--batch_size', type=int, default=128)
 parser.add_argument('--alpha', type=float, default=1e-2)
-parser.add_argument('--gpu', type=int, default=0)
+parser.add_argument('--gpu', type=int, default=2)
 parser.add_argument('--dfa', type=int, default=0)
 parser.add_argument('--sparse', type=int, default=0)
 parser.add_argument('--rank', type=int, default=0)
 parser.add_argument('--init', type=str, default="sqrt_fan_in")
 parser.add_argument('--opt', type=str, default="adam")
 args = parser.parse_args()
+
+if args.gpu >= 0:
+    os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
+    os.environ["CUDA_VISIBLE_DEVICES"]=str(args.gpu)
 
 ##############################################
 
@@ -36,6 +40,25 @@ import numpy as np
 import time
 from PIL import Image
 
+from Model import Model
+
+from Layer import Layer 
+from ConvToFullyConnected import ConvToFullyConnected
+from FullyConnected import FullyConnected
+from Convolution import Convolution
+from MaxPool import MaxPool
+from Dropout import Dropout
+from FeedbackFC import FeedbackFC
+from FeedbackConv import FeedbackConv
+
+from Activation import Activation
+from Activation import Sigmoid
+from Activation import Relu
+from Activation import Tanh
+from Activation import Softmax
+from Activation import LeakyRelu
+from Activation import Linear
+
 ##############################################
 
 batch_size = 128
@@ -47,6 +70,12 @@ label_counter = 0
 
 training_images = []
 training_labels = []
+
+EPOCHS = args.epochs
+BATCH_SIZE = args.batch_size
+ALPHA = args.alpha
+sparse = args.sparse
+rank = args.rank
 
 ##############################################
 
@@ -146,34 +175,36 @@ optimizer = tf.train.AdamOptimizer(learning_rate=0.01, beta1=0.9, beta2=0.999, e
 
 ###############################################################
 
-l0 = Convolution(input_sizes=[batch_size, 256, 256, 3], filter_sizes=[3, 3, 3, 16], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Tanh(), last_layer=False)
+l0 = Convolution(input_sizes=[batch_size, 256, 256, 3], filter_sizes=[3, 3, 3, 16], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Relu(), last_layer=False)
 l1 = MaxPool(size=[batch_size, 256, 256, 16], ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="SAME")
 l2 = FeedbackConv(size=[batch_size, 128, 128, 16], num_classes=num_classes, sparse=sparse, rank=rank)
 
-l3 = Convolution(input_sizes=[batch_size, 128, 128, 16], filter_sizes=[3, 3, 16, 16], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Tanh(), last_layer=False)
+l3 = Convolution(input_sizes=[batch_size, 128, 128, 16], filter_sizes=[3, 3, 16, 16], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Relu(), last_layer=False)
 l4 = MaxPool(size=[batch_size, 128, 128, 16], ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="SAME")
 l5 = FeedbackConv(size=[batch_size, 64, 64, 16], num_classes=num_classes, sparse=sparse, rank=rank)
 
-l6 = Convolution(input_sizes=[batch_size, 64, 64, 16], filter_sizes=[3, 3, 16, 32], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Tanh(), last_layer=False)
+l6 = Convolution(input_sizes=[batch_size, 64, 64, 16], filter_sizes=[3, 3, 16, 32], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Relu(), last_layer=False)
 l7 = MaxPool(size=[batch_size, 64, 64, 32], ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="SAME")
 l8 = FeedbackConv(size=[batch_size, 32, 32, 32], num_classes=num_classes, sparse=sparse, rank=rank)
 
-l9 = Convolution(input_sizes=[batch_size, 32, 32, 32], filter_sizes=[3, 3, 32, 32], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Tanh(), last_layer=False)
+l9 = Convolution(input_sizes=[batch_size, 32, 32, 32], filter_sizes=[3, 3, 32, 32], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Relu(), last_layer=False)
 l10 = MaxPool(size=[batch_size, 32, 32, 32], ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="SAME")
 l11 = FeedbackConv(size=[batch_size, 16, 16, 32], num_classes=num_classes, sparse=sparse, rank=rank)
 
-l12 = Convolution(input_sizes=[batch_size, 16, 16, 32], filter_sizes=[3, 3, 32, 32], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Tanh(), last_layer=False)
+l12 = Convolution(input_sizes=[batch_size, 16, 16, 32], filter_sizes=[3, 3, 32, 32], num_classes=num_classes, init_filters=args.init, strides=[1, 1, 1, 1], padding="SAME", alpha=ALPHA, activation=Relu(), last_layer=False)
 l13 = MaxPool(size=[batch_size, 16, 16, 32], ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding="SAME")
 l14 = FeedbackConv(size=[batch_size, 8, 8, 32], num_classes=num_classes, sparse=sparse, rank=rank)
 
 l15 = ConvToFullyConnected(shape=[8, 8, 32])
-l16 = FullyConnected(size=[8*8*32, 2048], num_classes=num_classes, init_weights=args.init, alpha=ALPHA, activation=Tanh(), last_layer=False)
+l16 = FullyConnected(size=[8*8*32, 2048], num_classes=num_classes, init_weights=args.init, alpha=ALPHA, activation=Relu(), last_layer=False)
 l17 = FeedbackFC(size=[8*8*32, 2048], num_classes=num_classes, sparse=sparse, rank=rank)
 
-l18 = FullyConnected(size=[2048, 2048], num_classes=num_classes, init_weights=args.init, alpha=ALPHA, activation=Tanh(), last_layer=False)
+l18 = FullyConnected(size=[2048, 2048], num_classes=num_classes, init_weights=args.init, alpha=ALPHA, activation=Relu(), last_layer=False)
 l19 = FeedbackFC(size=[2048, 2048], num_classes=num_classes, sparse=sparse, rank=rank)
 
-l20 = FullyConnected(size=[2048, num_classes], num_classes=num_classes, init_weights=args.init, alpha=ALPHA, activation=Linear(), last_layer=True)
+l20 = FullyConnected(size=[2048, num_classes], num_classes=num_classes, init_weights=args.init, alpha=ALPHA, activation=Sigmoid(), last_layer=True)
+
+model = Model(layers=[l0, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15, l16, l17, l18, l19, l20])
 
 predict = model.predict(X=features)
 
@@ -189,9 +220,9 @@ elif args.opt == "rms":
 else:
     optimizer = tf.train.GradientDescentOptimizer(learning_rate=ALPHA).apply_gradients(grads_and_vars=grads_and_vars)
 
-correct_prediction = tf.equal(tf.argmax(predict,1), tf.argmax(labels,1))
-correct_prediction_sum = tf.reduce_sum(tf.cast(correct_prediction, tf.float32))
-accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+correct = tf.equal(tf.argmax(predict,1), tf.argmax(labels,1))
+total_correct = tf.reduce_sum(tf.cast(correct, tf.float32))
+accuracy = tf.reduce_mean(tf.cast(correct, tf.float32))
 
 ###############################################################
 
