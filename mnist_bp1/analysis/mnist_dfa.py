@@ -15,14 +15,35 @@ import tensorflow as tf
 import numpy as np
 import keras
 from keras.datasets import mnist
+import matplotlib.pyplot as plt
+
+##############################################
+
+def unit_vector(vector):
+    """ Returns the unit vector of the vector.  """
+    return vector / np.linalg.norm(vector)
+
+def angle_between(v1, v2):
+    """ Returns the angle in radians between vectors 'v1' and 'v2'::
+
+            >>> angle_between((1, 0, 0), (0, 1, 0))
+            1.5707963267948966
+            >>> angle_between((1, 0, 0), (1, 0, 0))
+            0.0
+            >>> angle_between((1, 0, 0), (-1, 0, 0))
+            3.141592653589793
+    """
+    v1_u = unit_vector(v1)
+    v2_u = unit_vector(v2)
+    return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
 
 ##############################################
 
 TRAIN_EXAMPLES = 60000
 TEST_EXAMPLES = 10000
 NUM_CLASSES = 10
-EPOCHS = 50
-BATCH_SIZE = 32
+EPOCHS = 25
+BATCH_SIZE = 1
 
 ##############################################
 
@@ -58,13 +79,20 @@ def dsigmoid(x):
 ##############################################
 high = 1.0 / np.sqrt(785)
 low = -high
-W1 = tf.Variable(tf.random_uniform(minval=low, maxval=high, shape=[785, 25]))
+w1_init = np.random.uniform(low=low, high=high, size=(785, 100))
+W1 = tf.Variable( tf.cast(w1_init, tf.float32) )
 
-high = 1.0 / np.sqrt(26)
+high = 1.0 / np.sqrt(101)
 low = -high
-W2 = tf.Variable(tf.random_uniform(minval=low, maxval=high, shape=[26, 10]))
+w2_init = np.random.uniform(low=low, high=high, size=(101, 10))
+W2 = tf.Variable( tf.cast(w2_init, tf.float32) )
 
-B = tf.Variable(np.load("B.npy"), dtype=tf.float32)
+high = 1.0 / np.sqrt(101)
+low = -high
+# b_init = np.load("B.npy")
+b_init = np.random.uniform(low=low, high=high, size=(101, 10))
+# b_init = np.copy(w2_init)
+B = tf.Variable(tf.cast(np.copy(b_init), tf.float32))
 ##############################################
 # FEED FORWARD
 ##############################################
@@ -81,6 +109,7 @@ A3 = sigmoid(Y3)
 # BACK PROP
 ##############################################
 ANS = tf.placeholder(tf.float32, [None, 10])
+# D3 = tf.multiply(tf.subtract(A3, ANS), dsigmoid(A3))
 D3 = tf.subtract(A3, ANS)
 D2 = tf.multiply(tf.matmul(D3, tf.transpose(B)), dsigmoid(A2))
 
@@ -90,6 +119,7 @@ G1 = tf.matmul(tf.transpose(A1), D2[:, :-1])
 W2 = W2.assign(tf.subtract(W2, tf.scalar_mul(ALPHA, G2)))
 W1 = W1.assign(tf.subtract(W1, tf.scalar_mul(ALPHA, G1)))
 
+loss = tf.reduce_sum(tf.abs(D3))
 correct_prediction = tf.equal(tf.argmax(A3,1), tf.argmax(ANS,1))
 accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 ##############################################
@@ -97,31 +127,61 @@ accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 sess = tf.InteractiveSession()
 tf.global_variables_initializer().run()
 
-prev1 = np.zeros(shape=(785, 25))
-prev2 = np.zeros(shape=(26, 10))
+b = np.copy(b_init)
+b = b[0:100]
+b = np.reshape(b, (-1))
+
+angles = []
+losses = []
+accs = []
 
 for ii in range(EPOCHS):
     for jj in range(int(TRAIN_EXAMPLES / BATCH_SIZE)):
         xs = x_train[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
         ys = y_train[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
-        sess.run([W1, W2], feed_dict={ALPHA: 0.01, X: xs, ANS: ys})
+        w1, w2, l = sess.run([W1, W2, loss], feed_dict={ALPHA: 0.01, X: xs, ANS: ys})
+        
+        ##############################################   
+          
+        w2 = w2[0:100]
+        w2 = np.reshape(w2, (-1))
+        
+        print( angle_between(w2, b) * (180.0 / 3.14) )
+        print( l ) 
+        
+        losses.append(l)
+        angles.append(angle_between(w2, b) * (180.0 / 3.14))
+        
+        ##############################################
         
     total_correct_examples = 0.0
     total_examples = 0.0
 
     acc, w1, w2 = sess.run([accuracy, W1, W2], feed_dict={ALPHA: 0.00, X: x_test, ANS: y_test})
-    
-    # print (np.sum(np.absolute(prev1 - w1)))
-    # print (np.sum(np.absolute(prev2 - w2)))
-    # prev1 = w1
-    # prev2 = w2
-    
     print ("acc: " + str(acc))
+    
+    accs.append(acc)
+    
+    ##############################################
 
-np.save("W1_" + str(args.num) + "_" + str(args.gpu), w1)
-np.save("W2_" + str(args.num) + "_" + str(args.gpu), w2)
+plt.subplot(311)
+plt.plot(angles)
+plt.xlabel("Angle")
 
-print ("accuracy: " + str(acc))
+plt.subplot(312)
+plt.plot(losses)
+plt.xlabel("Loss")
+
+plt.subplot(313)
+plt.plot(accs)
+plt.xlabel("Accuracy")
+
+plt.show()
+
+# np.save("W1_" + str(args.num) + "_" + str(args.gpu), w1)
+# np.save("W2_" + str(args.num) + "_" + str(args.gpu), w2)
+
+# print ("accuracy: " + str(acc))
 
 
 
