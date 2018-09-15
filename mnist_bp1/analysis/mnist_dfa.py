@@ -44,7 +44,7 @@ TRAIN_EXAMPLES = 60000
 TEST_EXAMPLES = 10000
 NUM_CLASSES = 10
 EPOCHS = 25
-BATCH_SIZE = 1
+BATCH_SIZE = 32
 
 ##############################################
 
@@ -140,7 +140,7 @@ for ii in range(EPOCHS):
     for jj in range(int(TRAIN_EXAMPLES / BATCH_SIZE)):
         xs = x_train[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
         ys = y_train[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
-        w1, w2, l = sess.run([W1, W2, loss], feed_dict={ALPHA: 0.01, X: xs, ANS: ys})
+        w1, w2 = sess.run([W1, W2], feed_dict={ALPHA: 0.01, X: xs, ANS: ys})
         
         ##############################################   
         '''  
@@ -155,9 +155,6 @@ for ii in range(EPOCHS):
         '''
         ##############################################
         
-    total_correct_examples = 0.0
-    total_examples = 0.0
-
     acc, w1, w2 = sess.run([accuracy, W1, W2], feed_dict={ALPHA: 0.00, X: x_test, ANS: y_test})
     print ("acc: " + str(acc))
     
