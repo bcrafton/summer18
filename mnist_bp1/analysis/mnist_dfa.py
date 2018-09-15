@@ -5,6 +5,7 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('--num', type=int, default=0)
 parser.add_argument('--gpu', type=int, default=0)
+parser.add_argument('--load', type=str, default=None)
 args = parser.parse_args()
 
 if args.gpu >= 0:
@@ -89,8 +90,8 @@ W2 = tf.Variable( tf.cast(w2_init, tf.float32) )
 
 high = 1.0 / np.sqrt(101)
 low = -high
-# b_init = np.load("B.npy")
-b_init = np.random.uniform(low=low, high=high, size=(101, 10))
+b_init = np.load(args.load)
+# b_init = np.random.uniform(low=low, high=high, size=(101, 10))
 # b_init = np.copy(w2_init)
 B = tf.Variable(tf.cast(np.copy(b_init), tf.float32))
 ##############################################
@@ -142,7 +143,7 @@ for ii in range(EPOCHS):
         w1, w2, l = sess.run([W1, W2, loss], feed_dict={ALPHA: 0.01, X: xs, ANS: ys})
         
         ##############################################   
-          
+        '''  
         w2 = w2[0:100]
         w2 = np.reshape(w2, (-1))
         
@@ -151,7 +152,7 @@ for ii in range(EPOCHS):
         
         losses.append(l)
         angles.append(angle_between(w2, b) * (180.0 / 3.14))
-        
+        '''
         ##############################################
         
     total_correct_examples = 0.0
@@ -164,6 +165,7 @@ for ii in range(EPOCHS):
     
     ##############################################
 
+'''
 plt.subplot(311)
 plt.plot(angles)
 plt.xlabel("Angle")
@@ -177,9 +179,10 @@ plt.plot(accs)
 plt.xlabel("Accuracy")
 
 plt.show()
+'''
 
-# np.save("W1_" + str(args.num) + "_" + str(args.gpu), w1)
-# np.save("W2_" + str(args.num) + "_" + str(args.gpu), w2)
+np.save("W1_" + str(args.num) + "_" + str(args.gpu), w1)
+np.save("W2_" + str(args.num) + "_" + str(args.gpu), w2)
 
 # print ("accuracy: " + str(acc))
 
