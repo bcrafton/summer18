@@ -16,7 +16,7 @@ import tensorflow as tf
 import numpy as np
 import keras
 from keras.datasets import mnist
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
 ##############################################
 
@@ -43,7 +43,7 @@ def angle_between(v1, v2):
 TRAIN_EXAMPLES = 60000
 TEST_EXAMPLES = 10000
 NUM_CLASSES = 10
-EPOCHS = 25
+EPOCHS = 100
 BATCH_SIZE = 32
 
 ##############################################
