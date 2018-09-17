@@ -28,7 +28,7 @@ def angle_between(v1, v2):
     
 good_angles = []
     
-B = np.load("../random_feedback/SPARSE_B.npy")
+B = np.load("../random_feedback/B.npy")
 shape = np.shape(B)
 if shape[0] < shape[1]:
     B = np.transpose(B)
@@ -37,7 +37,7 @@ B = np.reshape(B, (-1))
 for ii in range(250):
     print (ii)
     
-    W2_ii_0 = np.load("../results/sparse_dfa/W2_" + str(ii+1) + "_2.npy")
+    W2_ii_0 = np.load("../results/dfa/W2_" + str(ii+1) + "_0.npy")
     W2_ii_0 = W2_ii_0[0:100]
     W2_ii_0 = np.reshape(W2_ii_0, (-1, 1))
     
@@ -48,7 +48,7 @@ for ii in range(250):
 
 bad_angles = []
     
-B = np.load("../random_feedback/SPARSE_BAD_B.npy")
+B = np.load("../random_feedback/BAD_B.npy")
 shape = np.shape(B)
 if shape[0] < shape[1]:
     B = np.transpose(B)
@@ -57,7 +57,7 @@ B = np.reshape(B, (-1))
 for ii in range(250):  
     print (ii)
 
-    W2_ii_0 = np.load("../results/sparse_dfa1/W2_" + str(ii+1) + "_3.npy")
+    W2_ii_0 = np.load("../results/dfa1/W2_" + str(ii+1) + "_1.npy")
     W2_ii_0 = W2_ii_0[0:100]
     W2_ii_0 = np.reshape(W2_ii_0, (-1, 1))
     
