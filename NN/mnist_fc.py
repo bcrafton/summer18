@@ -183,6 +183,7 @@ if args.save:
     w2_name = "W2_" + str(args.num) + "_" + str(args.gpu)
     np.save(w2_name, w2)
     
-    
+    acc_name = "acc_" + str(args.num) + "_" + str(args.gpu)
+    np.save(acc_name, np.array(accs))   
     
     
