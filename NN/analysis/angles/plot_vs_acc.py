@@ -35,7 +35,7 @@ if shape[0] < shape[1]:
     B = np.transpose(B)
 B = np.reshape(B, (-1))
 
-for ii in range(13):
+for ii in range(250):
     print (ii)
     
     W2_ii_0 = np.load("../results/dfa/W2_" + str(ii+1) + "_0.npy")
@@ -59,7 +59,7 @@ if shape[0] < shape[1]:
     B = np.transpose(B)
 B = np.reshape(B, (-1))
 
-for ii in range(13):  
+for ii in range(250):  
     print (ii)
 
     W2_ii_0 = np.load("../results/dfa1/W2_" + str(ii+1) + "_1.npy")
@@ -83,7 +83,7 @@ if shape[0] < shape[1]:
     B = np.transpose(B)
 B = np.reshape(B, (-1))
 
-for ii in range(13):
+for ii in range(250):
     print (ii)
     
     W2_ii_0 = np.load("../results/sparse_dfa/W2_" + str(ii+1) + "_2.npy")
@@ -107,7 +107,7 @@ if shape[0] < shape[1]:
     B = np.transpose(B)
 B = np.reshape(B, (-1))
 
-for ii in range(13):  
+for ii in range(250):  
     print (ii)
 
     W2_ii_0 = np.load("../results/sparse_dfa1/W2_" + str(ii+1) + "_3.npy")
