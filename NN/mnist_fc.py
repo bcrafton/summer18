@@ -19,6 +19,7 @@ parser.add_argument('--name', type=str, default=None)
 parser.add_argument('--save', type=int, default=0)
 parser.add_argument('--num', type=int, default=0)
 parser.add_argument('--load', type=str, default=None)
+parser.add_argument('--shuffle', type=int, default=0)
 args = parser.parse_args()
 
 if args.gpu >= 0:
@@ -66,6 +67,17 @@ sparse = args.sparse
 
 (x_train, y_train), (x_test, y_test) = mnist.load_data()
 
+if args.shuffle:
+    print ("Shuffling!")
+    perm = np.random.permutation(TRAIN_EXAMPLES)
+
+    tmp1 = np.copy(x_train[0])
+    x_train[perm] = x_train
+    y_train[perm] = y_train
+    tmp2 = x_train[perm[0]]
+    
+    assert(np.all(tmp1 == tmp2))
+    
 x_train = x_train.reshape(TRAIN_EXAMPLES, 784)
 x_test = x_test.reshape(TEST_EXAMPLES, 784)
 x_train = x_train.astype('float32')
