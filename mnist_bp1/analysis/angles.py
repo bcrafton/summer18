@@ -44,8 +44,8 @@ def angle_between(v1, v2):
 TRAIN_EXAMPLES = 60000
 TEST_EXAMPLES = 10000
 NUM_CLASSES = 10
-EPOCHS = 25
-BATCH_SIZE = 1
+EPOCHS = 500
+BATCH_SIZE = 32
 
 ##############################################
 
@@ -93,8 +93,8 @@ W2 = tf.Variable( tf.cast(w2_init, tf.float32) )
 
 high = 1.0 / np.sqrt(101)
 low = -high
-b_init = np.load(args.load)
-# b_init = np.random.uniform(low=low, high=high, size=(101, 10))
+# b_init = np.load(args.load)
+b_init = np.random.uniform(low=low, high=high, size=(101, 10))
 # b_init = np.copy(w2_init)
 B = tf.Variable(tf.cast(np.copy(b_init), tf.float32))
 ##############################################
@@ -166,11 +166,11 @@ for ii in range(EPOCHS):
         
         angles.append(angle_between(w2, b) * (180.0 / 3.14))
         
-        dfa_d2 = np.reshape(dfa_d2, (-1))
-        bp_d2 = np.reshape(bp_d2, (-1))
+        # dfa_d2 = np.reshape(dfa_d2, (-1))
+        # bp_d2 = np.reshape(bp_d2, (-1))
         # dw_angles.append(angle_between(dfa_d2, bp_d2) * (180.0 / 3.14))
-        last_50_dw_angles.append(angle_between(dfa_d2, bp_d2) * (180.0 / 3.14))
-        dw_angles.append(np.average(last_50_dw_angles))
+        # last_50_dw_angles.append(angle_between(dfa_d2, bp_d2) * (180.0 / 3.14))
+        # dw_angles.append(np.average(last_50_dw_angles))
         ##############################################
         
     acc, w1, w2 = sess.run([accuracy, W1, W2], feed_dict={ALPHA: 0.00, X: x_test, ANS: y_test})
@@ -179,7 +179,6 @@ for ii in range(EPOCHS):
     accs.append(acc)
     
     ##############################################
-
 
 plt.subplot(411)
 plt.plot(angles)

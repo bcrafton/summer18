@@ -50,6 +50,8 @@ class FullyConnected(Layer):
         Z = tf.matmul(X, self.weights) + self.bias
         A = self.activation.forward(Z)
         return A
+
+    ###################################################################
             
     def backward(self, AI, AO, DO):
         DO = tf.multiply(DO, self.activation.gradient(AO))
@@ -61,8 +63,18 @@ class FullyConnected(Layer):
         DW = tf.matmul(tf.transpose(AI), DO)
         DB = tf.reduce_sum(DO, axis=0)
         return [(DW, self.weights), (DB, self.bias)]
+
+    def train(self, AI, AO, DO):
+        DO = tf.multiply(DO, self.activation.gradient(AO))
+        DW = tf.matmul(tf.transpose(AI), DO)
+        DB = tf.reduce_sum(DO, axis=0)
+        self.weights = self.weights.assign(tf.subtract(self.weights, tf.scalar_mul(self.alpha, DW)))
+        self.bias = self.bias.assign(tf.subtract(self.bias, tf.scalar_mul(self.alpha, DB)))
+        return [(DW, self.weights), (DB, self.bias)]
+        
+    ###################################################################
     
-    def dfa(self, AI, AO, E, DO):
+    def dfa_backward(self, AI, AO, E, DO):
         return tf.ones(shape=(tf.shape(AI)))
         
     def dfa_gv(self, AI, AO, E, DO):
@@ -71,8 +83,13 @@ class FullyConnected(Layer):
         DB = tf.reduce_sum(DO, axis=0)
         return [(DW, self.weights), (DB, self.bias)]
         
-        
-        
+    def dfa(self, AI, AO, E, DO):
+        DO = tf.multiply(DO, self.activation.gradient(AO))
+        DW = tf.matmul(tf.transpose(AI), DO)
+        DB = tf.reduce_sum(DO, axis=0)
+        self.weights = self.weights.assign(tf.subtract(self.weights, tf.scalar_mul(self.alpha, DW)))
+        self.bias = self.bias.assign(tf.subtract(self.bias, tf.scalar_mul(self.alpha, DB)))
+        return [(DW, self.weights), (DB, self.bias)]
         
         
         
