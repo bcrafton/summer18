@@ -186,4 +186,10 @@ if args.save:
     acc_name = "acc_" + str(args.num) + "_" + str(args.gpu)
     np.save(acc_name, np.array(accs))   
     
-    
+    B = l1.B
+    B_name = "B_" + str(args.num) + "_" + str(args.gpu)
+    np.save(B_name, B)
+
+
+
+
