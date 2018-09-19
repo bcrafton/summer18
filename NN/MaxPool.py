@@ -46,7 +46,7 @@ class MaxPool(Layer):
     def dfa_gv(self, AI, AO, E, DO):
         return []
         
-    def dfa(self, AI, AO, DO): 
+    def dfa(self, AI, AO, E, DO): 
         return []
         
     ###################################################################   

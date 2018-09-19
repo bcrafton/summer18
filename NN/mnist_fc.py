@@ -114,6 +114,7 @@ model = Model(layers=[l0, l1, l2])
 predict = model.predict(X=XTEST)
 
 W1 = l0.get_weights()
+B = l1.get_feedback()
 W2 = l2.get_weights()
 
 if args.dfa:
@@ -180,7 +181,7 @@ if args.name is not None:
     np.save(args.name, np.array(accs))
     
 if args.save:
-    w1, w2 = sess.run([W1, W2])
+    w1, b, w2 = sess.run([W1, B, W2])
     
     w1_name = "W1_" + str(args.num) + "_" + str(args.gpu)
     np.save(w1_name, w1)
@@ -191,9 +192,8 @@ if args.save:
     acc_name = "acc_" + str(args.num) + "_" + str(args.gpu)
     np.save(acc_name, np.array(accs))   
     
-    B = l1.B
     B_name = "B_" + str(args.num) + "_" + str(args.gpu)
-    np.save(B_name, B)
+    np.save(B_name, b)
 
 
 

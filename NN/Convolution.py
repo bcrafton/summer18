@@ -79,7 +79,7 @@ class Convolution(Layer):
         DB = tf.reduce_sum(DO, axis=[0, 1, 2])
         return [(DF, self.filters), (DB, self.bias)]
         
-    def dfa(self, AI, AO, DO): 
+    def dfa(self, AI, AO, E, DO): 
         DO = tf.multiply(DO, self.activation.gradient(AO))
         DF = tf.nn.conv2d_backprop_filter(input=AI, filter_sizes=self.filter_sizes, out_backprop=DO, strides=self.strides, padding=self.padding)
         DB = tf.reduce_sum(DO, axis=[0, 1, 2])

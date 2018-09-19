@@ -32,7 +32,7 @@ class Layer:
     def dfa_gv(self, AI, AO, E, DO):
         pass
         
-    def dfa(self, AI, AO, DO): 
+    def dfa(self, AI, AO, E, DO): 
         pass
         
     ###################################################################   

@@ -63,7 +63,7 @@ class FeedbackFC(Layer):
                 b = b * self.mask
                 self.B = tf.cast(tf.Variable(b), tf.float32)            
 
-    def get_weights(self):
+    def get_feedback(self):
         return self.B
 
     def num_params(self):
@@ -93,7 +93,7 @@ class FeedbackFC(Layer):
     def dfa_gv(self, AI, AO, E, DO):
         return []
         
-    def dfa(self, AI, AO, DO): 
+    def dfa(self, AI, AO, E, DO): 
         return []
         
     ###################################################################  

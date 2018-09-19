@@ -58,6 +58,9 @@ class FeedbackConv(Layer):
             b = b * self.mask
             self.B = tf.cast(tf.Variable(b), tf.float32)
 
+    def get_feedback(self):
+        return self.B
+
     def num_params(self):
         return 0
         
@@ -86,7 +89,7 @@ class FeedbackConv(Layer):
     def dfa_gv(self, AI, AO, E, DO):
         return []
         
-    def dfa(self, AI, AO, DO): 
+    def dfa(self, AI, AO, E, DO): 
         return []
         
     ###################################################################   
