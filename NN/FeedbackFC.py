@@ -72,13 +72,20 @@ class FeedbackFC(Layer):
     def forward(self, X, dropout=False):
         return X
         
+    ###################################################################           
+        
     def backward(self, AI, AO, DO):    
         return DO
 
     def gv(self, AI, AO, DO):    
         return []
+        
+    def train(self, AI, AO, DO): 
+        return []
+        
+    ###################################################################
 
-    def dfa(self, AI, AO, E, DO):
+    def dfa_backward(self, AI, AO, E, DO):
         E = tf.matmul(E, self.B)
         E = tf.multiply(E, DO)
         return E
@@ -86,7 +93,10 @@ class FeedbackFC(Layer):
     def dfa_gv(self, AI, AO, E, DO):
         return []
         
+    def dfa(self, AI, AO, DO): 
+        return []
         
+    ###################################################################  
         
         
         

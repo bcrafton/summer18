@@ -117,17 +117,10 @@ W1 = l0.get_weights()
 W2 = l2.get_weights()
 
 if args.dfa:
-    grads_and_vars = model.dfa(X=XTRAIN, Y=YTRAIN)
+    train = model.dfa(X=XTRAIN, Y=YTRAIN)
 else:
-    grads_and_vars = model.train(X=XTRAIN, Y=YTRAIN)
+    train = model.train(X=XTRAIN, Y=YTRAIN)
     
-if args.opt == "adam":
-    optimizer = tf.train.AdamOptimizer(learning_rate=ALPHA, beta1=0.9, beta2=0.999, epsilon=1.0).apply_gradients(grads_and_vars=grads_and_vars)
-elif args.opt == "rms":
-    optimizer = tf.train.RMSPropOptimizer(learning_rate=ALPHA, decay=1.0, momentum=0.0).apply_gradients(grads_and_vars=grads_and_vars)
-else:
-    optimizer = tf.train.GradientDescentOptimizer(learning_rate=ALPHA).apply_gradients(grads_and_vars=grads_and_vars)
-
 correct = tf.equal(tf.argmax(predict,1), tf.argmax(YTEST,1))
 total_correct = tf.reduce_sum(tf.cast(correct, tf.float32))
 
@@ -162,7 +155,7 @@ for ii in range(EPOCHS):
     for jj in range(int(TRAIN_EXAMPLES / BATCH_SIZE)):
         xs = x_train[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
         ys = y_train[jj*BATCH_SIZE:(jj+1)*BATCH_SIZE]
-        sess.run([optimizer], feed_dict={batch_size: BATCH_SIZE, XTRAIN: xs, YTRAIN: ys})
+        sess.run([train], feed_dict={batch_size: BATCH_SIZE, XTRAIN: xs, YTRAIN: ys})
         
     total_correct_examples = 0.0
     total_examples = 0.0

@@ -15,15 +15,27 @@ class ConvToFullyConnected(Layer):
 
     def forward(self, X, dropout=False):
         return tf.reshape(X, [tf.shape(X)[0], -1])
+        
+    ###################################################################           
+        
+    def backward(self, AI, AO, DO):    
+        return tf.reshape(DO, [tf.shape(AI)[0]] + self.shape)
 
-    def backward(self, AIN, AOUT, DO):
-        return tf.reshape(DO, [tf.shape(AIN)[0]] + self.shape)
-
-    def gv(self, AIN, AOUT, DO):
+    def gv(self, AI, AO, DO):    
         return []
+        
+    def train(self, AI, AO, DO): 
+        return []
+        
+    ###################################################################
 
-    def dfa(self, AI, AO, E, DO):
+    def dfa_backward(self, AI, AO, E, DO):
         return tf.ones(shape=(tf.shape(AI)))
-
+        
     def dfa_gv(self, AI, AO, E, DO):
         return []
+        
+    def dfa(self, AI, AO, DO): 
+        return []
+        
+    ###################################################################    

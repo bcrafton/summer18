@@ -13,16 +13,26 @@ class Layer:
     def forward(self, X, dropout=False):
         pass
 
-    def backward(self, AI, AO, DO):
+    ###################################################################           
+        
+    def backward(self, AI, AO, DO):    
+        pass
+
+    def gv(self, AI, AO, DO):    
         pass
         
-    def gv(self, AI, AO, DO):
+    def train(self, AI, AO, DO): 
         pass
+        
+    ###################################################################
 
-    def dfa(self, AI, AO, E, DO):
+    def dfa_backward(self, AI, AO, E, DO):
         pass
-
+        
     def dfa_gv(self, AI, AO, E, DO):
         pass
-
-
+        
+    def dfa(self, AI, AO, DO): 
+        pass
+        
+    ###################################################################   
