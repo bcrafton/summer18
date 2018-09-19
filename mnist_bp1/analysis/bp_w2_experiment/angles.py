@@ -44,7 +44,7 @@ def angle_between(v1, v2):
 TRAIN_EXAMPLES = 60000
 TEST_EXAMPLES = 10000
 NUM_CLASSES = 10
-EPOCHS = 500
+EPOCHS = 1000
 BATCH_SIZE = 32
 
 ##############################################
@@ -180,6 +180,7 @@ for ii in range(EPOCHS):
     
     ##############################################
 
+'''
 plt.subplot(411)
 plt.plot(angles)
 plt.xlabel("Angle B vs W2")
@@ -197,6 +198,10 @@ plt.plot(accs)
 plt.xlabel("Accuracy")
 
 plt.show()
+'''
+
+np.save("acc2", np.array(accs))
+np.save("angles2", np.array(angles))
 
 '''
 np.save("W1_" + str(args.num) + "_" + str(args.gpu), w1)

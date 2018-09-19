@@ -80,12 +80,14 @@ def dsigmoid(x):
 ##############################################
 high = 1.0 / np.sqrt(785)
 low = -high
-w1_init = np.random.uniform(low=low, high=high, size=(785, 100))
+# w1_init = np.random.uniform(low=low, high=high, size=(785, 100))
+w1_init = np.zeros(shape=(785, 100))
 W1 = tf.Variable( tf.cast(w1_init, tf.float32) )
 
 high = 1.0 / np.sqrt(101)
 low = -high
-w2_init = np.random.uniform(low=low, high=high, size=(101, 10))
+# w2_init = np.random.uniform(low=low, high=high, size=(101, 10))
+w2_init = np.zeros(shape=(101, 10))
 W2 = tf.Variable( tf.cast(w2_init, tf.float32) )
 
 high = 1.0 / np.sqrt(101)
